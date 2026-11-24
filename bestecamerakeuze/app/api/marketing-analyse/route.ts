@@ -24,7 +24,7 @@ export const dynamic = "force-dynamic";
  *
  * GET                               → alle campagnes met de kerncijfers van hun laatste analyse,
  *                                     plus de analyse opzetten
- * POST { opzetId, naam, bedrijf, … }→ nieuwe campagne of rapportage (iedereen die ingelogd is)
+ * POST { opzetId, naam, bedrijven, … } → nieuwe campagne of rapportage (iedereen die ingelogd is)
  * PATCH ?id=… { opzetId, naam, … }  → briefing bijwerken (de opzet mag veranderen)
  * PATCH ?id=… { analyseRonde }      → schakelaar Analyse ronde
  * PATCH ?id=… { dataCorrectie }     → alleen de Data correctie (vanaf de analysepagina)

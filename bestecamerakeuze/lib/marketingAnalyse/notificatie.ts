@@ -14,6 +14,7 @@ import { Client } from "pg";
 import nodemailer from "nodemailer";
 import { controleerVerbindingssnaar } from "@/lib/verbindingssnaar";
 import { bouwMail } from "./mail";
+import { bedrijvenLabel } from "./rekenen";
 import type { DoelOordeel, Label } from "./types";
 
 const PRODUCTIE_URL = "https://news-ten-chi.vercel.app";
@@ -90,8 +91,8 @@ export async function verstuurNotificaties(client: Client, analyseId: string): P
 
   try {
     const [campagne, volgers] = await Promise.all([
-      client.query<{ naam: string; bedrijf: string }>(
-        `select naam, bedrijf from dataloket.marketing_analyse_campagnes where id = $1`,
+      client.query<{ naam: string; bedrijven: string[] }>(
+        `select naam, bedrijven from dataloket.marketing_analyse_campagnes where id = $1`,
         [versie.campagne_id],
       ),
       client.query<{ email: string; afmeld_token: string }>(
@@ -123,7 +124,7 @@ export async function verstuurNotificaties(client: Client, analyseId: string): P
     for (const v of volgers.rows) {
       const mail = bouwMail({
         campagneNaam: c.naam,
-        bedrijf: c.bedrijf,
+        bedrijf: bedrijvenLabel(c.bedrijven),
         versie: versie.versie,
         label: versie.label,
         geanalyseerdOp: versie.geanalyseerd_op.toISOString(),

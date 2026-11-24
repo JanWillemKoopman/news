@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Drawer from "@/components/Drawer";
-import { rapportageNaam } from "@/lib/marketingAnalyse/rekenen";
+import BedrijvenKiezer from "@/components/marketingAnalyse/BedrijvenKiezer";
+import { bedrijvenLabel, rapportageNaam } from "@/lib/marketingAnalyse/rekenen";
 import { STANDAARD_OPZET_ID, type MaCampagne, type MaOpzet } from "@/lib/marketingAnalyse/types";
 
 type Props = {
@@ -21,7 +22,7 @@ type Props = {
 type Velden = {
   opzetId: string;
   naam: string;
-  bedrijf: string;
+  bedrijven: string[];
   merk: string;
   modellen: string;
   startdatum: string;
@@ -37,7 +38,7 @@ function beginwaarden(c: MaCampagne | null): Velden {
   return {
     opzetId: c?.opzetId ?? STANDAARD_OPZET_ID,
     naam: c?.naam ?? "",
-    bedrijf: c?.bedrijf ?? "",
+    bedrijven: c?.bedrijven ?? [],
     merk: c?.merk ?? "",
     modellen: c?.modellen.join(", ") ?? "",
     startdatum: c?.startdatum ?? "",
@@ -85,12 +86,10 @@ export default function CampagneZijbalk({ campagne, opzetten, bedrijven, isEigen
   const rapportage = opzet?.formulier === "rapportage";
   // Uitgezette opzetten staan alleen in de lijst als deze analyse er al een heeft.
   const opzetOpties = opzetten.filter((o) => o.actief || o.id === v.opzetId);
-  const vastBedrijf = opzet?.bedrijf ?? null;
+  const vasteBedrijven = opzet && opzet.bedrijven.length > 0 ? opzet.bedrijven : null;
   const [bezig, setBezig] = useState(false);
   const [fout, setFout] = useState<string | null>(null);
   const [bevestigWeg, setBevestigWeg] = useState(false);
-  // Een bedrijf dat niet (meer) in de lijst staat, blijft kiesbaar voor deze campagne.
-  const opties = v.bedrijf && !bedrijven.includes(v.bedrijf) ? [...bedrijven, v.bedrijf] : bedrijven;
 
   const zet = (veld: keyof Velden) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setV((huidig) => ({ ...huidig, [veld]: e.target.value }));
@@ -129,7 +128,7 @@ export default function CampagneZijbalk({ campagne, opzetten, bedrijven, isEigen
     e.preventDefault();
     if (bezig) return;
     if (!v.naam.trim()) return setFout("Geef de analyse een naam.");
-    if (!vastBedrijf && !v.bedrijf.trim()) return setFout("Kies voor welk bedrijf de analyse is.");
+    if (!vasteBedrijven && v.bedrijven.length === 0) return setFout("Kies voor welk bedrijf of welke bedrijven de analyse is.");
     if (rapportage && !v.periodeTekst.trim()) return setFout("Vul de periode in.");
     const data = campagne
       ? await verstuur(`/api/marketing-analyse?id=${encodeURIComponent(campagne.id)}`, "PATCH", v)
@@ -186,20 +185,19 @@ export default function CampagneZijbalk({ campagne, opzetten, bedrijven, isEigen
             autoFocus={!campagne}
           />
         </Veld>
-        {vastBedrijf ? (
-          <Veld label="Bedrijf" hint="Ligt vast voor deze opzet.">
-            <p className="rounded-control border border-line-soft bg-surface-tint px-3 py-2 text-sm text-ink">{vastBedrijf}</p>
+        {vasteBedrijven ? (
+          <Veld label={vasteBedrijven.length > 1 ? "Bedrijven" : "Bedrijf"} hint="Ligt vast voor deze opzet.">
+            <p className="rounded-control border border-line-soft bg-surface-tint px-3 py-2 text-sm text-ink">{bedrijvenLabel(vasteBedrijven)}</p>
           </Veld>
         ) : (
-          <Veld label="Bedrijf" verplicht hint="Voor welk van onze bedrijven. Bepaalt in welke accounts en websites de analyse kijkt.">
-            <select className={INVOER} value={v.bedrijf} onChange={zet("bedrijf")} disabled={bezig}>
-              <option value="">Kies een bedrijf…</option>
-              {opties.map((b) => (
-                <option key={b} value={b}>
-                  {b}
-                </option>
-              ))}
-            </select>
+          <Veld label="Bedrijven" verplicht hint="Voor welke van onze bedrijven; meerdere kan. Bepaalt in welke accounts en websites de analyse kijkt.">
+            <BedrijvenKiezer
+              label="Bedrijven"
+              opties={bedrijven}
+              gekozen={v.bedrijven}
+              onChange={(lijst) => setV((huidig) => ({ ...huidig, bedrijven: lijst }))}
+              disabled={bezig}
+            />
           </Veld>
         )}
         {rapportage ? (

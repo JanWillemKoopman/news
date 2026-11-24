@@ -29,7 +29,7 @@ const SEMANTIEK = "marketing_analyse_semantiek";
 const OPZETTEN = "marketing_analyse_opzetten";
 
 const CAMPAGNE_KOLOMMEN =
-  "id, opzet_id, naam, bedrijf, merk, modellen, startdatum, einddatum, periode_tekst, doel, budget, omschrijving, data_correctie, data_correctie_bijgewerkt_op, analyse_ronde, aangemaakt_op, bijgewerkt_op";
+  "id, opzet_id, naam, bedrijven, merk, modellen, startdatum, einddatum, periode_tekst, doel, budget, omschrijving, data_correctie, data_correctie_bijgewerkt_op, analyse_ronde, aangemaakt_op, bijgewerkt_op";
 
 function getalOfNull(x: unknown): number | null {
   if (x === null || x === undefined || x === "") return null;
@@ -46,7 +46,7 @@ function naarCampagne(r: Record<string, unknown>): MaCampagne {
     id: r.id as string,
     opzetId: (r.opzet_id as string) ?? STANDAARD_OPZET_ID,
     naam: r.naam as string,
-    bedrijf: r.bedrijf as string,
+    bedrijven: Array.isArray(r.bedrijven) ? (r.bedrijven as string[]) : [],
     merk: tekst(r.merk),
     modellen: Array.isArray(r.modellen) ? (r.modellen as string[]) : [],
     startdatum: tekst(r.startdatum),
@@ -68,7 +68,7 @@ function naarKolommen(i: MaCampagneInvoer) {
   return {
     opzet_id: i.opzetId,
     naam: i.naam,
-    bedrijf: i.bedrijf,
+    bedrijven: i.bedrijven,
     merk: i.merk,
     modellen: i.modellen,
     startdatum: i.startdatum,
@@ -338,7 +338,7 @@ export function bewaarPrompt(supabase: SupabaseClient, opzetId: string, inhoud: 
 // Analyse opzetten
 // ---------------------------------------------------------------------------
 
-const OPZET_KOLOMMEN = "id, naam, formulier, bedrijf, volgorde, actief, standaard";
+const OPZET_KOLOMMEN = "id, naam, formulier, bedrijven, volgorde, actief, standaard";
 
 function naarOpzet(r: Record<string, unknown>, metPrompt: Set<string>, aantallen: Map<string, number>): MaOpzet {
   const id = r.id as string;
@@ -346,7 +346,7 @@ function naarOpzet(r: Record<string, unknown>, metPrompt: Set<string>, aantallen
     id,
     naam: r.naam as string,
     formulier: r.formulier as Formulier,
-    bedrijf: tekst(r.bedrijf),
+    bedrijven: Array.isArray(r.bedrijven) ? (r.bedrijven as string[]) : [],
     volgorde: Number(r.volgorde ?? 100),
     actief: Boolean(r.actief),
     standaard: Boolean(r.standaard),
@@ -379,7 +379,7 @@ export async function haalOpzet(supabase: SupabaseClient, id: string): Promise<M
 export interface OpzetVelden {
   naam: string;
   formulier: Formulier;
-  bedrijf: string | null;
+  bedrijven: string[];
   actief: boolean;
 }
 

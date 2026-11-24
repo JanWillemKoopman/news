@@ -3,31 +3,25 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Inlogprompt from "@/components/Inlogprompt";
-import AnalyseWeergave, { DoelRegel, LabelBadge } from "@/components/marketingAnalyse/AnalyseWeergave";
+import AnalyseWeergave, { LabelBadge } from "@/components/marketingAnalyse/AnalyseWeergave";
+import ProgressBar from "@/components/ProgressBar";
 import CampagneZijbalk from "@/components/marketingAnalyse/CampagneZijbalk";
 import AnalysePromptZijbalk from "@/components/marketingAnalyse/AnalysePromptZijbalk";
 import SemantiekZijbalk from "@/components/marketingAnalyse/SemantiekZijbalk";
 import { getBrandLogo } from "@/components/brandLogos";
 import { IconBook, IconBrain, IconChevronDown, IconPencil, IconPlus } from "@/components/icons";
-import { deelOpInLopendEnAfgelopen, formatWaarde, looptijdLabel, vandaagNL, versieLabel } from "@/lib/marketingAnalyse/rekenen";
-import { STANDAARD_SEMANTIEK } from "@/lib/marketingAnalyse/standaardSemantiek";
 import {
-  BEDRIJF_MET_SYNTEC,
-  type MaCampagne,
-  type MaKerncijfers,
-  type MaOpzet,
-  type MaOverzichtRegel,
-} from "@/lib/marketingAnalyse/types";
-
-/** De funnelcijfers in het overzicht, in funnelvolgorde. */
-const KOLOMMEN: { sleutel: keyof MaKerncijfers; label: string; eenheid: "euro" | "aantal"; titel: string }[] = [
-  { sleutel: "kosten", label: "Kosten", eenheid: "euro", titel: "Mediakosten plus de verdeelde extra kanaalkosten" },
-  { sleutel: "vertoningen", label: "Vertoningen", eenheid: "aantal", titel: "Vertoningen betaald en organisch" },
-  { sleutel: "klikken", label: "Klikken", eenheid: "aantal", titel: "Klikken op advertenties" },
-  { sleutel: "sessies", label: "Sessies", eenheid: "aantal", titel: "Sessies die op de campagnepagina('s) begonnen (GA4)" },
-  { sleutel: "leadEvents", label: "Lead-events", eenheid: "aantal", titel: "Lead-events in sessies die op de campagnepagina begonnen (GA4)" },
-  { sleutel: "leadsSyntec", label: "Leads Syntec", eenheid: "aantal", titel: "Leads in Syntec voor merk en model (alleen Van den Udenhout)" },
-];
+  bedrijvenLabel,
+  deelOpInLopendEnAfgelopen,
+  formatWaarde,
+  looptijdLabel,
+  overzichtCijfers,
+  vandaagNL,
+  versieLabel,
+  type LeadBron,
+} from "@/lib/marketingAnalyse/rekenen";
+import { STANDAARD_SEMANTIEK } from "@/lib/marketingAnalyse/standaardSemantiek";
+import type { MaCampagne, MaOpzet, MaOverzichtRegel } from "@/lib/marketingAnalyse/types";
 
 const URL_PARAM = "analyse";
 
@@ -39,6 +33,10 @@ function zetUrl(id: string | null) {
   window.history.replaceState(null, "", `${window.location.pathname}${zoek ? `?${zoek}` : ""}`);
 }
 
+/**
+ * De schakelaar Analyse ronde: aan = "voer de analyseronde uit" neemt deze regel mee. Klein en
+ * zonder tekst ernaast, zodat hij vooraan in de regel niet de aandacht trekt.
+ */
 function RondeSchakelaar({ aan, bezig, onWissel, naam }: { aan: boolean; bezig: boolean; onWissel: () => void; naam: string }) {
   return (
     <button
@@ -46,31 +44,23 @@ function RondeSchakelaar({ aan, bezig, onWissel, naam }: { aan: boolean; bezig: 
       role="switch"
       aria-checked={aan}
       aria-label={`Analyse ronde voor ${naam}`}
+      title={aan ? "In de analyseronde" : "Niet in de analyseronde"}
       disabled={bezig}
       onClick={(e) => {
         e.stopPropagation();
         onWissel();
       }}
-      className="inline-flex items-center gap-2 disabled:opacity-60"
+      className="inline-flex items-center disabled:opacity-60"
     >
-      <span className={`relative h-5 w-9 shrink-0 rounded-pill transition-colors duration-[var(--duur-snel)] ${aan ? "bg-primary" : "bg-progress-track"}`}>
+      <span className={`relative h-4 w-7 shrink-0 rounded-pill transition-colors duration-[var(--duur-snel)] ${aan ? "bg-primary/60" : "bg-progress-track"}`}>
         <span
-          className={`absolute left-0 top-0.5 h-4 w-4 rounded-full bg-card shadow-subtle transition-transform duration-[var(--duur-snel)] ease-merk ${aan ? "translate-x-4" : "translate-x-0.5"}`}
+          className={`absolute left-0 top-0.5 h-3 w-3 rounded-full bg-card shadow-subtle transition-transform duration-[var(--duur-snel)] ease-merk ${aan ? "translate-x-3.5" : "translate-x-0.5"}`}
         />
       </span>
-      <span className={`text-sm ${aan ? "text-ink" : "text-ink-faint"}`}>{aan ? "Aan" : "Uit"}</span>
     </button>
   );
 }
 
-/**
- * Het menu Analyse prompts: per opzet de prompt openen, en voor de eigenaar "Nieuwe opzet".
- * Een opzet zonder prompt zegt dat erbij; uitgezette opzetten ziet alleen de eigenaar.
- *
- * Het menu rendert via een portal naar <body> met een vaste positie onder de knop: de knop
- * staat in de kop van een paneel met `overflow-hidden`, en daarbinnen viel alles onder de
- * rand van een kort paneel weg (de PGZ-opzetten en "Nieuwe opzet").
- */
 function AnalysePromptsMenu({
   opzetten,
   isEigenaar,
@@ -178,38 +168,109 @@ function AnalysePromptsMenu({
   );
 }
 
-function CampagneTabel({
-  campagnes,
-  opzetten,
-  rondeBezig,
-  onOpen,
-  onBewerk,
-  onRonde,
-}: {
+type TabelProps = {
   campagnes: MaOverzichtRegel[];
   opzetten: Map<string, MaOpzet>;
   rondeBezig: Set<string>;
   onOpen: (id: string) => void;
   onBewerk: (c: MaOverzichtRegel) => void;
   onRonde: (c: MaOverzichtRegel) => void;
+};
+
+const KOP = "label-theme whitespace-nowrap px-3 py-2.5 font-normal";
+const RIJ =
+  "cursor-pointer align-top transition-colors duration-[var(--duur-snel)] hover:bg-surface [&>td]:border-t [&>td]:border-line-soft";
+
+/** De laatste analyse als korte regel onder de naam. */
+function LaatsteAnalyse({ c, opzet }: { c: MaOverzichtRegel; opzet: MaOpzet | undefined }) {
+  if (c.laatsteAnalyse) {
+    return (
+      <span className="inline-flex flex-wrap items-center gap-1.5">
+        <span>{versieLabel(c.laatsteAnalyse.versie, c.laatsteAnalyse.geanalyseerdOp)}</span>
+        <LabelBadge label={c.laatsteAnalyse.label} />
+      </span>
+    );
+  }
+  if (opzet && !opzet.heeftPrompt) {
+    return (
+      <span className="text-negative" title={`Er is nog geen prompt voor ${opzet.naam}; Claude weigert de analyse`}>
+        Nog geen prompt
+      </span>
+    );
+  }
+  return <span>Nog niet geanalyseerd</span>;
+}
+
+function BewerkKnop({ c, onBewerk }: { c: MaOverzichtRegel; onBewerk: (c: MaOverzichtRegel) => void }) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onBewerk(c);
+      }}
+      title="Briefing bewerken"
+      aria-label={`Briefing van ${c.naam} bewerken`}
+      className="inline-flex h-7 w-7 items-center justify-center rounded-control text-ink-faint transition-colors hover:bg-card hover:text-ink"
+    >
+      <IconPencil className="h-4 w-4" />
+    </button>
+  );
+}
+
+/** Een cel met een bedrag of aantal, een balkje en een regel eronder. */
+function BalkCel({
+  waarde,
+  pct,
+  onder,
+  toon = "neutraal",
+}: {
+  waarde: string;
+  pct: number | null;
+  onder: string;
+  /** Kleur van de regel eronder: rood bij boven budget, groen bij een gehaald doel. */
+  toon?: "neutraal" | "positief" | "negatief";
 }) {
+  return (
+    <div className="flex min-w-[150px] flex-col gap-1.5">
+      <span className="tabular-nums text-ink">{waarde}</span>
+      {pct !== null ? <ProgressBar percent={pct} className="h-1 max-w-40" /> : null}
+      <span className={`text-meta ${toon === "negatief" ? "text-negative" : toon === "positief" ? "text-positive" : "text-ink-faint"}`}>
+        {onder}
+      </span>
+    </div>
+  );
+}
+
+const BRON_NAAM: Record<LeadBron, string> = { syntec: "Syntec", ga4: "Google Analytics" };
+const BRON_UITLEG: Record<LeadBron, string> = {
+  syntec: "Leads in Syntec (Data leads) voor het merk en de modellen uit de briefing",
+  ga4: "Lead-events in GA4 in sessies die op de campagnepagina('s) begonnen",
+};
+
+/**
+ * Campagne-analyses: Analyse ronde, campagne, uitgaven tegen budget, leads (met bron) en het
+ * leaddoel met hoeveel er gehaald is. De cijfers komen uit de laatste analyse.
+ */
+function CampagneAnalyseTabel({ campagnes, opzetten, rondeBezig, onOpen, onBewerk, onRonde }: TabelProps) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-separate border-spacing-0 text-sm">
         <thead>
           <tr className="text-left text-label text-ink-faint">
-            <th className="label-theme px-6 py-2.5 font-normal">Campagne</th>
-            <th className="label-theme px-3 py-2.5 font-normal">Doel</th>
-            <th className="label-theme whitespace-nowrap px-3 py-2.5 font-normal" title="Aan: “voer de analyseronde uit” neemt deze campagne mee">
-              Analyse ronde
+            <th className="w-12 py-2.5 pl-6 pr-1" title="Aan: “voer de analyseronde uit” neemt deze campagne mee">
+              <span className="label-theme font-normal">Ronde</span>
             </th>
-            <th className="label-theme px-3 py-2.5 font-normal">Laatste analyse</th>
-            {KOLOMMEN.map((k) => (
-              <th key={k.sleutel} title={k.titel} className="label-theme whitespace-nowrap px-3 py-2.5 text-right font-normal">
-                {k.label}
-              </th>
-            ))}
-            <th className="label-theme whitespace-nowrap px-3 py-2.5 font-normal">Op schema</th>
+            <th className={`${KOP} pl-3`}>Campagne</th>
+            <th className={KOP} title="Mediakosten plus de verdeelde extra kanaalkosten, tegen het totaalbudget">
+              Uitgaven
+            </th>
+            <th className={KOP} title="Syntec bij Van den Udenhout met opgegeven modellen, anders lead-events in Google Analytics">
+              Leads
+            </th>
+            <th className={KOP} title="Het aantal leads uit het doel van de briefing, en hoeveel daarvan gehaald is">
+              Doel leads
+            </th>
             <th className="w-12 px-4 py-2.5">
               <span className="sr-only">Briefing bewerken</span>
             </th>
@@ -218,18 +279,15 @@ function CampagneTabel({
         <tbody>
           {campagnes.map((c) => {
             const Logo = c.merk ? getBrandLogo(c.merk) : null;
-            const k = c.laatsteAnalyse?.kerncijfers;
-            const zonderSyntec = c.bedrijf !== BEDRIJF_MET_SYNTEC;
             const opzet = opzetten.get(c.opzetId);
-            // Alleen een campagne-analyse heeft funnelcijfers, doel en kosten op schema.
-            const rapportage = opzet?.formulier === "rapportage";
+            const o = overzichtCijfers(c, c.laatsteAnalyse?.kerncijfers);
+            const geanalyseerd = Boolean(c.laatsteAnalyse);
             return (
-              <tr
-                key={c.id}
-                onClick={() => onOpen(c.id)}
-                className="cursor-pointer align-top transition-colors duration-[var(--duur-snel)] hover:bg-surface [&>td]:border-t [&>td]:border-line-soft"
-              >
-                <td className="max-w-[280px] px-6 py-3">
+              <tr key={c.id} onClick={() => onOpen(c.id)} className={RIJ}>
+                <td className="py-3 pl-6 pr-1 pt-3.5">
+                  <RondeSchakelaar aan={c.analyseRonde} bezig={rondeBezig.has(c.id)} onWissel={() => onRonde(c)} naam={c.naam} />
+                </td>
+                <td className="max-w-[340px] px-3 py-3">
                   <div className="flex items-center gap-2">
                     {Logo && <Logo role="img" aria-label={c.merk ?? undefined} className="h-4 w-4 shrink-0 text-ink-muted" />}
                     <p className="truncate font-semibold text-ink" title={c.naam}>
@@ -238,67 +296,48 @@ function CampagneTabel({
                   </div>
                   <p className="mt-0.5 text-meta text-ink-faint">
                     {opzet && !opzet.standaard && `${opzet.naam} · `}
-                    {c.bedrijf} ·{" "}
-                    {rapportage ? c.periodeTekst || "Geen periode" : looptijdLabel(c.startdatum, c.einddatum)}
-                    {!rapportage && c.budget != null && ` · ${formatWaarde(c.budget, "euro")}`}
+                    {bedrijvenLabel(c.bedrijven)} · {looptijdLabel(c.startdatum, c.einddatum)}
+                  </p>
+                  <p className="mt-1 text-meta text-ink-faint">
+                    <LaatsteAnalyse c={c} opzet={opzet} />
                   </p>
                 </td>
-                <td className="max-w-[220px] px-3 py-3 text-ink-muted">
-                  {!rapportage && <p className="line-clamp-2">{c.doel || "—"}</p>}
+                <td className="px-3 py-3">
+                  <BalkCel
+                    waarde={geanalyseerd ? formatWaarde(o.kosten, "euro") : "—"}
+                    pct={o.besteedPct}
+                    toon={o.besteedPct !== null && o.besteedPct > 100 ? "negatief" : "neutraal"}
+                    onder={
+                      o.budget === null
+                        ? "Geen budget opgegeven"
+                        : o.besteedPct === null
+                          ? `Budget ${formatWaarde(o.budget, "euro")}`
+                          : `${formatWaarde(o.besteedPct, "procent")} van ${formatWaarde(o.budget, "euro")}`
+                    }
+                  />
+                </td>
+                <td className="px-3 py-3" title={BRON_UITLEG[o.bron]}>
+                  <div className="flex min-w-[120px] flex-col gap-1.5">
+                    <span className="tabular-nums text-ink">{geanalyseerd ? formatWaarde(o.leads) : "—"}</span>
+                    <span className="text-meta text-ink-faint">{BRON_NAAM[o.bron]}</span>
+                  </div>
                 </td>
                 <td className="px-3 py-3">
-                  <RondeSchakelaar aan={c.analyseRonde} bezig={rondeBezig.has(c.id)} onWissel={() => onRonde(c)} naam={c.naam} />
+                  <BalkCel
+                    waarde={o.doelLeads !== null ? formatWaarde(o.doelLeads) : "—"}
+                    pct={o.gehaaldPct}
+                    toon={o.gehaaldPct !== null && o.gehaaldPct >= 100 ? "positief" : "neutraal"}
+                    onder={
+                      o.doelLeads === null
+                        ? "Geen aantal in het doel"
+                        : o.gehaaldPct === null
+                          ? "Nog niet gemeten"
+                          : `${formatWaarde(o.gehaaldPct, "procent")} gehaald`
+                    }
+                  />
                 </td>
-                <td className="px-3 py-3">
-                  {c.laatsteAnalyse ? (
-                    <div className="flex flex-col items-start gap-1">
-                      <span className="whitespace-nowrap text-ink">{versieLabel(c.laatsteAnalyse.versie, c.laatsteAnalyse.geanalyseerdOp)}</span>
-                      <LabelBadge label={c.laatsteAnalyse.label} />
-                    </div>
-                  ) : opzet && !opzet.heeftPrompt ? (
-                    <span className="text-negative" title={`Er is nog geen prompt voor ${opzet.naam}; Claude weigert de analyse`}>
-                      Nog geen prompt
-                    </span>
-                  ) : (
-                    <span className="text-ink-faint">Nog niet geanalyseerd</span>
-                  )}
-                </td>
-                {rapportage ? (
-                  <td colSpan={KOLOMMEN.length + 1} aria-hidden="true" />
-                ) : (
-                  <>
-                {KOLOMMEN.map((kol) => (
-                  <td key={kol.sleutel} className="whitespace-nowrap px-3 py-3 text-right tabular-nums text-ink">
-                    {kol.sleutel === "leadsSyntec" && zonderSyntec ? (
-                      <span className="text-ink-faint" title="Syntec-leads zijn alleen van toepassing op Van den Udenhout">
-                        n.v.t.
-                      </span>
-                    ) : (
-                      formatWaarde((k?.[kol.sleutel] as number | null | undefined) ?? null, kol.eenheid)
-                    )}
-                    {kol.sleutel === "leadsSyntec" && !zonderSyntec && k?.leadsSyntecInternet != null && (
-                      <p className="text-meta text-ink-faint">{formatWaarde(k.leadsSyntecInternet)} via internet</p>
-                    )}
-                  </td>
-                ))}
-                <td className="whitespace-nowrap px-3 py-3" title={k?.doel?.toelichting}>
-                  <DoelRegel doel={k?.doel} />
-                </td>
-                  </>
-                )}
                 <td className="px-4 py-3 text-right">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onBewerk(c);
-                    }}
-                    title="Briefing bewerken"
-                    aria-label={`Briefing van ${c.naam} bewerken`}
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-control text-ink-faint transition-colors hover:bg-card hover:text-ink"
-                  >
-                    <IconPencil className="h-4 w-4" />
-                  </button>
+                  <BewerkKnop c={c} onBewerk={onBewerk} />
                 </td>
               </tr>
             );
@@ -309,16 +348,72 @@ function CampagneTabel({
   );
 }
 
-/**
- * Campagnes → Marketing analyse.
- *
- * Het overzicht: lopende campagnes bovenaan op startdatum, afgelopen campagnes eronder in een
- * inklapbaar blok, elk met de funnelcijfers uit zijn laatste analyse en de schakelaar Analyse
- * ronde. Een klik op een regel opent de analysepagina (met alle versies). Rechtsboven de
- * hoofdprompt, de semantic layer en "Nieuwe campagne"; het potlood opent de briefing.
- *
- * De analyses maakt Claude Code (skill `marketing-analyse`), niet deze pagina.
- */
+/** Rapportages en andere opzetten zonder funnel: alleen naam, Analyse ronde en laatste analyse. */
+function RapportageTabel({ campagnes, opzetten, rondeBezig, onOpen, onBewerk, onRonde }: TabelProps) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full border-separate border-spacing-0 text-sm">
+        <thead>
+          <tr className="text-left text-label text-ink-faint">
+            <th className="w-12 py-2.5 pl-6 pr-1" title="Aan: “voer de analyseronde uit” neemt deze rapportage mee">
+              <span className="label-theme font-normal">Ronde</span>
+            </th>
+            <th className={`${KOP} pl-3`}>Rapportage</th>
+            <th className={KOP}>Laatste analyse</th>
+            <th className="w-12 px-4 py-2.5">
+              <span className="sr-only">Briefing bewerken</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {campagnes.map((c) => {
+            const opzet = opzetten.get(c.opzetId);
+            return (
+              <tr key={c.id} onClick={() => onOpen(c.id)} className={RIJ}>
+                <td className="py-3 pl-6 pr-1 pt-3.5">
+                  <RondeSchakelaar aan={c.analyseRonde} bezig={rondeBezig.has(c.id)} onWissel={() => onRonde(c)} naam={c.naam} />
+                </td>
+                <td className="max-w-[420px] px-3 py-3">
+                  <p className="truncate font-semibold text-ink" title={c.naam}>
+                    {c.naam}
+                  </p>
+                  <p className="mt-0.5 text-meta text-ink-faint">
+                    {opzet ? `${opzet.naam} · ` : ""}
+                    {bedrijvenLabel(c.bedrijven)} · {c.periodeTekst || "Geen periode"}
+                  </p>
+                </td>
+                <td className="px-3 py-3 text-ink">
+                  <LaatsteAnalyse c={c} opzet={opzet} />
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <BewerkKnop c={c} onBewerk={onBewerk} />
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/** Campagne-analyses en rapportages onder elkaar, elk met hun eigen kolommen. */
+function OverzichtTabellen(props: TabelProps) {
+  const isRapportage = (c: MaOverzichtRegel) => props.opzetten.get(c.opzetId)?.formulier === "rapportage";
+  const campagnes = props.campagnes.filter((c) => !isRapportage(c));
+  const rapportages = props.campagnes.filter(isRapportage);
+  return (
+    <>
+      {campagnes.length > 0 && <CampagneAnalyseTabel {...props} campagnes={campagnes} />}
+      {rapportages.length > 0 && (
+        <div className={campagnes.length > 0 ? "border-t border-line-soft pt-2" : ""}>
+          <RapportageTabel {...props} campagnes={rapportages} />
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean }) {
   const [campagnes, setCampagnes] = useState<MaOverzichtRegel[] | null>(null);
   const [opzetten, setOpzetten] = useState<MaOpzet[]>([]);
@@ -491,7 +586,7 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
                 </p>
               </div>
             ) : (
-              <CampagneTabel campagnes={lopend} {...tabelProps} />
+              <OverzichtTabellen campagnes={lopend} {...tabelProps} />
             )}
           </section>
 
@@ -510,7 +605,7 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
               </button>
               {afgelopenOpen && (
                 <div className="border-t border-line-soft">
-                  <CampagneTabel campagnes={afgelopen} {...tabelProps} />
+                  <OverzichtTabellen campagnes={afgelopen} {...tabelProps} />
                 </div>
               )}
             </section>

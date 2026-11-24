@@ -45,8 +45,8 @@ export interface MaOpzet {
   id: string;
   naam: string;
   formulier: Formulier;
-  /** Vast bedrijf; null = de gebruiker kiest het in de briefing. */
-  bedrijf: string | null;
+  /** Vaste bedrijven; leeg = de gebruiker kiest ze in de briefing. */
+  bedrijven: string[];
   volgorde: number;
   actief: boolean;
   standaard: boolean;
@@ -60,7 +60,8 @@ export interface MaCampagne {
   id: string;
   opzetId: string;
   naam: string;
-  bedrijf: string;
+  /** Voor welke van onze bedrijven de analyse is; minstens één. */
+  bedrijven: string[];
   merk: string | null;
   modellen: string[];
   startdatum: string | null;
@@ -82,7 +83,7 @@ export type MaCampagneInvoer = Pick<
   MaCampagne,
   | "opzetId"
   | "naam"
-  | "bedrijf"
+  | "bedrijven"
   | "merk"
   | "modellen"
   | "startdatum"
@@ -129,6 +130,11 @@ export interface MaKerncijfers {
   leadsSyntec?: number | null;
   /** Waarvan via kanaalgroep Internet. */
   leadsSyntecInternet?: number | null;
+  /**
+   * Het aantal leads uit het doel van de briefing (vrije tekst, bijv. "20 proefritten" → 20),
+   * zoals de analyse het las. Null als het doel niet over een aantal leads gaat.
+   */
+  doelLeads?: number | null;
   doel?: DoelOordeel | null;
 }
 
@@ -280,7 +286,8 @@ export interface MaAnalyse {
   geanalyseerdOp: string;
   periodeVan: string | null;
   periodeTot: string | null;
-  briefing: Partial<MaCampagneInvoer> & { opzet?: string; formulier?: Formulier };
+  /** `bedrijf` (één tekst) staat in versies van vóór migratie 0045. */
+  briefing: Partial<MaCampagneInvoer> & { opzet?: string; formulier?: Formulier; bedrijf?: string };
   promptVersie: number | null;
   semantiekVersie: number | null;
   model: string | null;
