@@ -6,7 +6,7 @@ import SectieBlok from "@/components/marketingAnalyse/SectieBlok";
 import VolgersBlok from "@/components/marketingAnalyse/VolgersBlok";
 import { getBrandLogo } from "@/components/brandLogos";
 import { IconArrowRight, IconPencil } from "@/components/icons";
-import { datumKort, doorstroom, formatWaarde, looptijdLabel, versieLabel } from "@/lib/marketingAnalyse/rekenen";
+import { bedrijvenLabel, datumKort, doorstroom, formatWaarde, looptijdLabel, versieLabel } from "@/lib/marketingAnalyse/rekenen";
 import {
   DOEL_STATUS_NAAM,
   LABEL_NAAM,
@@ -106,16 +106,32 @@ function FunnelStrip({ stappen }: { stappen: FunnelStap[] }) {
   );
 }
 
-function Briefing({ b, titel, opzet, rapportage }: { b: Partial<MaCampagne>; titel: string; opzet?: string; rapportage: boolean }) {
+/** Bedrijven uit een briefing; versies van vóór migratie 0045 hebben één `bedrijf`. */
+function bedrijvenUitBriefing(b: Partial<MaCampagne> & { bedrijf?: string }): string {
+  if (b.bedrijven && b.bedrijven.length > 0) return bedrijvenLabel(b.bedrijven);
+  return b.bedrijf || "—";
+}
+
+function Briefing({
+  b,
+  titel,
+  opzet,
+  rapportage,
+}: {
+  b: Partial<MaCampagne> & { bedrijf?: string };
+  titel: string;
+  opzet?: string;
+  rapportage: boolean;
+}) {
   const regels: [string, string][] = rapportage
     ? [
         ["Analyse opzet", opzet || "—"],
-        ["Bedrijf", b.bedrijf || "—"],
+        ["Bedrijf", bedrijvenUitBriefing(b)],
         ["Periode", b.periodeTekst || "—"],
       ]
     : [
         ...(opzet ? ([["Analyse opzet", opzet]] as [string, string][]) : []),
-        ["Bedrijf", b.bedrijf || "—"],
+        ["Bedrijf", bedrijvenUitBriefing(b)],
         ["Looptijd", looptijdLabel(b.startdatum ?? null, b.einddatum ?? null)],
         ["Totaalbudget", b.budget != null ? formatWaarde(b.budget, "euro") : "—"],
         ["Merk en model", [b.merk, (b.modellen ?? []).join(", ")].filter(Boolean).join(" · ") || "—"],
@@ -299,7 +315,7 @@ export default function AnalyseWeergave({ campagne, opzet, isEigenaar, onTerug, 
           <h2 className="truncate font-sans-w7 text-lg font-bold text-ink">{campagne.naam}</h2>
           <span className="whitespace-nowrap text-sm text-ink-muted">
             {opzet && !opzet.standaard ? `${opzet.naam} · ` : ""}
-            {campagne.bedrijf}
+            {bedrijvenLabel(campagne.bedrijven)}
           </span>
           <button
             type="button"

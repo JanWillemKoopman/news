@@ -6,6 +6,7 @@ import {
   formatWaarde,
   isAfgelopen,
   leesBedrag,
+  bedrijvenLabel,
   leesCampagneInvoer,
   leesDoelGetal,
   leadBron,
@@ -23,8 +24,8 @@ import {
 import { SEMANTIEK_BLOKKEN } from "@/lib/marketingAnalyse/types";
 
 
-const CAMPAGNE = { id: "c", formulier: "campagne" as const, bedrijf: null };
-const VDU_MAAND = { id: "r", formulier: "rapportage" as const, bedrijf: "Van den Udenhout" };
+const CAMPAGNE = { id: "c", formulier: "campagne" as const, bedrijven: [] as string[] };
+const VDU_MAAND = { id: "r", formulier: "rapportage" as const, bedrijven: ["Van den Udenhout"] };
 
 test("bedragen in Nederlandse en Engelse notatie", () => {
   assert.equal(leesBedrag("5000"), 5000);
@@ -174,7 +175,7 @@ test("rapportage: vast bedrijf, periode verplicht, campagnevelden vallen weg", (
   );
   assert.ok(u.ok);
   if (u.ok) {
-    assert.equal(u.invoer.bedrijf, "Van den Udenhout");
+    assert.deepEqual(u.invoer.bedrijven, ["Van den Udenhout"]);
     assert.equal(u.invoer.periodeTekst, "Afgelopen 3 maanden");
     assert.equal(u.invoer.merk, null);
     assert.equal(u.invoer.budget, null);
@@ -194,8 +195,10 @@ test("opzetten: naam, sortering en invoer", () => {
   ]);
   assert.deepEqual(lijst.map((o) => o.naam), ["A", "C", "B"]);
   assert.equal(leesOpzetInvoer({ naam: "X" }).ok, false);
-  const o = leesOpzetInvoer({ naam: " Social rapportage ", formulier: "rapportage", bedrijf: "" });
-  assert.ok(o.ok && o.invoer.bedrijf === null && o.invoer.actief);
+  const o = leesOpzetInvoer({ naam: " Social rapportage ", formulier: "rapportage", bedrijven: [] });
+  assert.ok(o.ok && o.invoer.bedrijven.length === 0 && o.invoer.actief);
+  const m = leesOpzetInvoer({ naam: "PGZ + VELOO", formulier: "rapportage", bedrijven: ["PGZ", "VELOO", "pgz"] });
+  assert.ok(m.ok && m.invoer.bedrijven.join("|") === "PGZ|VELOO");
 });
 
 test("doel als getal uit vrije tekst", () => {
@@ -206,13 +209,14 @@ test("doel als getal uit vrije tekst", () => {
 });
 
 test("leadbron: Syntec alleen bij Van den Udenhout met modellen", () => {
-  assert.equal(leadBron({ bedrijf: "Van den Udenhout", modellen: ["A2"] }), "syntec");
-  assert.equal(leadBron({ bedrijf: "Van den Udenhout", modellen: [] }), "ga4");
-  assert.equal(leadBron({ bedrijf: "PGZ", modellen: ["Taycan"] }), "ga4");
+  assert.equal(leadBron({ bedrijven: ["Van den Udenhout"], modellen: ["A2"] }), "syntec");
+  assert.equal(leadBron({ bedrijven: ["Van den Udenhout"], modellen: [] }), "ga4");
+  assert.equal(leadBron({ bedrijven: ["PGZ"], modellen: ["Taycan"] }), "ga4");
+  assert.equal(leadBron({ bedrijven: ["Van den Udenhout", "PGZ"], modellen: ["A2"] }), "ga4");
 });
 
 test("overzichtcijfers: uitgaven tegen budget, leads tegen doel", () => {
-  const a2 = { bedrijf: "Van den Udenhout", modellen: ["A2"], budget: 3150, doel: "20 proefritten" };
+  const a2 = { bedrijven: ["Van den Udenhout"], modellen: ["A2"], budget: 3150, doel: "20 proefritten" };
   const o = overzichtCijfers(a2, { kosten: 3189.79, leadEvents: 30, leadsSyntec: 12 });
   assert.equal(o.bron, "syntec");
   assert.equal(o.leads, 12);
@@ -226,4 +230,16 @@ test("overzichtcijfers: uitgaven tegen budget, leads tegen doel", () => {
   assert.equal(zonder.bron, "ga4");
   assert.equal(zonder.leads, 30);
   assert.equal(overzichtCijfers(a2, null).gehaaldPct, null);
+});
+
+test("meerdere bedrijven in de briefing en als label", () => {
+  const u = leesCampagneInvoer({ naam: "Najaar", bedrijven: ["PGZ", " VELOO ", "PGZ"] }, CAMPAGNE);
+  assert.ok(u.ok && u.invoer.bedrijven.join("|") === "PGZ|VELOO");
+  // De oude vorm (één bedrijf als tekst) blijft werken.
+  const oud = leesCampagneInvoer({ naam: "A2", bedrijf: "Van den Udenhout" }, CAMPAGNE);
+  assert.ok(oud.ok && oud.invoer.bedrijven[0] === "Van den Udenhout");
+  assert.equal(leesCampagneInvoer({ naam: "X", bedrijven: [] }, CAMPAGNE).ok, false);
+  assert.equal(bedrijvenLabel(["PGZ"]), "PGZ");
+  assert.equal(bedrijvenLabel(["PGZ", "VELOO", "Instra"]), "PGZ, VELOO en Instra");
+  assert.equal(bedrijvenLabel([]), "Geen bedrijf");
 });

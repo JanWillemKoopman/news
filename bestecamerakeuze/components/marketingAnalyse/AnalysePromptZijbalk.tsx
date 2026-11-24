@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Drawer from "@/components/Drawer";
+import BedrijvenKiezer from "@/components/marketingAnalyse/BedrijvenKiezer";
+import { bedrijvenLabel } from "@/lib/marketingAnalyse/rekenen";
 import { FORMULIER_NAAM, type Formulier, type MaOpzet, type MaPrompt } from "@/lib/marketingAnalyse/types";
 
 export function opgeslagenRegel(
@@ -32,7 +34,7 @@ type Props = {
   onClose: () => void;
 };
 
-/** Naam, formulier, bedrijf en actief van een opzet; alleen de eigenaar ziet dit als formulier. */
+/** Naam, formulier, bedrijven en actief van een opzet; alleen de eigenaar ziet dit als formulier. */
 function OpzetInstellingen({
   opzet,
   bedrijven,
@@ -46,15 +48,14 @@ function OpzetInstellingen({
 }) {
   const [naam, setNaam] = useState(opzet?.naam ?? "");
   const [formulier, setFormulier] = useState<Formulier>(opzet?.formulier ?? "rapportage");
-  const [bedrijf, setBedrijf] = useState(opzet?.bedrijf ?? "");
+  const [gekozen, setGekozen] = useState<string[]>(opzet?.bedrijven ?? []);
   const [actief, setActief] = useState(opzet?.actief ?? true);
   const [bezig, setBezig] = useState(false);
   const [fout, setFout] = useState<string | null>(null);
   const [melding, setMelding] = useState<string | null>(null);
   const [bevestigWeg, setBevestigWeg] = useState(false);
-  const opties = bedrijf && !bedrijven.includes(bedrijf) ? [...bedrijven, bedrijf] : bedrijven;
   const gewijzigd =
-    !opzet || naam.trim() !== opzet.naam || formulier !== opzet.formulier || (bedrijf || null) !== opzet.bedrijf || actief !== opzet.actief;
+    !opzet || naam.trim() !== opzet.naam || formulier !== opzet.formulier || gekozen.join("|") !== opzet.bedrijven.join("|") || actief !== opzet.actief;
 
   async function verstuur(method: "POST" | "PATCH" | "DELETE") {
     setBezig(true);
@@ -65,7 +66,7 @@ function OpzetInstellingen({
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: method === "DELETE" ? undefined : JSON.stringify({ naam, formulier, bedrijf, actief }),
+        body: method === "DELETE" ? undefined : JSON.stringify({ naam, formulier, bedrijven: gekozen, actief }),
       });
       const data = (await res.json().catch(() => ({}))) as { opzet?: MaOpzet; fout?: string };
       if (!res.ok) throw new Error(data.fout ?? "Er ging iets mis.");
@@ -95,7 +96,7 @@ function OpzetInstellingen({
           <span className="text-meta text-ink-faint">Naam</span>
           <input className={INVOER} value={naam} onChange={(e) => setNaam(e.target.value)} disabled={bezig} autoFocus={!opzet} placeholder="Bijv. VELOO maandrapportage" />
         </label>
-        <label className="flex flex-col gap-1">
+        <label className="col-span-2 flex flex-col gap-1">
           <span className="text-meta text-ink-faint">Formulier</span>
           <select
             className={INVOER}
@@ -110,17 +111,12 @@ function OpzetInstellingen({
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-meta text-ink-faint">Bedrijf</span>
-          <select className={INVOER} value={bedrijf} onChange={(e) => setBedrijf(e.target.value)} disabled={bezig}>
-            <option value="">Kiezen in de briefing</option>
-            {opties.map((b) => (
-              <option key={b} value={b}>
-                {b}
-              </option>
-            ))}
-          </select>
-        </label>
+      </div>
+      <div className="flex flex-col gap-1">
+        <span className="text-meta text-ink-faint">
+          Bedrijven {gekozen.length === 0 ? "— niets gekozen: kiezen in de briefing" : "— liggen vast voor deze opzet"}
+        </span>
+        <BedrijvenKiezer label="Bedrijven van de opzet" opties={bedrijven} gekozen={gekozen} onChange={setGekozen} disabled={bezig} />
       </div>
       {opzet && !opzet.standaard && (
         <label className="flex items-center gap-2 text-sm text-ink">
@@ -217,7 +213,7 @@ export default function AnalysePromptZijbalk({ opzet, bedrijven, isEigenaar, onO
         ) : (
           opzet && (
             <p className="text-meta text-ink-faint">
-              {FORMULIER_NAAM[opzet.formulier]} · {opzet.bedrijf ?? "bedrijf kiezen in de briefing"}
+              {FORMULIER_NAAM[opzet.formulier]} · {opzet.bedrijven.length > 0 ? bedrijvenLabel(opzet.bedrijven) : "bedrijven kiezen in de briefing"}
               {!opzet.actief && " · uitgezet"}
             </p>
           )

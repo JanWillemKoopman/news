@@ -33,9 +33,13 @@ analyses; jij maakt ze. Het plan en alle besluiten van de eigenaar staan in
 ## Harde regel: alleen deze bronnen
 1. **Windsor, live** (`get_data`, eerst `get_fields`): `google_ads`, `facebook` (Meta Ads),
    `linkedin`, `facebook_organic`, `instagram`, `linkedin_organic`, `googleanalytics4`.
-   Alleen de accounts en properties van het bedrijf uit de briefing (semantic layer, Algemeen).
-2. **`dataloket.marketing_analyse_leads`**: de leads-kopie van "Data leads". **Alleen bij
-   bedrijf "Van den Udenhout"**; bij elk ander bedrijf niet gebruiken en `leadsSyntec` null.
+   Alleen de accounts en properties van de bedrijven uit de briefing (`bedrijven`, kan er meer
+   dan één zijn; semantic layer, Algemeen). Bij meerdere bedrijven: alle accounts van elk
+   bedrijf, en splits de belangrijkste cijfers per bedrijf uit.
+2. **`dataloket.marketing_analyse_leads`**: de leads-kopie van "Data leads". **Alleen voor
+   Van den Udenhout**; voor elk ander bedrijf niet gebruiken. `leadsSyntec` alleen invullen als
+   de analyse uitsluitend over Van den Udenhout gaat, anders null (het overzicht toont dan de
+   lead-events uit GA4).
 3. **`dataloket.lead_kanaalkosten`**: extra maandkosten per GA4-bron/medium.
 
 **Niet gebruiken**: alle andere tabellen in Supabase, ook niet `windsor_*`, `leads_raw` of
@@ -44,7 +48,7 @@ analyses; jij maakt ze. Het plan en alle besluiten van de eigenaar staan in
 
 ## Stap 0 — Welke campagne(s) of rapportage(s)
 ```sql
-select c.id, c.naam, c.bedrijf, c.merk, c.modellen, c.startdatum, c.einddatum, c.periode_tekst,
+select c.id, c.naam, c.bedrijven, c.merk, c.modellen, c.startdatum, c.einddatum, c.periode_tekst,
        c.doel, c.budget, c.omschrijving, c.data_correctie, c.analyse_ronde, c.laatste_versie,
        o.id as opzet_id, o.naam as opzet, o.formulier
 from dataloket.marketing_analyse_campagnes c
@@ -54,8 +58,9 @@ where c.naam ilike '%<deel van de naam>%';   -- "voer de analyseronde uit": wher
 - **Analyseronde**: alle regels met `analyse_ronde = true`, één voor één. Sla een campagne
   over waarvan de startdatum nog niet bereikt is, en meld dat.
 - Bestaat hij niet en geeft de gebruiker de gegevens in de chat: maak hem aan met
-  `insert into dataloket.marketing_analyse_campagnes (opzet_id, naam, bedrijf, merk, modellen, startdatum, einddatum, periode_tekst, doel, budget, omschrijving) values (…) returning id;`
-  Naam en bedrijf zijn verplicht (een opzet met vast `bedrijf` bepaalt het bedrijf); bij een
+  `insert into dataloket.marketing_analyse_campagnes (opzet_id, naam, bedrijven, merk, modellen, startdatum, einddatum, periode_tekst, doel, budget, omschrijving) values (…) returning id;`
+  Naam en minstens één bedrijf (`bedrijven`, een lijst) zijn verplicht; een opzet met vaste
+  `bedrijven` bepaalt ze; bij een
   rapportage ook `periode_tekst`, en blijven merk, modellen, data, doel en budget leeg. Zonder
   `opzet_id` wordt het Campagne analyse. Vraag ontbrekende essentiële gegevens eerst.
 - Meerdere treffers: vraag welke.
@@ -157,10 +162,14 @@ semantic layer nooit zelf aan.
 **Kerncijfers** (`MaKerncijfers`, voor het overzicht; null als onbekend):
 ```json
 { "kosten": 1960.8, "vertoningen": 520000, "klikken": 12000, "sessies": 8000, "leadEvents": 25,
-  "leadsSyntec": 60, "leadsSyntecInternet": 41,
+  "leadsSyntec": 60, "leadsSyntecInternet": 41, "doelLeads": 20,
   "doel": { "status": "achter", "toelichting": "…" } }
 ```
-`leadsSyntec` en `leadsSyntecInternet` zijn null bij elk ander bedrijf dan Van den Udenhout.
+`leadsSyntec` en `leadsSyntecInternet` zijn null tenzij de analyse uitsluitend over Van den
+Udenhout gaat. `doelLeads`: het aantal leads uit het doel van de briefing zoals jij het leest
+("20 proefritten" → 20; proefrit- en offerteaanvragen zijn leads), null als het doel niet over
+een aantal leads gaat. Het overzicht zet de leads (Syntec bij alleen Van den Udenhout met
+modellen, anders `leadEvents`) tegen dit doel, en de kosten tegen het budget.
 Bij een **rapportage** toont het overzicht geen kerncijfers: geef `{}` mee (of vul in wat
 vanzelf meekomt), laat `doel` weg en gebruik `funnel` alleen als de prompt erom vraagt (`[]`
 mag).

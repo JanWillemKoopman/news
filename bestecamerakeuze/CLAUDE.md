@@ -1691,7 +1691,19 @@ lees dat eerst voordat je hier iets verandert.
   opzet; de eigenaar wijzigt daar ook naam, formulier, bedrijf en actief, en maakt met
   "Nieuwe opzet" zelf opzetten aan; verwijderen alleen zonder analyses, anders uitzetten).
   Route `opzetten`, `leesCampagneInvoer(body, opzet)` in `rekenen.ts` (getest).
-- **Vier kennislagen.** De *briefing* (opzet, naam, **Bedrijf** = welk van onze bedrijven, **Merk** =
+- **Meerdere bedrijven** (migratie 0045). Een analyse en een opzet hebben een lijst
+  `bedrijven` (chips in de briefing en bij de opzet, `BedrijvenKiezer.tsx`); een opzet zonder
+  bedrijven laat de keuze aan de briefing. De oude kolom `bedrijf` blijft als leesbare kopie
+  ("PGZ, VELOO"), bijgehouden door een trigger; lees en schrijf `bedrijven`. Syntec-leads
+  alleen als de analyse **uitsluitend** over Van den Udenhout gaat (`leadBron`).
+- **Overzicht campagne-analyses** (verzoek van de eigenaar, november 2026): kolommen Ronde
+  (klein schuifje vooraan), Campagne (met de laatste analyse eronder), Uitgaven (balkje
+  tegen het budget, rood boven 100%), Leads (Syntec bij alleen Van den Udenhout met modellen,
+  anders lead-events in Google Analytics, met de bron eronder) en Doel leads (balkje, groen
+  vanaf 100%). Het leaddoel komt uit `kerncijfers.doelLeads` (de analyse leest het uit het
+  vrije doel), anders het eerste getal in het doel (`overzichtCijfers` in `rekenen.ts`,
+  getest). Rapportages hebben een eigen tabel eronder: Ronde, Rapportage, Laatste analyse.
+- **Vier kennislagen.** De *briefing* (opzet, naam, **Bedrijven** = welke van onze bedrijven, **Merk** =
   automerk, modellen, looptijd, doel als vrije tekst, totaalbudget, omschrijving; bij een
   rapportage naam, bedrijf, periode en omschrijving); de
   *prompt van de opzet* (bij Campagne analyse de hoofdprompt met een hoofdstuk per label); de *semantic layer* (per databron een

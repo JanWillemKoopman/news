@@ -11,6 +11,7 @@ import SemantiekZijbalk from "@/components/marketingAnalyse/SemantiekZijbalk";
 import { getBrandLogo } from "@/components/brandLogos";
 import { IconBook, IconBrain, IconChevronDown, IconPencil, IconPlus } from "@/components/icons";
 import {
+  bedrijvenLabel,
   deelOpInLopendEnAfgelopen,
   formatWaarde,
   looptijdLabel,
@@ -295,7 +296,7 @@ function CampagneAnalyseTabel({ campagnes, opzetten, rondeBezig, onOpen, onBewer
                   </div>
                   <p className="mt-0.5 text-meta text-ink-faint">
                     {opzet && !opzet.standaard && `${opzet.naam} · `}
-                    {c.bedrijf} · {looptijdLabel(c.startdatum, c.einddatum)}
+                    {bedrijvenLabel(c.bedrijven)} · {looptijdLabel(c.startdatum, c.einddatum)}
                   </p>
                   <p className="mt-1 text-meta text-ink-faint">
                     <LaatsteAnalyse c={c} opzet={opzet} />
@@ -378,7 +379,7 @@ function RapportageTabel({ campagnes, opzetten, rondeBezig, onOpen, onBewerk, on
                   </p>
                   <p className="mt-0.5 text-meta text-ink-faint">
                     {opzet ? `${opzet.naam} · ` : ""}
-                    {c.bedrijf} · {c.periodeTekst || "Geen periode"}
+                    {bedrijvenLabel(c.bedrijven)} · {c.periodeTekst || "Geen periode"}
                   </p>
                 </td>
                 <td className="px-3 py-3 text-ink">

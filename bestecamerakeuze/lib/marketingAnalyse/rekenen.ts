@@ -71,20 +71,34 @@ export type InvoerUitkomst = { ok: true; invoer: MaCampagneInvoer } | { ok: fals
 export interface OpzetVoorInvoer {
   id: string;
   formulier: Formulier;
-  bedrijf: string | null;
+  bedrijven: readonly string[];
+}
+
+/** Bedrijven uit een lijst of tekst ("PGZ, VELOO"), opgeschoond en zonder dubbele. */
+export function leesBedrijven(waarde: unknown): string[] {
+  return leesModellen(waarde);
+}
+
+/** "PGZ", "PGZ en VELOO", "PGZ, VELOO en Instra". */
+export function bedrijvenLabel(bedrijven: readonly string[] | null | undefined): string {
+  const lijst = (bedrijven ?? []).filter(Boolean);
+  if (lijst.length === 0) return "Geen bedrijf";
+  if (lijst.length === 1) return lijst[0];
+  return `${lijst.slice(0, -1).join(", ")} en ${lijst[lijst.length - 1]}`;
 }
 
 /**
- * De invoer uit het briefingformulier, gecontroleerd tegen de gekozen opzet. Naam en bedrijf
- * zijn altijd verplicht; een vast bedrijf van de opzet gaat vóór wat er is ingevuld. Bij een
+ * De invoer uit het briefingformulier, gecontroleerd tegen de gekozen opzet. Naam en minstens
+ * één bedrijf zijn verplicht; vaste bedrijven van de opzet gaan vóór wat er is ingevuld. Bij een
  * rapportage is de periode verplicht en vallen merk, modellen, looptijd, budget en doel weg.
  */
 export function leesCampagneInvoer(body: unknown, opzet: OpzetVoorInvoer): InvoerUitkomst {
   const b = (body ?? {}) as Record<string, unknown>;
   const naam = tekstOfNull(b.naam, MAX_KORT);
   if (!naam) return { ok: false, fout: "Geef de analyse een naam." };
-  const bedrijf = opzet.bedrijf ?? tekstOfNull(b.bedrijf, MAX_KORT);
-  if (!bedrijf) return { ok: false, fout: "Kies voor welk bedrijf de analyse is." };
+  // `bedrijf` (één tekst) is de oude vorm; die blijft geldig.
+  const bedrijven = opzet.bedrijven.length > 0 ? [...opzet.bedrijven] : leesBedrijven(b.bedrijven ?? b.bedrijf);
+  if (bedrijven.length === 0) return { ok: false, fout: "Kies voor welk bedrijf of welke bedrijven de analyse is." };
   const omschrijving = tekstOfNull(b.omschrijving, MAX_LANG);
   const dataCorrectie = tekstOfNull(b.dataCorrectie, MAX_LANG);
 
@@ -96,7 +110,7 @@ export function leesCampagneInvoer(body: unknown, opzet: OpzetVoorInvoer): Invoe
       invoer: {
         opzetId: opzet.id,
         naam,
-        bedrijf,
+        bedrijven,
         merk: null,
         modellen: [],
         startdatum: null,
@@ -126,7 +140,7 @@ export function leesCampagneInvoer(body: unknown, opzet: OpzetVoorInvoer): Invoe
     invoer: {
       opzetId: opzet.id,
       naam,
-      bedrijf,
+      bedrijven,
       merk: tekstOfNull(b.merk, MAX_KORT),
       modellen: leesModellen(b.modellen),
       startdatum,
@@ -154,7 +168,7 @@ export function sorteerOpzetten<T extends { volgorde: number; naam: string; acti
 }
 
 export type OpzetInvoerUitkomst =
-  | { ok: true; invoer: { naam: string; formulier: Formulier; bedrijf: string | null; actief: boolean } }
+  | { ok: true; invoer: { naam: string; formulier: Formulier; bedrijven: string[]; actief: boolean } }
   | { ok: false; fout: string };
 
 /** Een nieuwe of gewijzigde opzet uit het dashboard, gecontroleerd. */
@@ -165,7 +179,7 @@ export function leesOpzetInvoer(body: unknown): OpzetInvoerUitkomst {
   if (b.formulier !== "campagne" && b.formulier !== "rapportage") return { ok: false, fout: "Kies een formulier." };
   return {
     ok: true,
-    invoer: { naam, formulier: b.formulier, bedrijf: tekstOfNull(b.bedrijf, MAX_KORT), actief: b.actief !== false },
+    invoer: { naam, formulier: b.formulier, bedrijven: leesBedrijven(b.bedrijven ?? b.bedrijf), actief: b.actief !== false },
   };
 }
 
@@ -335,12 +349,13 @@ export function leesDoelGetal(doel: string | null | undefined): number | null {
 export type LeadBron = "syntec" | "ga4";
 
 /**
- * Waar de leads van een campagne-analyse vandaan komen. Syntec alleen bij Van den Udenhout
- * én als er modellen zijn opgegeven (de leads-kopie is te filteren op merk en model);
- * anders de lead-events in GA4 (sessies die op de campagnepagina begonnen).
+ * Waar de leads van een campagne-analyse vandaan komen. Syntec alleen als de analyse
+ * uitsluitend over Van den Udenhout gaat én er modellen zijn opgegeven (de leads-kopie is te
+ * filteren op merk en model, en Syntec bestaat alleen voor Van den Udenhout); anders de
+ * lead-events in GA4 (sessies die op de campagnepagina begonnen).
  */
-export function leadBron(c: { bedrijf: string; modellen: readonly string[] }): LeadBron {
-  return c.bedrijf === BEDRIJF_MET_SYNTEC && c.modellen.length > 0 ? "syntec" : "ga4";
+export function leadBron(c: { bedrijven: readonly string[]; modellen: readonly string[] }): LeadBron {
+  return c.bedrijven.length === 1 && c.bedrijven[0] === BEDRIJF_MET_SYNTEC && c.modellen.length > 0 ? "syntec" : "ga4";
 }
 
 export interface OverzichtCijfers {
@@ -357,7 +372,7 @@ export interface OverzichtCijfers {
 
 /** De cijfers voor één regel in het overzicht van campagne-analyses. */
 export function overzichtCijfers(
-  c: { bedrijf: string; modellen: readonly string[]; budget: number | null; doel: string | null },
+  c: { bedrijven: readonly string[]; modellen: readonly string[]; budget: number | null; doel: string | null },
   k: MaKerncijfers | null | undefined,
 ): OverzichtCijfers {
   const kosten = k?.kosten ?? null;
