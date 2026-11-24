@@ -7,6 +7,9 @@ import {
   isAfgelopen,
   leesBedrag,
   leesCampagneInvoer,
+  leesDoelGetal,
+  leadBron,
+  overzichtCijfers,
   leesOpzetInvoer,
   rapportageNaam,
   sorteerOpzetten,
@@ -193,4 +196,34 @@ test("opzetten: naam, sortering en invoer", () => {
   assert.equal(leesOpzetInvoer({ naam: "X" }).ok, false);
   const o = leesOpzetInvoer({ naam: " Social rapportage ", formulier: "rapportage", bedrijf: "" });
   assert.ok(o.ok && o.invoer.bedrijf === null && o.invoer.actief);
+});
+
+test("doel als getal uit vrije tekst", () => {
+  assert.equal(leesDoelGetal("20 proefritten"), 20);
+  assert.equal(leesDoelGetal("Minimaal 1.000 leads in Q4"), 1000);
+  assert.equal(leesDoelGetal("Naamsbekendheid vergroten"), null);
+  assert.equal(leesDoelGetal(null), null);
+});
+
+test("leadbron: Syntec alleen bij Van den Udenhout met modellen", () => {
+  assert.equal(leadBron({ bedrijf: "Van den Udenhout", modellen: ["A2"] }), "syntec");
+  assert.equal(leadBron({ bedrijf: "Van den Udenhout", modellen: [] }), "ga4");
+  assert.equal(leadBron({ bedrijf: "PGZ", modellen: ["Taycan"] }), "ga4");
+});
+
+test("overzichtcijfers: uitgaven tegen budget, leads tegen doel", () => {
+  const a2 = { bedrijf: "Van den Udenhout", modellen: ["A2"], budget: 3150, doel: "20 proefritten" };
+  const o = overzichtCijfers(a2, { kosten: 3189.79, leadEvents: 30, leadsSyntec: 12 });
+  assert.equal(o.bron, "syntec");
+  assert.equal(o.leads, 12);
+  assert.equal(o.doelLeads, 20);
+  assert.equal(Math.round(o.besteedPct!), 101);
+  assert.equal(o.gehaaldPct, 60);
+  // De analyse kan het doel anders lezen dan de eerste regex: die wint.
+  assert.equal(overzichtCijfers(a2, { doelLeads: 25 }).doelLeads, 25);
+  const zonder = overzichtCijfers({ ...a2, budget: null, modellen: [] }, { kosten: 100, leadEvents: 30 });
+  assert.equal(zonder.besteedPct, null);
+  assert.equal(zonder.bron, "ga4");
+  assert.equal(zonder.leads, 30);
+  assert.equal(overzichtCijfers(a2, null).gehaaldPct, null);
 });

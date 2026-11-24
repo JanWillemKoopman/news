@@ -129,6 +129,11 @@ export interface MaKerncijfers {
   leadsSyntec?: number | null;
   /** Waarvan via kanaalgroep Internet. */
   leadsSyntecInternet?: number | null;
+  /**
+   * Het aantal leads uit het doel van de briefing (vrije tekst, bijv. "20 proefritten" → 20),
+   * zoals de analyse het las. Null als het doel niet over een aantal leads gaat.
+   */
+  doelLeads?: number | null;
   doel?: DoelOordeel | null;
 }
 
