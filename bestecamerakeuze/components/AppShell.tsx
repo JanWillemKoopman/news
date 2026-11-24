@@ -49,9 +49,6 @@ type Props = {
   instellingen: React.ReactNode;
 };
 
-/** Tabbladen uit de sidebargroep "Campagnes" — hier blijft het ronde "+"-knopje zichtbaar. */
-const CAMPAGNE_GROEP_VIEWS: DashboardView[] = ["campagnes", "tijdlijn", "campagnebeheer"];
-
 /** De "Game info"-knop legt de puntentelling uit en hoort daarom alleen thuis op de
  *  tabbladen waar die telling ook zichtbaar is: Scores (de stand zelf) en Kennis en
  *  acties (de berichten die de punten opleveren) — niet op Campagnes. */
@@ -414,7 +411,8 @@ export default function AppShell({
       {/* Het ronde "+"-knopje rechtsonder: alleen op de tabbladen uit de sidebargroep
           "Campagnes" (Campagnes, Tijdlijn, Campagnebeheer), niet op Chatbot/Kosten/
           Instellingen — het hoort bij het beheren van campagnes, niet bij het hele dashboard. */}
-      {CAMPAGNE_GROEP_VIEWS.includes(actief) && <NieuweCampagneKnop ingelogd={ingelogd} />}
+      {/* Het ronde "+"-knopje staat alleen op het tabblad Campagnes. */}
+      {actief === "campagnes" && <NieuweCampagneKnop ingelogd={ingelogd} />}
 
       {/* Dezelfde plek, maar dan voor een bericht: op Scores, op Kennis en acties en op de
           kanaalpagina's, want een observatie leg je vast op het moment dat je hem doet. De

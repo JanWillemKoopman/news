@@ -9,9 +9,8 @@ type Props = {
 };
 
 /**
- * Het ronde "+"-knopje rechtsonder: staat `fixed` op elk tabblad onder "Campagnes"
- * (Campagnes, Tijdlijn, Campagnebeheer — zie AppShell) op dezelfde plek, ongeacht
- * scrollpositie. Opent het formulier voor een nieuwe campagne in een Modal.
+ * Het ronde "+"-knopje rechtsonder: staat `fixed` alleen op het tabblad Campagnes
+ * (zie AppShell), op dezelfde plek ongeacht scrollpositie. Opent het formulier voor een nieuwe campagne in een Modal.
  */
 export default function NieuweCampagneKnop({ ingelogd }: Props) {
   const [open, setOpen] = useState(false);
