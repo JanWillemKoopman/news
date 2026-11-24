@@ -8,8 +8,9 @@ import ProgressBar from "@/components/ProgressBar";
 import CampagneZijbalk from "@/components/marketingAnalyse/CampagneZijbalk";
 import AnalysePromptZijbalk from "@/components/marketingAnalyse/AnalysePromptZijbalk";
 import SemantiekZijbalk from "@/components/marketingAnalyse/SemantiekZijbalk";
+import VolgersZijbalk from "@/components/marketingAnalyse/VolgersZijbalk";
 import { getBrandLogo } from "@/components/brandLogos";
-import { IconBook, IconBrain, IconChevronDown, IconPencil, IconPlus } from "@/components/icons";
+import { IconBook, IconBrain, IconChevronDown, IconMail, IconPencil, IconPlus } from "@/components/icons";
 import {
   bedrijvenLabel,
   deelOpInLopendEnAfgelopen,
@@ -175,6 +176,7 @@ type TabelProps = {
   onOpen: (id: string) => void;
   onBewerk: (c: MaOverzichtRegel) => void;
   onRonde: (c: MaOverzichtRegel) => void;
+  onVolgers: (c: MaOverzichtRegel) => void;
 };
 
 const KOP = "label-theme whitespace-nowrap px-3 py-2.5 font-normal";
@@ -218,6 +220,26 @@ function BewerkKnop({ c, onBewerk }: { c: MaOverzichtRegel; onBewerk: (c: MaOver
   );
 }
 
+/** Het mail-icoontje: opent de zijbalk met wie een mail krijgt bij een nieuwe versie. */
+function MailKnop({ c, onVolgers }: { c: MaOverzichtRegel; onVolgers: (c: MaOverzichtRegel) => void }) {
+  const titel = c.aantalVolgers > 0 ? `${c.aantalVolgers} ${c.aantalVolgers === 1 ? "adres krijgt" : "adressen krijgen"} een mail bij een nieuwe analyse` : "Mail bij een nieuwe analyse";
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onVolgers(c);
+      }}
+      title={titel}
+      aria-label={`${titel} — ${c.naam}`}
+      className="inline-flex h-7 items-center gap-1 rounded-control px-1.5 text-ink-faint transition-colors hover:bg-card hover:text-ink"
+    >
+      <IconMail className="h-4 w-4" />
+      {c.aantalVolgers > 0 && <span className="text-meta tabular-nums">{c.aantalVolgers}</span>}
+    </button>
+  );
+}
+
 /** Een cel met een bedrag of aantal, een balkje en een regel eronder. */
 function BalkCel({
   waarde,
@@ -253,7 +275,7 @@ const BRON_UITLEG: Record<LeadBron, string> = {
  * advertentiekanalen, bezoekers op de campagnepagina, leads (met bron) en het leaddoel met
  * hoeveel er gehaald is. De cijfers komen uit de laatste analyse.
  */
-function CampagneAnalyseTabel({ campagnes, opzetten, rondeBezig, onOpen, onBewerk, onRonde }: TabelProps) {
+function CampagneAnalyseTabel({ campagnes, opzetten, rondeBezig, onOpen, onBewerk, onRonde, onVolgers }: TabelProps) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-separate border-spacing-0 text-sm">
@@ -278,8 +300,8 @@ function CampagneAnalyseTabel({ campagnes, opzetten, rondeBezig, onOpen, onBewer
             <th className={KOP} title="Het aantal leads uit het doel van de briefing, en hoeveel daarvan gehaald is">
               Doel leads
             </th>
-            <th className="w-12 px-4 py-2.5">
-              <span className="sr-only">Briefing bewerken</span>
+            <th className="w-24 px-4 py-2.5">
+              <span className="sr-only">Briefing en mail</span>
             </th>
           </tr>
         </thead>
@@ -357,8 +379,9 @@ function CampagneAnalyseTabel({ campagnes, opzetten, rondeBezig, onOpen, onBewer
                     }
                   />
                 </td>
-                <td className="px-4 py-3 text-right">
+                <td className="whitespace-nowrap px-4 py-3 text-right">
                   <BewerkKnop c={c} onBewerk={onBewerk} />
+                  <MailKnop c={c} onVolgers={onVolgers} />
                 </td>
               </tr>
             );
@@ -370,7 +393,7 @@ function CampagneAnalyseTabel({ campagnes, opzetten, rondeBezig, onOpen, onBewer
 }
 
 /** Rapportages en andere opzetten zonder funnel: alleen naam, Analyse ronde en laatste analyse. */
-function RapportageTabel({ campagnes, opzetten, rondeBezig, onOpen, onBewerk, onRonde }: TabelProps) {
+function RapportageTabel({ campagnes, opzetten, rondeBezig, onOpen, onBewerk, onRonde, onVolgers }: TabelProps) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-separate border-spacing-0 text-sm">
@@ -381,8 +404,8 @@ function RapportageTabel({ campagnes, opzetten, rondeBezig, onOpen, onBewerk, on
             </th>
             <th className={`${KOP} pl-3`}>Rapportage</th>
             <th className={KOP}>Laatste analyse</th>
-            <th className="w-12 px-4 py-2.5">
-              <span className="sr-only">Briefing bewerken</span>
+            <th className="w-24 px-4 py-2.5">
+              <span className="sr-only">Briefing en mail</span>
             </th>
           </tr>
         </thead>
@@ -406,8 +429,9 @@ function RapportageTabel({ campagnes, opzetten, rondeBezig, onOpen, onBewerk, on
                 <td className="px-3 py-3 text-ink">
                   <LaatsteAnalyse c={c} opzet={opzet} />
                 </td>
-                <td className="px-4 py-3 text-right">
+                <td className="whitespace-nowrap px-4 py-3 text-right">
                   <BewerkKnop c={c} onBewerk={onBewerk} />
+                  <MailKnop c={c} onVolgers={onVolgers} />
                 </td>
               </tr>
             );
@@ -446,6 +470,7 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
   const [paneel, setPaneel] = useState<{ soort: "prompt"; opzetId: string | null } | { soort: "semantiek" } | null>(null);
   const [afgelopenOpen, setAfgelopenOpen] = useState(false);
   const [rondeBezig, setRondeBezig] = useState<Set<string>>(new Set());
+  const [volgersVan, setVolgersVan] = useState<MaOverzichtRegel | null>(null);
 
   const laad = useCallback(() => {
     fetch("/api/marketing-analyse")
@@ -490,7 +515,7 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
     setCampagnes((lijst) => {
       if (!lijst) return lijst;
       if (lijst.some((x) => x.id === c.id)) return lijst.map((x) => (x.id === c.id ? { ...x, ...c } : x));
-      return [{ ...c, laatsteAnalyse: null, aantalAnalyses: 0 }, ...lijst];
+      return [{ ...c, laatsteAnalyse: null, aantalAnalyses: 0, aantalVolgers: 0 }, ...lijst];
     });
   }
 
@@ -562,6 +587,7 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
     onOpen: (id: string) => open(id),
     onBewerk: (c: MaOverzichtRegel) => setZijbalk({ campagne: c }),
     onRonde: wisselRonde,
+    onVolgers: (c: MaOverzichtRegel) => setVolgersVan(c),
   };
 
   return (
@@ -663,6 +689,17 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
             setPaneel(null);
           }}
           onClose={() => setPaneel(null)}
+        />
+      )}
+      {volgersVan && (
+        <VolgersZijbalk
+          key={volgersVan.id}
+          campagneId={volgersVan.id}
+          naam={volgersVan.naam}
+          onAantal={(aantal) =>
+            setCampagnes((lijst) => lijst?.map((x) => (x.id === volgersVan.id ? { ...x, aantalVolgers: aantal } : x)) ?? lijst)
+          }
+          onClose={() => setVolgersVan(null)}
         />
       )}
       {paneel?.soort === "semantiek" && (

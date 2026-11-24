@@ -1717,8 +1717,10 @@ lees dat eerst voordat je hier iets verandert.
   opslaan alleen de eigenaar (`isBeheerder`), elke opslag een nieuwe versie. Data correctie:
   iedereen.
 - **Mail bij een nieuwe analyse** (migratie 0043, `lib/marketingAnalyse/notificatie.ts` en
-  `mail.ts`). Op de analysepagina kan iedereen een campagne volgen (eigen adres met één klik)
-  of een ander adres toevoegen (`marketing_analyse_volgers`, route `volgers`; weghalen: de
+  `mail.ts`). In het overzicht staat helemaal rechts op elke regel een mail-icoontje met het
+  aantal volgers; een klik opent een zijbalk (`VolgersZijbalk.tsx`, verzoek van de eigenaar:
+  niet meer als blok op de analysepagina) waarin iedereen de analyse kan volgen (eigen adres met
+  één klik) of een ander adres toevoegen of verwijderen (`marketing_analyse_volgers`, route `volgers`; weghalen: de
   volger zelf, wie het toevoegde, of de eigenaar). Een insert in `marketing_analyse_versies`
   laat een trigger via pg_net `POST /api/marketing-analyse/notificatie` doen; die claimt de
   versie (`notificatie_verstuurd_op`) en mailt elke volger via het **gedeelde Gmail-account**

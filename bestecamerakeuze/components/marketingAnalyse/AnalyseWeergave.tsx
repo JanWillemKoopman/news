@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Markdown from "@/components/chat/Markdown";
 import SectieBlok from "@/components/marketingAnalyse/SectieBlok";
-import VolgersBlok from "@/components/marketingAnalyse/VolgersBlok";
 import { getBrandLogo } from "@/components/brandLogos";
 import { IconArrowRight, IconPencil } from "@/components/icons";
 import { bedrijvenLabel, datumKort, doorstroom, formatWaarde, looptijdLabel, versieLabel } from "@/lib/marketingAnalyse/rekenen";
@@ -368,7 +367,6 @@ export default function AnalyseWeergave({ campagne, opzet, isEigenaar, onTerug, 
             )}
           </section>
           <DataCorrectie campagne={campagne} bijVersie={campagne.dataCorrectie} onOpgeslagen={onCampagneBijgewerkt} />
-          <VolgersBlok campagneId={campagne.id} />
         </>
       )}
 
@@ -547,7 +545,6 @@ export default function AnalyseWeergave({ campagne, opzet, isEigenaar, onTerug, 
             onOpgeslagen={onCampagneBijgewerkt}
           />
 
-          <VolgersBlok campagneId={campagne.id} />
 
           {r.semantiekVoorstellen && r.semantiekVoorstellen.length > 0 && (
             <section className="rounded-panel border border-line bg-card px-6 py-5 shadow-subtle">

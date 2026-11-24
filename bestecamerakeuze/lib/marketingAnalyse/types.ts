@@ -261,6 +261,8 @@ export interface MaOverzichtRegel extends MaCampagne {
     kerncijfers: MaKerncijfers;
   } | null;
   aantalAnalyses: number;
+  /** Hoeveel adressen een mail krijgen bij een nieuwe versie. */
+  aantalVolgers: number;
 }
 
 /** Iemand die een mail krijgt bij een nieuwe analyse van een campagne. */
