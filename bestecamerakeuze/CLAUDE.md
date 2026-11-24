@@ -1698,7 +1698,9 @@ lees dat eerst voordat je hier iets verandert.
   alleen als de analyse **uitsluitend** over Van den Udenhout gaat (`leadBron`).
 - **Overzicht campagne-analyses** (verzoek van de eigenaar, november 2026): kolommen Ronde
   (klein schuifje vooraan), Campagne (met de laatste analyse eronder), Uitgaven (balkje
-  tegen het budget, rood boven 100%), Leads (Syntec bij alleen Van den Udenhout met modellen,
+  tegen het budget, rood boven 100%), CTR (gezamenlijk over Google, Meta en LinkedIn Ads:
+  `klikken` ÷ `vertoningenAds`, gewogen, nooit over de vertoningen inclusief organisch),
+  Bezoekers (`sessies`: sessies die op de campagnepagina begonnen, uit elk kanaal), Leads (Syntec bij alleen Van den Udenhout met modellen,
   anders lead-events in Google Analytics, met de bron eronder) en Doel leads (balkje, groen
   vanaf 100%). Het leaddoel komt uit `kerncijfers.doelLeads` (de analyse leest het uit het
   vrije doel), anders het eerste getal in het doel (`overzichtCijfers` in `rekenen.ts`,

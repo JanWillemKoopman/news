@@ -165,10 +165,15 @@ semantic layer nooit zelf aan.
 
 **Kerncijfers** (`MaKerncijfers`, voor het overzicht; null als onbekend):
 ```json
-{ "kosten": 1960.8, "vertoningen": 520000, "klikken": 12000, "sessies": 8000, "leadEvents": 25,
+{ "kosten": 1960.8, "vertoningen": 520000, "vertoningenAds": 410000, "klikken": 12000, "sessies": 8000, "leadEvents": 25,
   "leadsSyntec": 60, "leadsSyntecInternet": 41, "doelLeads": 20,
   "doel": { "status": "achter", "toelichting": "…" } }
 ```
+`vertoningen` = betaald + organisch. `vertoningenAds` = alleen de vertoningen van Google Ads,
+Meta Ads en LinkedIn Ads samen, en `klikken` = hun klikken samen (Google Ads clicks, Meta link
+clicks, LinkedIn clicks). Het overzicht toont de gezamenlijke CTR als klikken ÷ vertoningenAds;
+vul daarom altijd allebei in. `sessies` = sessies die op de campagnepagina('s) begonnen, uit elk
+kanaal: dat zijn de "bezoekers" in het overzicht.
 `leadsSyntec` en `leadsSyntecInternet` zijn null tenzij de analyse uitsluitend over Van den
 Udenhout gaat. `doelLeads`: het aantal leads uit het doel van de briefing zoals jij het leest
 ("20 proefritten" → 20; proefrit- en offerteaanvragen zijn leads), null als het doel niet over

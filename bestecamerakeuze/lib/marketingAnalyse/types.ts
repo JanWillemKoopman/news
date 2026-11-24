@@ -120,7 +120,9 @@ export interface MaKerncijfers {
   kosten?: number | null;
   /** Vertoningen betaald + organisch. */
   vertoningen?: number | null;
-  /** Klikken op advertenties. */
+  /** Alleen de vertoningen van de advertenties (Google Ads, Meta Ads, LinkedIn Ads samen); noemer van de CTR. */
+  vertoningenAds?: number | null;
+  /** Klikken op advertenties (Google Ads clicks, Meta link clicks, LinkedIn clicks samen); teller van de CTR. */
   klikken?: number | null;
   /** Sessies die op de campagnepagina('s) begonnen (GA4). */
   sessies?: number | null;

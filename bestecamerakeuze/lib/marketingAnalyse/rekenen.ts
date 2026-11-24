@@ -363,6 +363,10 @@ export interface OverzichtCijfers {
   budget: number | null;
   /** Deel van het budget dat is uitgegeven, in procenten; null zonder budget of kosten. */
   besteedPct: number | null;
+  /** Gezamenlijke CTR van de advertentiekanalen in procenten: alle klikken ÷ alle advertentievertoningen. */
+  ctr: number | null;
+  /** Sessies die op de campagnepagina('s) begonnen, uit elk kanaal. */
+  bezoekers: number | null;
   leads: number | null;
   bron: LeadBron;
   doelLeads: number | null;
@@ -383,6 +387,10 @@ export function overzichtCijfers(
     kosten,
     budget: c.budget,
     besteedPct: kosten !== null && c.budget ? (kosten / c.budget) * 100 : null,
+    // Gewogen: klikken en vertoningen eerst optellen, dan delen. Nooit de vertoningen inclusief
+    // organisch (`vertoningen`) als noemer: dan komt de CTR veel te laag uit.
+    ctr: k?.klikken != null && k?.vertoningenAds ? (k.klikken / k.vertoningenAds) * 100 : null,
+    bezoekers: k?.sessies ?? null,
     leads,
     bron,
     doelLeads,

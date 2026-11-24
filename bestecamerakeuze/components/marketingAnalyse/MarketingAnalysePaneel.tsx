@@ -249,8 +249,9 @@ const BRON_UITLEG: Record<LeadBron, string> = {
 };
 
 /**
- * Campagne-analyses: Analyse ronde, campagne, uitgaven tegen budget, leads (met bron) en het
- * leaddoel met hoeveel er gehaald is. De cijfers komen uit de laatste analyse.
+ * Campagne-analyses: Analyse ronde, campagne, uitgaven tegen budget, gezamenlijke CTR van de
+ * advertentiekanalen, bezoekers op de campagnepagina, leads (met bron) en het leaddoel met
+ * hoeveel er gehaald is. De cijfers komen uit de laatste analyse.
  */
 function CampagneAnalyseTabel({ campagnes, opzetten, rondeBezig, onOpen, onBewerk, onRonde }: TabelProps) {
   return (
@@ -264,6 +265,12 @@ function CampagneAnalyseTabel({ campagnes, opzetten, rondeBezig, onOpen, onBewer
             <th className={`${KOP} pl-3`}>Campagne</th>
             <th className={KOP} title="Mediakosten plus de verdeelde extra kanaalkosten, tegen het totaalbudget">
               Uitgaven
+            </th>
+            <th className={KOP} title="Alle klikken ÷ alle vertoningen van Google Ads, Meta Ads en LinkedIn Ads samen">
+              CTR
+            </th>
+            <th className={KOP} title="Sessies die op de campagnepagina('s) begonnen, uit elk kanaal (GA4)">
+              Bezoekers
             </th>
             <th className={KOP} title="Syntec bij Van den Udenhout met opgegeven modellen, anders lead-events in Google Analytics">
               Leads
@@ -315,6 +322,20 @@ function CampagneAnalyseTabel({ campagnes, opzetten, rondeBezig, onOpen, onBewer
                           : `${formatWaarde(o.besteedPct, "procent")} van ${formatWaarde(o.budget, "euro")}`
                     }
                   />
+                </td>
+                <td className="px-3 py-3" title="Alle klikken ÷ alle vertoningen van Google Ads, Meta Ads en LinkedIn Ads samen">
+                  <div className="flex min-w-[110px] flex-col gap-1.5">
+                    <span className="tabular-nums text-ink">{geanalyseerd ? formatWaarde(o.ctr, "procent") : "—"}</span>
+                    <span className="text-meta text-ink-faint">
+                      {geanalyseerd && o.ctr === null ? "Bij de volgende analyse" : "Google, Meta en LinkedIn"}
+                    </span>
+                  </div>
+                </td>
+                <td className="px-3 py-3" title="Sessies die op de campagnepagina('s) begonnen, uit elk kanaal (GA4)">
+                  <div className="flex min-w-[110px] flex-col gap-1.5">
+                    <span className="tabular-nums text-ink">{geanalyseerd ? formatWaarde(o.bezoekers) : "—"}</span>
+                    <span className="text-meta text-ink-faint">Op de campagnepagina</span>
+                  </div>
                 </td>
                 <td className="px-3 py-3" title={BRON_UITLEG[o.bron]}>
                   <div className="flex min-w-[120px] flex-col gap-1.5">
