@@ -1,6 +1,6 @@
 # Campagne-analysetool (Marketing analyse) — plan
 
-*Versie 4.1 · 24 november 2026 · status: plan, laatste ronde vragen (ronde 4)*
+*Versie 5 · 24 november 2026 · status: plan rond, klaar om te bouwen (fase 1)*
 
 ## 1. Waar het om gaat
 
@@ -47,6 +47,14 @@ Drie kennislagen sturen de analyse:
 | v3-1 | Lead Type | **Niet** in de kopie. Wat welk soort lead is, legt de eigenaar vast in de semantic layer van Data leads. |
 | v3-2 | Kolommen kopie | Precies de zes opgegeven velden, **1-op-1** zoals in de sheet: Ordersoort, Onderwerp, Kanaalgroep, Merk, Model, Aangelegd. Geen Kanaal, geen andere kolommen. Hoe ze te analyseren, staat in de semantic layer. |
 | v3-3 | Veldnamen briefing | **Bedrijf** = welk van onze bedrijven (Van den Udenhout, Porsche Centrum Brabant, Bentley Maastricht …). **Merk** = het automerk (Audi, Volkswagen …). |
+| v4-1 | Meerdere modellen | **Model** mag meerdere waarden hebben; **Bedrijf** blijft één keuze. Een gezamenlijke campagne van twee bedrijven wordt twee campagnes. |
+| v4-2 | Budget | Geen vermelding van inclusief of exclusief btw. |
+| v4-3 | Lezer | Geschreven voor de **marketeer** die bijstuurt, met bovenaan een **samenvatting van vijf regels** die ook het management kan lezen. |
+| v4-4 | Hoofdprompt | **Eén** hoofdprompt met een **apart hoofdstuk per label** (tussentijdse evaluatie, eindevaluatie). |
+| v4-5 | Data correctie | Iedereen die ingelogd is mag hem invullen. |
+| v4-6 | Correctie → semantic layer | De analyse stelt correcties die voor alle campagnes gelden **voor** als aanvulling op de semantic layer; de eigenaar beslist. De analyse past de semantic layer **nooit** zelf aan. |
+| v4-7 | Versie verwijderen | Alleen de eigenaar kan een versie verwijderen. De nummering schuift niet op. |
+| v4-8 | Afgelopen campagnes | Lopende campagnes bovenaan op startdatum; afgelopen campagnes in een inklapbaar blok **Afgelopen**. |
 | v3-4 | Leads per bedrijf | **Alleen Van den Udenhout** gebruikt de leads-kopie, naast de leads en andere interessante events uit GA4. **Alle andere bedrijven**: de leads-kopie is niet van toepassing; voor leads kijken ze **alleen naar GA4**. Dit staat ook in het blok Algemeen van de semantic layer. |
 
 ## 3. Harde regel: welke data de analyse mag gebruiken
@@ -217,13 +225,13 @@ Naast de knop **Hoofdprompt** komt een knop **Semantic layer**. Daarachter staat
 - laatste versie met label (Tussentijds / Eind) en datum;
 - kosten, vertoningen, klikken, sessies, lead-events, leads (totaal / via Internet).
 
-Rechtsboven staan **Hoofdprompt**, **Semantic layer** en **Nieuwe campagne**. Een klik op een regel opent de analyse; het potlood opent de briefing.
+Lopende campagnes staan bovenaan op startdatum; afgelopen campagnes staan eronder in een inklapbaar blok **Afgelopen**. Rechtsboven staan **Hoofdprompt**, **Semantic layer** en **Nieuwe campagne**. Een klik op een regel opent de analyse; het potlood opent de briefing.
 
 **Briefing** (zijbalk). Velden:
 
 - naam (verplicht);
 - **Bedrijf** (verplicht, keuzelijst): Van den Udenhout, Porsche Centrum Brabant, Porsche Centrum Maastricht, PGZ, Bentley Maastricht, VELOO, Instra … De lijst komt uit het blok Algemeen van de semantic layer, zodat een nieuw bedrijf daar maar op één plek bij hoeft;
-- **Merk** en **Model** (optioneel, de auto: bijv. Audi / A2 e-tron);
+- **Merk** en **Model** (optioneel, de auto: bijv. Audi / A2 e-tron; meerdere modellen mogelijk);
 - startdatum en einddatum;
 - totaalbudget;
 - doel (open tekst);
@@ -234,13 +242,16 @@ Rechtsboven staan **Hoofdprompt**, **Semantic layer** en **Nieuwe campagne**. Ee
 **Analysepagina**, van boven naar beneden:
 
 1. Kop met versiekeuze en label
-2. Samenvatting en oordeel over het doel
+2. Samenvatting van vijf regels (ook voor het management) en het oordeel over het doel
 3. Briefing van die versie
 4. Funnelrij
 5. Een blok per funnelstap
 6. Inzichten en aanbevelingen. Bij een tussentijdse evaluatie: wat nu bijsturen; bij een eindevaluatie: lessen.
 7. Verantwoording (wat is toegerekend en welke bronnen zijn gebruikt)
 8. Het veld **Data correctie**
+9. Eventuele **voorstellen voor de semantic layer**: correcties die voor alle campagnes lijken te gelden. Jij beslist of je ze overneemt.
+
+Alleen de eigenaar ziet bij een versie de knop **Versie verwijderen**.
 
 ## 9. Wat er verandert aan de code die er al staat
 
@@ -251,11 +262,12 @@ De eerste opzet (branch `claude/campaign-insight-analysis-inbofg`) blijft de bas
 | Naam | "Campaign insight" wordt **Marketing analyse** (sidebar, titel, startscherm, documentatie) |
 | Knop "Analyse aanvragen" | Wordt de schakelaar **Analyse ronde** in het overzicht |
 | Briefing | Zoektermen, campagnepagina's en de sheetkoppeling eruit; **Bedrijf** en **Data correctie** erin |
-| Nieuw | **Semantic layer**: knop, zijbalk met een blok per bron, tabel met versies |
+| Nieuw | **Semantic layer**: knop, zijbalk met een blok per bron (inclusief Algemeen), tabel met versies |
+| Nieuw | **Bedrijf** (keuzelijst uit het blok Algemeen), meerdere modellen, blok **Afgelopen** in het overzicht, **versie verwijderen** (alleen eigenaar), voorstellen voor de semantic layer in het resultaat |
 | Analyse | **Label** (tussentijds/eind) automatisch bij opslaan; momentopname van data correctie en semantic layer per versie |
 | Kerncijfers overzicht | Lead-events GA4 (elk bedrijf) en leads uit `marketing_analyse_leads` (alleen Van den Udenhout; bij de andere bedrijven "n.v.t." in plaats van een nul) |
 | Nachtelijke sync | Extra tabel `marketing_analyse_leads` vullen in dezelfde run (§3.1), plus migratie |
-| Hoofdprompt (standaardtekst) | Herschreven naar de besluiten: bronnenregel, periode, leads (totaal/Internet/type), kostenverdeling, twee labels, geen orders, geen vergelijking met vóór de campagne |
+| Hoofdprompt (standaardtekst) | Eén prompt met een hoofdstuk per label; geschreven voor de marketeer met een samenvatting van vijf regels; herschreven naar de besluiten: bronnenregel, periode, leads (totaal/Internet/type), kostenverdeling, twee labels, geen orders, geen vergelijking met vóór de campagne |
 | Skill | Alleen Windsor live, `marketing_analyse_leads` en `lead_kanaalkosten`; bedrijf → accounts uit de semantic layer; semantic layer en data correctie inlezen; analyseronde; ronde uit na eindevaluatie |
 | Rechten | Hoofdprompt en semantic layer: alleen de eigenaar (de twee accounts van Jan Willem) |
 
@@ -267,29 +279,9 @@ De eerste opzet (branch `claude/campaign-insight-analysis-inbofg`) blijft de bas
 | **2** | Hoofdprompt en semantic layer aanscherpen op basis van v1; data correctie invullen; v2 draaien en controleren dat de correcties zijn toegepast |
 | **3** | Later: e-mailcijfers uit Selligent, benchmarks tussen campagnes, automatisch wekelijks draaien |
 
-## 11. Open vragen (ronde 4)
+## 11. Open vragen
 
-Alle vragen uit de rondes 1 tot en met 3 zijn verwerkt in §2. Deze vragen beïnvloeden de bouw nog; bij elke vraag staat een voorstel.
-
-**Briefing**
-
-1. **Meerdere modellen of bedrijven in één campagne?** Een campagne kan over meerdere modellen gaan (bijv. een e-tron-actie met A2, Q4 en Q6), of over meerdere bedrijven tegelijk. *Voorstel: Model mag meerdere waarden hebben; Bedrijf blijft één keuze.* Een gezamenlijke campagne van twee bedrijven wordt dan twee campagnes.
-2. **Budget inclusief of exclusief btw?** De advertentieplatforms rapporteren hun kosten exclusief btw. Is het totaalbudget dat je in de briefing invult ook exclusief btw? *Voorstel: ja, exclusief btw, en dat staat bij het veld.*
-
-**De analyse**
-
-3. **Voor wie schrijft de analyse?** Voor de marketeer die de campagne bijstuurt (concreet, kanaal- en advertentieniveau), of ook voor het management (kort, op hoofdlijnen)? *Voorstel: voor de marketeer, met bovenaan een samenvatting van vijf regels die ook het management kan lezen.*
-4. **Eén hoofdprompt of twee?** De tussentijdse evaluatie en de eindevaluatie hebben een andere focus. *Voorstel: één hoofdprompt met een apart hoofdstuk per label,* zodat het gedeelde deel (bronnen, rekenregels, opbouw) maar één keer bestaat.
-
-**Data correctie en semantic layer**
-
-5. **Wie mag de Data correctie invullen?** Die stuurt de volgende analyse. *Voorstel: iedereen die ingelogd is* (de collega's kennen hun campagnes het best). Bij elke versie wordt vastgelegd welke tekst er toen stond.
-6. **Van correctie naar algemene kennis.** Sommige correcties gelden voor álle campagnes, bijvoorbeeld "events op /werkplaatsplanner zijn nooit campagne". *Voorstel: de analyse meldt zulke correcties als voorstel voor de semantic layer; jij beslist of ze erin komen.* De analyse past de semantic layer zelf nooit aan.
-
-**Overzicht en beheer**
-
-7. **Een foute versie verwijderen?** Als een analyse duidelijk mis is (bijvoorbeeld door een verkeerde koppeling), mag die versie dan weg? *Voorstel: alleen jij kunt een versie verwijderen. De nummering schuift niet op, dus na het verwijderen van v2 is de volgende v3.*
-8. **Afgelopen campagnes in het overzicht.** De lijst groeit. *Voorstel: lopende campagnes bovenaan op startdatum, afgelopen campagnes eronder in een inklapbaar blok "Afgelopen".*
+Geen. Alle vragen uit de rondes 1 tot en met 4 zijn beantwoord en verwerkt in §2. Nieuwe vragen die tijdens het bouwen opkomen, komen hier te staan.
 
 ## 12. Risico's
 
