@@ -17,6 +17,7 @@ import {
   type Label,
   type MaAnalyse,
   type MaCampagne,
+  type MaOpzet,
   type MaOverzichtRegel,
   type MaVersie,
   type Prioriteit,
@@ -24,6 +25,8 @@ import {
 
 type Props = {
   campagne: MaOverzichtRegel;
+  /** De analyse opzet van deze campagne (null zolang de opzetten laden). */
+  opzet: MaOpzet | null;
   isEigenaar: boolean;
   onTerug: () => void;
   onBewerk: () => void;
@@ -53,7 +56,9 @@ const DOEL_KLEUR: Record<DoelStatus, string> = {
   onbekend: "text-ink-muted",
 };
 
-export function LabelBadge({ label }: { label: Label }) {
+/** Het label van een versie; een rapportage heeft er geen (dan niets). */
+export function LabelBadge({ label }: { label: Label | null }) {
+  if (!label) return null;
   return (
     <span
       className={`inline-block whitespace-nowrap rounded-control border px-1.5 py-0.5 text-meta ${
@@ -101,13 +106,20 @@ function FunnelStrip({ stappen }: { stappen: FunnelStap[] }) {
   );
 }
 
-function Briefing({ b, titel }: { b: Partial<MaCampagne>; titel: string }) {
-  const regels: [string, string][] = [
-    ["Bedrijf", b.bedrijf || "—"],
-    ["Looptijd", looptijdLabel(b.startdatum ?? null, b.einddatum ?? null)],
-    ["Totaalbudget", b.budget != null ? formatWaarde(b.budget, "euro") : "—"],
-    ["Merk en model", [b.merk, (b.modellen ?? []).join(", ")].filter(Boolean).join(" · ") || "—"],
-  ];
+function Briefing({ b, titel, opzet, rapportage }: { b: Partial<MaCampagne>; titel: string; opzet?: string; rapportage: boolean }) {
+  const regels: [string, string][] = rapportage
+    ? [
+        ["Analyse opzet", opzet || "—"],
+        ["Bedrijf", b.bedrijf || "—"],
+        ["Periode", b.periodeTekst || "—"],
+      ]
+    : [
+        ...(opzet ? ([["Analyse opzet", opzet]] as [string, string][]) : []),
+        ["Bedrijf", b.bedrijf || "—"],
+        ["Looptijd", looptijdLabel(b.startdatum ?? null, b.einddatum ?? null)],
+        ["Totaalbudget", b.budget != null ? formatWaarde(b.budget, "euro") : "—"],
+        ["Merk en model", [b.merk, (b.modellen ?? []).join(", ")].filter(Boolean).join(" · ") || "—"],
+      ];
   return (
     <section className="rounded-panel border border-line bg-card px-6 py-5 shadow-subtle">
       <h2 className="label-theme mb-3 text-label text-ink-muted">{titel}</h2>
@@ -212,7 +224,7 @@ function DataCorrectie({
 }
 
 /** De analysepagina van één campagne: kies een versie, lees de analyse in funnelvolgorde. */
-export default function AnalyseWeergave({ campagne, isEigenaar, onTerug, onBewerk, onCampagneBijgewerkt }: Props) {
+export default function AnalyseWeergave({ campagne, opzet, isEigenaar, onTerug, onBewerk, onCampagneBijgewerkt }: Props) {
   const [versies, setVersies] = useState<MaVersie[] | null>(null);
   const [gekozen, setGekozen] = useState<string | null>(campagne.laatsteAnalyse?.id ?? null);
   const [analyse, setAnalyse] = useState<MaAnalyse | null>(null);
@@ -285,7 +297,10 @@ export default function AnalyseWeergave({ campagne, isEigenaar, onTerug, onBewer
           </button>
           {Logo && <Logo role="img" aria-label={campagne.merk ?? undefined} className="h-5 w-5 shrink-0 text-ink-muted" />}
           <h2 className="truncate font-sans-w7 text-lg font-bold text-ink">{campagne.naam}</h2>
-          <span className="whitespace-nowrap text-sm text-ink-muted">{campagne.bedrijf}</span>
+          <span className="whitespace-nowrap text-sm text-ink-muted">
+            {opzet && !opzet.standaard ? `${opzet.naam} · ` : ""}
+            {campagne.bedrijf}
+          </span>
           <button
             type="button"
             onClick={onBewerk}
@@ -306,7 +321,8 @@ export default function AnalyseWeergave({ campagne, isEigenaar, onTerug, onBewer
             >
               {versies.map((v, i) => (
                 <option key={v.id} value={v.id}>
-                  {versieLabel(v.versie, v.geanalyseerdOp)} · {LABEL_NAAM[v.label]}
+                  {versieLabel(v.versie, v.geanalyseerdOp)}
+                  {v.label ? ` · ${LABEL_NAAM[v.label]}` : ""}
                   {i === 0 ? " (nieuwste)" : ""}
                 </option>
               ))}
@@ -319,13 +335,21 @@ export default function AnalyseWeergave({ campagne, isEigenaar, onTerug, onBewer
 
       {versies && versies.length === 0 && (
         <>
-          <Briefing b={campagne} titel="Briefing" />
+          <Briefing b={campagne} titel="Briefing" opzet={opzet?.naam} rapportage={opzet?.formulier === "rapportage"} />
           <section className="rounded-panel border border-dashed border-line bg-card px-6 py-8 text-center">
             <p className="font-semibold text-ink">Nog geen analyse</p>
-            <p className="mx-auto mt-1 max-w-xl text-sm text-ink-muted">
-              Zeg in Claude Code: “maak een marketing analyse van {campagne.naam}”, of zet de Analyse ronde aan en zeg “voer de
-              analyseronde uit”. Claude haalt de briefing, de hoofdprompt en de semantic layer op en zet het resultaat hier neer.
-            </p>
+            {opzet && !opzet.heeftPrompt ? (
+              <p className="mx-auto mt-1 max-w-xl text-sm text-ink-muted">
+                Er is nog geen prompt voor <span className="font-medium text-ink">{opzet.naam}</span>. Zolang die leeg is, weigert Claude
+                de analyse. {isEigenaar ? "Schrijf hem via de knop Analyse prompts rechtsboven." : "De eigenaar schrijft hem via Analyse prompts."}
+              </p>
+            ) : (
+              <p className="mx-auto mt-1 max-w-xl text-sm text-ink-muted">
+                Zeg in Claude Code: “maak een marketing analyse van {campagne.naam}”, of zet de Analyse ronde aan en zeg “voer de
+                analyseronde uit”. Claude haalt de briefing, de prompt van {opzet?.naam ?? "de opzet"} en de semantic layer op en zet het
+                resultaat hier neer.
+              </p>
+            )}
           </section>
           <DataCorrectie campagne={campagne} bijVersie={campagne.dataCorrectie} onOpgeslagen={onCampagneBijgewerkt} />
           <VolgersBlok campagneId={campagne.id} />
@@ -340,8 +364,10 @@ export default function AnalyseWeergave({ campagne, isEigenaar, onTerug, onBewer
               <span>
                 Geanalyseerd op{" "}
                 {new Intl.DateTimeFormat("nl-NL", { dateStyle: "long", timeStyle: "short" }).format(new Date(analyse.geanalyseerdOp))}
-                {analyse.periodeVan && ` · periode ${looptijdLabel(analyse.periodeVan, analyse.periodeTot)}`}
-                {` · hoofdprompt ${analyse.promptVersie ? `v${analyse.promptVersie}` : "standaard"}`}
+                {analyse.briefing.periodeTekst
+                  ? ` · periode “${analyse.briefing.periodeTekst}”${analyse.periodeVan ? ` → ${looptijdLabel(analyse.periodeVan, analyse.periodeTot)}` : ""}`
+                  : analyse.periodeVan && ` · periode ${looptijdLabel(analyse.periodeVan, analyse.periodeTot)}`}
+                {` · prompt ${analyse.promptVersie ? `v${analyse.promptVersie}` : "standaard"}`}
                 {` · semantic layer ${analyse.semantiekVersie ? `v${analyse.semantiekVersie}` : "standaard"}`}
               </span>
             </p>
@@ -378,7 +404,12 @@ export default function AnalyseWeergave({ campagne, isEigenaar, onTerug, onBewer
             )}
           </section>
 
-          <Briefing b={analyse.briefing} titel={`Briefing bij v${analyse.versie}`} />
+          <Briefing
+            b={analyse.briefing}
+            titel={`Briefing bij v${analyse.versie}`}
+            opzet={analyse.briefing.opzet}
+            rapportage={analyse.briefing.formulier === "rapportage"}
+          />
           <FunnelStrip stappen={r.funnel} />
           {r.secties.map((s, i) => (
             <SectieBlok key={`${s.stap}-${i}`} sectie={s} nummer={i + 1} />

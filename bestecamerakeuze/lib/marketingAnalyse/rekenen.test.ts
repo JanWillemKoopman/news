@@ -7,6 +7,9 @@ import {
   isAfgelopen,
   leesBedrag,
   leesCampagneInvoer,
+  leesOpzetInvoer,
+  rapportageNaam,
+  sorteerOpzetten,
   leesModellen,
   leesSemantiek,
   looptijdLabel,
@@ -15,6 +18,10 @@ import {
   versieLabel,
 } from "@/lib/marketingAnalyse/rekenen";
 import { SEMANTIEK_BLOKKEN } from "@/lib/marketingAnalyse/types";
+
+
+const CAMPAGNE = { id: "c", formulier: "campagne" as const, bedrijf: null };
+const VDU_MAAND = { id: "r", formulier: "rapportage" as const, bedrijf: "Van den Udenhout" };
 
 test("bedragen in Nederlandse en Engelse notatie", () => {
   assert.equal(leesBedrag("5000"), 5000);
@@ -34,9 +41,9 @@ test("modellen uit tekst of lijst, zonder dubbele", () => {
 });
 
 test("naam en bedrijf zijn verplicht", () => {
-  assert.equal(leesCampagneInvoer({ naam: " ", bedrijf: "Van den Udenhout" }).ok, false);
-  assert.equal(leesCampagneInvoer({ naam: "Audi A2" }).ok, false);
-  const u = leesCampagneInvoer({ naam: " Audi A2 ", bedrijf: "Van den Udenhout" });
+  assert.equal(leesCampagneInvoer({ naam: " ", bedrijf: "Van den Udenhout" }, CAMPAGNE).ok, false);
+  assert.equal(leesCampagneInvoer({ naam: "Audi A2" }, CAMPAGNE).ok, false);
+  const u = leesCampagneInvoer({ naam: " Audi A2 ", bedrijf: "Van den Udenhout" }, CAMPAGNE);
   assert.ok(u.ok);
   if (u.ok) {
     assert.equal(u.invoer.naam, "Audi A2");
@@ -57,7 +64,7 @@ test("een volledige briefing wordt opgeschoond", () => {
     budget: "5.000",
     omschrijving: "Introductie.",
     dataCorrectie: "De post van 3 oktober hoort er niet bij.",
-  });
+  }, CAMPAGNE);
   assert.ok(u.ok);
   if (u.ok) {
     assert.equal(u.invoer.budget, 5000);
@@ -68,9 +75,9 @@ test("een volledige briefing wordt opgeschoond", () => {
 
 test("einddatum vóór de start en een onleesbaar budget worden geweigerd", () => {
   const basis = { naam: "X", bedrijf: "PGZ" };
-  assert.equal(leesCampagneInvoer({ ...basis, startdatum: "2026-10-01", einddatum: "2026-09-01" }).ok, false);
-  assert.equal(leesCampagneInvoer({ ...basis, budget: "vijfduizend" }).ok, false);
-  const u = leesCampagneInvoer({ ...basis, startdatum: "18-09-2026" });
+  assert.equal(leesCampagneInvoer({ ...basis, startdatum: "2026-10-01", einddatum: "2026-09-01" }, CAMPAGNE).ok, false);
+  assert.equal(leesCampagneInvoer({ ...basis, budget: "vijfduizend" }, CAMPAGNE).ok, false);
+  const u = leesCampagneInvoer({ ...basis, startdatum: "18-09-2026" }, CAMPAGNE);
   assert.ok(u.ok && u.invoer.startdatum === null);
 });
 
@@ -154,4 +161,36 @@ test("een onvolledig resultaat laat de weergave niet vastlopen", () => {
   assert.deepEqual(r.semantiekVoorstellen, []);
   assert.deepEqual(r.secties.map((s) => s.titel), ["Bereik", "Leads"]);
   assert.deepEqual(normaliseerResultaat(null).secties, []);
+});
+
+test("rapportage: vast bedrijf, periode verplicht, campagnevelden vallen weg", () => {
+  assert.equal(leesCampagneInvoer({ naam: "VDU maand" }, VDU_MAAND).ok, false);
+  const u = leesCampagneInvoer(
+    { naam: "VDU maandrapportage november", bedrijf: "PGZ", periodeTekst: " Afgelopen 3 maanden ", merk: "Audi", budget: "5000" },
+    VDU_MAAND,
+  );
+  assert.ok(u.ok);
+  if (u.ok) {
+    assert.equal(u.invoer.bedrijf, "Van den Udenhout");
+    assert.equal(u.invoer.periodeTekst, "Afgelopen 3 maanden");
+    assert.equal(u.invoer.merk, null);
+    assert.equal(u.invoer.budget, null);
+    assert.equal(u.invoer.opzetId, "r");
+  }
+  const c = leesCampagneInvoer({ naam: "A2", bedrijf: "VELOO", periodeTekst: "x" }, CAMPAGNE);
+  assert.ok(c.ok && c.invoer.periodeTekst === null && c.invoer.opzetId === "c");
+});
+
+test("opzetten: naam, sortering en invoer", () => {
+  assert.equal(rapportageNaam("VDU maandrapportage", " november 2026 "), "VDU maandrapportage november 2026");
+  assert.equal(rapportageNaam("VDU maandrapportage", ""), "VDU maandrapportage");
+  const lijst = sorteerOpzetten([
+    { naam: "B", volgorde: 10, actief: false },
+    { naam: "C", volgorde: 20, actief: true },
+    { naam: "A", volgorde: 0, actief: true },
+  ]);
+  assert.deepEqual(lijst.map((o) => o.naam), ["A", "C", "B"]);
+  assert.equal(leesOpzetInvoer({ naam: "X" }).ok, false);
+  const o = leesOpzetInvoer({ naam: " Social rapportage ", formulier: "rapportage", bedrijf: "" });
+  assert.ok(o.ok && o.invoer.bedrijf === null && o.invoer.actief);
 });

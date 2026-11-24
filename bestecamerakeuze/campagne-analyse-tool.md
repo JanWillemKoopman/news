@@ -1,6 +1,6 @@
 # Campagne-analysetool (Marketing analyse) — plan
 
-*Versie 5 · 24 november 2026 · status: fase 1 gebouwd (zie §10a)*
+*Versie 6 · 24 november 2026 · status: fase 1 gebouwd (zie §10a); fase 2 (analyse opzetten) gebouwd (zie §13)*
 
 ## 1. Waar het om gaat
 
@@ -306,3 +306,56 @@ Geen. Alle vragen uit de rondes 1 tot en met 4 zijn beantwoord en verwerkt in §
 | Modelnamen in de leads op veel manieren gespeld | Brede zoekterm, gebruikte waarden tonen, semantic layer, Data correctie |
 | Per ongeluk andere Supabase-tabellen gebruikt | Bronnenregel in skill, hoofdprompt en verantwoording |
 | Bestaand beveiligingspunt: 15 `dataloket`-tabellen zonder RLS | Los van deze tool oppakken |
+
+## 13. Fase 2 — Analyse opzetten (gebouwd 24 november 2026, migratie 0044)
+
+Naast de campagne-analyse komen er andere soorten analyses: de **analyse opzet** (analysetype).
+Elke opzet heeft een eigen prompt; de semantic layer blijft één en dezelfde.
+
+### 13.1 Besluiten van de eigenaar (24 november 2026)
+
+| # | Onderwerp | Besluit |
+|---|---|---|
+| 1 | Periode bij een rapportage | **Open tekstveld**: "Afgelopen 3 maanden", "1 januari t/m 10 februari 2026", "Q4 2026". Zie 13.3. |
+| 2 | Opbouw | Elke rapportage is een eigen regel (bijv. "VDU maandrapportage november 2026"); nieuwe versies zijn herzieningen. Formulier: naam, periode, omschrijving/aandachtspunten, Data correctie; bedrijf volgt uit de opzet. Geen merk, modellen, budget of doel. |
+| 3 | Label | Rapportages krijgen **geen label** (campagnes houden tussentijds/eind). |
+| 4 | Lege prompt | Claude **weigert** de analyse met een melding ("Er is nog geen prompt voor …"). Geen terugval op de campagneprompt. |
+| 5 | Opzet wijzigen | Kan altijd; elke versie onthoudt met welke prompt hij is gemaakt. |
+| 6 | Overzicht | Alleen campagne-analyses krijgen de funnelkolommen en kosten op schema. Andere opzetten: alleen **Campagne, Analyse ronde, Laatste analyse**. |
+| 7 | Leads VDU-rapportage | Alle Syntec-leads van de periode, uitgesplitst naar merk en kanaalgroep. PGZ: alleen GA4. Dataregel (§3) geldt voor elke opzet. |
+| 8 | Volgen per opzet | Later. |
+| 9 | Nieuwe opzetten | De eigenaar wil later **zelf** opzetten kunnen toevoegen (in het dashboard, niet via code). |
+| 10 | Rapportages in het overzicht | Een eigen regel, net als een campagne, maar zonder funnelcijfers, doel en kosten. |
+| 11 | Zelf opzetten toevoegen | Alleen de eigenaar, via Analyse prompts → Nieuwe opzet: naam, formulier (campagne/rapportage), bedrijf (vast of kiezen). Verwijderen alleen zonder analyses, anders uitzetten. |
+| 12 | Gedeelde regels | Dataregel, schrijfstijl voor de marketeer en managementsamenvatting van vijf regels gelden voor elke opzet (staan in de skill); een opzetprompt beschrijft alleen het eigene. |
+
+### 13.2 Startlijst
+
+| Opzet | Formulier | Bedrijf | Prompt |
+|---|---|---|---|
+| Campagne analyse (standaard) | campagne | kiezen | de huidige hoofdprompt |
+| VDU kwartaalrapportage | rapportage | Van den Udenhout | leeg |
+| VDU maandrapportage | rapportage | Van den Udenhout | leeg |
+| PGZ kwartaalrapportage | rapportage | PGZ | leeg |
+| PGZ maandrapportage | rapportage | PGZ | leeg |
+
+### 13.3 Open periode: hoe het werkt
+
+Claude legt de tekst bij elke analyse uit tot concrete datums, ten opzichte van de dag van de
+analyse, en bewaart die bij de versie (`periode_van`/`periode_tot`, bestaat al). De pagina toont
+beide: "Afgelopen 3 maanden → 1 aug t/m 31 okt 2026". Een relatieve periode schuift dus mee
+met elke nieuwe versie. Is de tekst niet eenduidig, dan kiest Claude de redelijkste uitleg en
+meldt die in de verantwoording. Een rapportage heeft geen start- en einddatum in de briefing,
+dus de indeling Lopend/Afgelopen (§8) werkt alleen voor campagnes.
+
+### 13.4 Ontwerp (zo gebouwd)
+
+- Tabel `marketing_analyse_opzetten` (naam, formulier `campagne`/`rapportage`, vast bedrijf of
+  leeg, volgorde, actief). Prompts per opzet in `marketing_analyse_prompts` (kolom `opzet_id`,
+  versienummer per opzet). Campagne krijgt `opzet_id` (standaard Campagne analyse) en
+  `periode_tekst`.
+- Briefing: uitklapmenu **Analyse opzet** bovenaan; het formulier eronder volgt het type.
+- Rechtsboven **Analyse prompts** met een uitklapmenu per opzet; de eigenaar bewerkt, de rest
+  leest. Daar ook "Nieuwe opzet" (alleen de eigenaar).
+- Skill: stap 1 haalt de prompt van de opzet op en stopt bij een lege prompt; rapportages
+  slaan het label over.

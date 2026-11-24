@@ -1678,12 +1678,26 @@ lees dat eerst voordat je hier iets verandert.
   met "FW:" in Onderwerp. Filterlogica in `lib/sync/analyseLeads.ts` (getest). Alleen van
   toepassing op Van den Udenhout (`BEDRIJF_MET_SYNTEC`); de andere bedrijven kijken voor leads
   alleen naar GA4 en tonen in het overzicht "n.v.t.".
-- **Vier kennislagen.** De *briefing* (naam, **Bedrijf** = welk van onze bedrijven, **Merk** =
-  automerk, modellen, looptijd, doel als vrije tekst, totaalbudget, omschrijving); de
-  *hoofdprompt* (één prompt met een hoofdstuk per label); de *semantic layer* (per databron een
+- **Analyse opzetten** (fase 2, migratie 0044, besluiten in §13 van het plan). Elke regel in
+  het overzicht heeft een opzet (`marketing_analyse_opzetten`): **Campagne analyse** (standaard,
+  vast id `STANDAARD_OPZET_ID`, formulier `campagne`) of bijv. VDU/PGZ maand- en
+  kwartaalrapportage (formulier `rapportage`, vast bedrijf). Het uitklapmenu bovenaan de
+  briefing kiest de opzet en daarmee het formulier: een rapportage heeft naam (vult zich met
+  opzet + periode), bedrijf, een **open periode** (`periode_tekst`, Claude zet hem per analyse om
+  in datums) en omschrijving, en **geen label**. Elke opzet heeft een eigen prompt (per opzet
+  genummerd); een lege prompt laat de skill **weigeren**, nooit terugvallen. In het overzicht
+  krijgen alleen campagnes doel, funnelcijfers en kosten op schema; een rapportage toont alleen
+  naam, Analyse ronde en Laatste analyse. Rechtsboven **Analyse prompts** (uitklapmenu per
+  opzet; de eigenaar wijzigt daar ook naam, formulier, bedrijf en actief, en maakt met
+  "Nieuwe opzet" zelf opzetten aan; verwijderen alleen zonder analyses, anders uitzetten).
+  Route `opzetten`, `leesCampagneInvoer(body, opzet)` in `rekenen.ts` (getest).
+- **Vier kennislagen.** De *briefing* (opzet, naam, **Bedrijf** = welk van onze bedrijven, **Merk** =
+  automerk, modellen, looptijd, doel als vrije tekst, totaalbudget, omschrijving; bij een
+  rapportage naam, bedrijf, periode en omschrijving); de
+  *prompt van de opzet* (bij Campagne analyse de hoofdprompt met een hoofdstuk per label); de *semantic layer* (per databron een
   tekstblok, plus in Algemeen de bedrijvenlijst voor de keuzelijst en welke accounts bij welk
   bedrijf horen; startinhoud in `standaardSemantiek.ts`); en de *Data correctie* per campagne
-  (wat er bij een vorige analyse niet klopte). Hoofdprompt en semantic layer: lezen iedereen,
+  (wat er bij een vorige analyse niet klopte). Prompts en semantic layer: lezen iedereen,
   opslaan alleen de eigenaar (`isBeheerder`), elke opslag een nieuwe versie. Data correctie:
   iedereen.
 - **Mail bij een nieuwe analyse** (migratie 0043, `lib/marketingAnalyse/notificatie.ts` en
@@ -1702,7 +1716,8 @@ lees dat eerst voordat je hier iets verandert.
 - **Versies en label.** `marketing_analyse_bewaar` kent het versienummer toe uit
   `laatste_versie` op de campagne (een verwijderde versie wordt nooit hergebruikt), bepaalt het
   label (**Eindevaluatie** als de einddatum vóór vandaag ligt, anders **Tussentijdse
-  evaluatie**), legt briefing en Data correctie van dat moment vast en zet de **Analyse ronde**
+  evaluatie**; bij een rapportage geen label), legt briefing (met opzet en periode) en Data
+  correctie van dat moment vast en zet de **Analyse ronde**
   uit na een eindevaluatie. Elke versie onthoudt met welke hoofdprompt en semantic layer hij is
   gemaakt. Alleen de eigenaar kan een versie verwijderen.
 - **Het formaat** (`lib/marketingAnalyse/types.ts`, `MaResultaat`) is generiek: samenvatting
@@ -1713,8 +1728,9 @@ lees dat eerst voordat je hier iets verandert.
   ontbrekend veld de pagina niet breekt. **Verander je het formaat, pas dan de skill in dezelfde
   wijziging aan.**
 - **Het overzicht**: lopende campagnes bovenaan op startdatum, afgelopen in een inklapbaar blok
-  Afgelopen; per regel de schakelaar Analyse ronde en de kerncijfers uit de laatste analyse.
-  Rechtsboven Hoofdprompt, Semantic layer en Nieuwe campagne. De open analyse staat in de URL
+  Afgelopen (rapportages hebben geen einddatum en staan altijd bij lopend); per regel de
+  schakelaar Analyse ronde en bij campagnes de kerncijfers uit de laatste analyse.
+  Rechtsboven Analyse prompts, Semantic layer en Nieuwe analyse. De open analyse staat in de URL
   (`?analyse=<campagne-id>`).
 - **Een eigen tabel, niet de sheet.** Dit is geen campagnelijst maar de briefing voor een
   analyse; de sheet blijft de bron van de campagnetabel.
