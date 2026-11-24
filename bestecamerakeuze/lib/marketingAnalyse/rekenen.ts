@@ -3,8 +3,14 @@
  * React of database, zodat ze zonder bundler te testen zijn (`rekenen.test.ts`).
  */
 import {
+  ANALYSE_TABBLADEN,
   SEMANTIEK_BLOKKEN,
+  type Aanbeveling,
   type Eenheid,
+  type Kerncijfer,
+  type Prioriteit,
+  type Sectie,
+  type TabOordeel,
   BEDRIJF_MET_SYNTEC,
   type FunnelStap,
   type Formulier,
@@ -305,11 +311,34 @@ export function looptijdLabel(start: string | null | undefined, eind: string | n
  * Een resultaat uit de database zo neerzetten dat de weergave er niet op kan vastlopen. Een
  * analyse is door een model geschreven; een veld dat ontbreekt mag de pagina niet breken.
  */
+const PRIORITEITEN: readonly Prioriteit[] = ["hoog", "middel", "laag"];
+const OORDELEN: readonly TabOordeel[] = ["goed", "aandacht", "probleem", "geen-data"];
+const TAB_SLEUTELS = new Set<string>(ANALYSE_TABBLADEN.map((t) => t.sleutel));
+
+function lijst<T>(x: T[] | undefined | null): T[] {
+  return Array.isArray(x) ? x : [];
+}
+
+/** Een aanbeveling zonder geldige prioriteit telt als laag; zonder titel valt hij weg. */
+function leesAanbevelingen(ruw: unknown): Aanbeveling[] {
+  return lijst(ruw as Aanbeveling[])
+    .filter((a) => a && typeof a.titel === "string" && a.titel.trim())
+    .map((a) => ({
+      titel: a.titel,
+      toelichting: typeof a.toelichting === "string" ? a.toelichting : "",
+      prioriteit: PRIORITEITEN.includes(a.prioriteit) ? a.prioriteit : "laag",
+      ...(Array.isArray(a.tabs) ? { tabs: a.tabs.filter((t) => TAB_SLEUTELS.has(t)) } : {}),
+    }));
+}
+
+/**
+ * Een resultaat zoals de pagina het kan tonen, ook als er velden ontbreken of het een versie in
+ * formaat 1 is. Wat niet klopt, valt weg in plaats van de pagina te breken.
+ */
 export function normaliseerResultaat(ruw: unknown): MaResultaat {
   const r = (ruw ?? {}) as Partial<MaResultaat>;
-  const lijst = <T,>(x: T[] | undefined | null): T[] => (Array.isArray(x) ? x : []);
   return {
-    formaat: 1,
+    formaat: r.formaat === 2 ? 2 : 1,
     samenvatting: {
       kop: r.samenvatting?.kop ?? "",
       regels: lijst(r.samenvatting?.regels).filter((x) => typeof x === "string").slice(0, 5),
@@ -318,16 +347,121 @@ export function normaliseerResultaat(ruw: unknown): MaResultaat {
     doel: r.doel,
     funnel: lijst(r.funnel),
     secties: lijst(r.secties)
-      .map((s, i) => ({ ...s, stap: typeof s.stap === "number" ? s.stap : i + 1 }))
+      .filter((s) => s && typeof s === "object")
+      .map((s, i) => ({
+        ...s,
+        stap: typeof s.stap === "number" ? s.stap : i + 1,
+        titel: typeof s.titel === "string" ? s.titel : "",
+        oordeel: s.oordeel && OORDELEN.includes(s.oordeel) ? s.oordeel : undefined,
+        bevindingen: lijst(s.bevindingen).filter((b) => typeof b === "string" && b.trim()).slice(0, 5),
+        acties: leesAanbevelingen(s.acties),
+      }))
       .sort((a, b) => a.stap - b.stap),
     inzichten: lijst(r.inzichten),
-    aanbevelingen: lijst(r.aanbevelingen),
+    aanbevelingen: leesAanbevelingen(r.aanbevelingen),
     herkenning: lijst(r.herkenning),
     bronnen: lijst(r.bronnen),
     correcties: lijst(r.correcties),
     semantiekVoorstellen: lijst(r.semantiekVoorstellen),
     datakwaliteit: lijst(r.datakwaliteit),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Tabbladen van de analysepagina
+// ---------------------------------------------------------------------------
+
+/** Eén tabblad op de analysepagina. */
+export interface AnalyseTab {
+  /** Een vaste sleutel (`bereik` …) of, bij een sectie zonder vaste plek, `sectie-<n>`. */
+  sleutel: string;
+  naam: string;
+  /** De groep boven de tabbalk; null bij een sectie zonder vaste plek. */
+  groep: string | null;
+  secties: Sectie[];
+  /** Het hoofdgetal in de tabbalk: het eerste kerncijfer van de eerste sectie. */
+  hoofdcijfer: Kerncijfer | null;
+  oordeel: TabOordeel | null;
+  /** Grijs in de tabbalk: geen sectie, of de analyse zegt zelf dat er geen data is. */
+  leeg: boolean;
+  /** Waarom er niets staat (alleen bij een tabblad zonder sectie). */
+  reden: string | null;
+}
+
+/** Syntec-leads gelden alleen als de analyse uitsluitend over Van den Udenhout gaat. */
+export function syntecVanToepassing(bedrijven: readonly string[] | null | undefined): boolean {
+  const lijst = (bedrijven ?? []).filter(Boolean);
+  return lijst.length > 0 && lijst.every((b) => b === BEDRIJF_MET_SYNTEC);
+}
+
+function tabUitSecties(sleutel: string, naam: string, groep: string | null, secties: Sectie[], reden: string | null): AnalyseTab {
+  const oordeel = secties.find((s) => s.oordeel)?.oordeel ?? null;
+  return {
+    sleutel,
+    naam,
+    groep,
+    secties,
+    hoofdcijfer: secties.find((s) => (s.kerncijfers?.length ?? 0) > 0)?.kerncijfers?.[0] ?? null,
+    oordeel,
+    leeg: secties.length === 0 || oordeel === "geen-data",
+    reden: secties.length === 0 ? reden : null,
+  };
+}
+
+/**
+ * De tabbladen van een analyse. Een campagne-analyse in formaat 2 krijgt altijd de vaste
+ * tabbladen in vaste volgorde (een tabblad zonder sectie staat grijs met de reden), en daarachter
+ * een eigen tabblad voor elke sectie zonder geldige `tab`. Een versie in formaat 1 en een
+ * rapportage krijgen één tabblad per sectie, in de volgorde van de secties.
+ */
+export function tabbladenVoor(
+  resultaat: Pick<MaResultaat, "formaat" | "secties">,
+  opties: { rapportage: boolean; bedrijven: readonly string[] | null | undefined },
+): AnalyseTab[] {
+  const losse = (secties: Sectie[]) =>
+    secties.map((s, i) => tabUitSecties(`sectie-${i + 1}`, s.titel || `Onderdeel ${i + 1}`, null, [s], null));
+  if (resultaat.formaat !== 2 || opties.rapportage) return losse(resultaat.secties);
+
+  const vast = ANALYSE_TABBLADEN.map((t) => {
+    const secties = resultaat.secties.filter((s) => s.tab === t.sleutel);
+    const reden =
+      t.sleutel === "syntec" && !syntecVanToepassing(opties.bedrijven)
+        ? `Niet van toepassing. Leads uit Syntec gelden alleen voor een analyse die uitsluitend over ${BEDRIJF_MET_SYNTEC} gaat; de leads staan bij Lead-events.`
+        : "Deze analyse heeft hier geen onderdeel voor.";
+    return tabUitSecties(t.sleutel, t.naam, t.groep, secties, reden);
+  });
+  const zonderPlek = resultaat.secties.filter((s) => !s.tab || !TAB_SLEUTELS.has(s.tab));
+  return [...vast, ...losse(zonderPlek)];
+}
+
+/** Een actie uit een tabblad, met het tabblad erbij voor de lijst bovenaan. */
+export interface TabActie {
+  actie: Aanbeveling;
+  tabSleutel: string;
+  tabNaam: string;
+}
+
+/** Alle acties uit de tabbladen, op prioriteit (hoog, middel, laag) en verder in tabvolgorde. */
+export function actiesUitTabbladen(tabs: readonly AnalyseTab[]): TabActie[] {
+  const alle: TabActie[] = [];
+  for (const tab of tabs) {
+    for (const sectie of tab.secties) {
+      for (const actie of sectie.acties ?? []) alle.push({ actie, tabSleutel: tab.sleutel, tabNaam: tab.naam });
+    }
+  }
+  return sorteerOpPrioriteit(alle, (a) => a.actie.prioriteit);
+}
+
+/** Stabiel sorteren op prioriteit: hoog, middel, laag. */
+export function sorteerOpPrioriteit<T>(items: readonly T[], prioriteit: (item: T) => Prioriteit): T[] {
+  const rang = (p: Prioriteit) => {
+    const i = PRIORITEITEN.indexOf(p);
+    return i < 0 ? PRIORITEITEN.length : i;
+  };
+  return items
+    .map((item, i) => ({ item, i }))
+    .sort((a, b) => rang(prioriteit(a.item)) - rang(prioriteit(b.item)) || a.i - b.i)
+    .map((x) => x.item);
 }
 
 // ---------------------------------------------------------------------------

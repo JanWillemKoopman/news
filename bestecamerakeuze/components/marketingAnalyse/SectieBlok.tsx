@@ -77,30 +77,26 @@ export function AnalyseTabel({ tabel }: { tabel: Tabel }) {
 }
 
 /**
- * Eén stap van de funnel. Alle blokken zijn optioneel; de hoofdprompt bepaalt welke een
- * sectie gebruikt. Het nummer links is de plek in de funnel.
+ * De linkerkant (3/4) van een tabblad: kop, kerncijfers, de leeswijzer, grafieken en tabellen.
+ * Alle blokken zijn optioneel; de prompt bepaalt welke een sectie gebruikt. Bevindingen en
+ * acties staan niet hier maar in de rechterkolom van het tabblad.
  */
-export default function SectieBlok({ sectie, nummer }: { sectie: Sectie; nummer: number }) {
+export default function SectieBlok({ sectie }: { sectie: Sectie }) {
   return (
     <section className="rounded-panel border border-line bg-card shadow-subtle">
-      <header className="flex items-start gap-4 border-b border-line-soft px-6 py-4">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface font-sans-w7 text-sm font-bold tabular-nums text-ink-muted">
-          {nummer}
-        </span>
-        <div className="min-w-0">
-          <h3 className="font-sans-w7 text-base font-bold text-ink">{sectie.titel}</h3>
-          {sectie.ondertitel && <p className="mt-0.5 text-meta text-ink-muted">{sectie.ondertitel}</p>}
-        </div>
+      <header className="border-b border-line-soft px-6 py-4">
+        <h3 className="font-sans-w7 text-base font-bold text-ink">{sectie.titel}</h3>
+        {sectie.ondertitel && <p className="mt-0.5 text-meta text-ink-muted">{sectie.ondertitel}</p>}
       </header>
       <div className="flex flex-col gap-5 px-6 py-5">
         {sectie.kerncijfers && <KerncijferRij cijfers={sectie.kerncijfers} />}
         {sectie.tekst && (
-          <div className="text-sm">
+          <div className="max-w-[90ch] text-sm text-ink-muted">
             <Markdown tekst={sectie.tekst} />
           </div>
         )}
         {sectie.grafieken && sectie.grafieken.length > 0 && (
-          <div className={`grid gap-4 ${sectie.grafieken.length > 1 ? "lg:grid-cols-2" : ""}`}>
+          <div className={`grid gap-4 ${sectie.grafieken.length > 1 ? "xl:grid-cols-2" : ""}`}>
             {sectie.grafieken.map((g, i) => (
               <AnalyseGrafiek key={i} grafiek={g} />
             ))}
