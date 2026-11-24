@@ -243,3 +243,13 @@ test("meerdere bedrijven in de briefing en als label", () => {
   assert.equal(bedrijvenLabel(["PGZ", "VELOO", "Instra"]), "PGZ, VELOO en Instra");
   assert.equal(bedrijvenLabel([]), "Geen bedrijf");
 });
+
+test("overzichtcijfers: gezamenlijke CTR en bezoekers", () => {
+  const c = { bedrijven: ["PGZ"], modellen: [], budget: null, doel: null };
+  const o = overzichtCijfers(c, { klikken: 1500, vertoningenAds: 100000, vertoningen: 500000, sessies: 5777 });
+  assert.equal(o.ctr, 1.5);
+  assert.equal(o.bezoekers, 5777);
+  // Zonder advertentievertoningen geen CTR: de vertoningen inclusief organisch tellen niet.
+  assert.equal(overzichtCijfers(c, { klikken: 1500, vertoningen: 500000 }).ctr, null);
+  assert.equal(overzichtCijfers(c, { klikken: 0, vertoningenAds: 1000 }).ctr, 0);
+});

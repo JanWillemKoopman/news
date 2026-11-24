@@ -40,7 +40,10 @@ analyses; jij maakt ze. Het plan en alle besluiten van de eigenaar staan in
    Van den Udenhout**; voor elk ander bedrijf niet gebruiken. `leadsSyntec` alleen invullen als
    de analyse uitsluitend over Van den Udenhout gaat, anders null (het overzicht toont dan de
    lead-events uit GA4).
-3. **`dataloket.lead_kanaalkosten`**: extra maandkosten per GA4-bron/medium.
+3. **`dataloket.lead_kanaalkosten`**: extra maandkosten per GA4-bron/medium. **Niet bij een
+   campagne-analyse** (besluit van de eigenaar): daar zijn de kosten alleen de mediakosten uit
+   Google Ads, Meta Ads en LinkedIn Ads. Alleen een rapportage mag deze tabel gebruiken, als de
+   prompt erom vraagt, en noemt ze dan apart.
 
 **Niet gebruiken**: alle andere tabellen in Supabase, ook niet `windsor_*`, `leads_raw` of
 `v_leads`. De tabellen van de tool zelf (`marketing_analyse_campagnes`, `_prompts`,
@@ -120,9 +123,11 @@ select id, versie, inhoud from dataloket.marketing_analyse_semantiek order by ve
   ```
   Soort lead en ordersoort volgens de semantic layer. Controleer `max(aangelegd_op)` en meld tot
   wanneer de kopie loopt.
-- **Extra kanaalkosten**: `select bron_medium, maand, bedrag from dataloket.lead_kanaalkosten`
-  voor de maanden in de periode, verdeeld over sessies zoals de semantic layer zegt (alle
-  sessies van die bron/medium in de maand uit GA4, via Windsor).
+- **Kosten bij een campagne-analyse**: alleen de mediakosten uit de advertentieplatformen.
+  `kerncijfers.kosten` en de sectie Investering tellen geen `lead_kanaalkosten` mee.
+- **Extra kanaalkosten (alleen rapportages)**: `select bron_medium, maand, bedrag from
+  dataloket.lead_kanaalkosten` voor de maanden in de periode, verdeeld over sessies zoals de
+  semantic layer zegt; altijd apart van de mediakosten.
 - Reken verhoudingen uit totalen. Bereik niet optellen over dagen of platforms.
 
 ## Stap 4 — Het resultaat (`MaResultaat`, `formaat: 1`)
@@ -165,10 +170,15 @@ semantic layer nooit zelf aan.
 
 **Kerncijfers** (`MaKerncijfers`, voor het overzicht; null als onbekend):
 ```json
-{ "kosten": 1960.8, "vertoningen": 520000, "klikken": 12000, "sessies": 8000, "leadEvents": 25,
+{ "kosten": 1960.8, "vertoningen": 520000, "vertoningenAds": 410000, "klikken": 12000, "sessies": 8000, "leadEvents": 25,
   "leadsSyntec": 60, "leadsSyntecInternet": 41, "doelLeads": 20,
   "doel": { "status": "achter", "toelichting": "…" } }
 ```
+`vertoningen` = betaald + organisch. `vertoningenAds` = alleen de vertoningen van Google Ads,
+Meta Ads en LinkedIn Ads samen, en `klikken` = hun klikken samen (Google Ads clicks, Meta link
+clicks, LinkedIn clicks). Het overzicht toont de gezamenlijke CTR als klikken ÷ vertoningenAds;
+vul daarom altijd allebei in. `sessies` = sessies die op de campagnepagina('s) begonnen, uit elk
+kanaal: dat zijn de "bezoekers" in het overzicht.
 `leadsSyntec` en `leadsSyntecInternet` zijn null tenzij de analyse uitsluitend over Van den
 Udenhout gaat. `doelLeads`: het aantal leads uit het doel van de briefing zoals jij het leest
 ("20 proefritten" → 20; proefrit- en offerteaanvragen zijn leads), null als het doel niet over

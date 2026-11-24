@@ -1,14 +1,28 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Drawer from "@/components/Drawer";
+import { IconTrash } from "@/components/icons";
 import type { MaVolger } from "@/lib/marketingAnalyse/types";
 
 /**
- * Volgers van een campagne: wie een mail krijgt zodra er een nieuwe analyse staat. Jezelf
- * aanmelden kan met één klik (het adres van je account); een ander adres toevoegen ook.
- * Afmelden kan hier of via de link onderaan elke mail.
+ * Volgers van een analyse, in een zijbalk die opent vanaf het mail-icoontje in het overzicht:
+ * wie een mail krijgt zodra er een nieuwe versie staat. Jezelf aanmelden kan met één klik (het
+ * adres van je account); een ander adres toevoegen ook. Afmelden kan hier of via de link
+ * onderaan elke mail.
  */
-export default function VolgersBlok({ campagneId }: { campagneId: string }) {
+export default function VolgersZijbalk({
+  campagneId,
+  naam,
+  onAantal,
+  onClose,
+}: {
+  campagneId: string;
+  naam: string;
+  /** Het aantal volgers na elke wijziging, voor het getal naast het icoontje. */
+  onAantal: (aantal: number) => void;
+  onClose: () => void;
+}) {
   const [volgers, setVolgers] = useState<MaVolger[] | null>(null);
   const [email, setEmail] = useState("");
   const [bezig, setBezig] = useState<string | null>(null);
@@ -22,7 +36,7 @@ export default function VolgersBlok({ campagneId }: { campagneId: string }) {
       .then(async (res) => {
         const data = (await res.json().catch(() => ({}))) as { volgers?: MaVolger[]; fout?: string };
         if (!res.ok || !data.volgers) throw new Error(data.fout ?? "Kon de volgers niet laden.");
-        if (actief) setVolgers(data.volgers);
+        if (actief) zetVolgers(data.volgers);
       })
       .catch((err) => actief && setFout(err instanceof Error ? err.message : String(err)));
     return () => {
@@ -31,6 +45,11 @@ export default function VolgersBlok({ campagneId }: { campagneId: string }) {
   }, [basis]);
 
   const ik = volgers?.find((v) => v.ikZelf) ?? null;
+
+  function zetVolgers(lijst: MaVolger[]) {
+    setVolgers(lijst);
+    onAantal(lijst.length);
+  }
 
   async function voegToe(adres: string | null) {
     setBezig(adres === null ? "zelf" : "toevoegen");
@@ -44,7 +63,7 @@ export default function VolgersBlok({ campagneId }: { campagneId: string }) {
       const data = (await res.json().catch(() => ({}))) as { volger?: MaVolger; fout?: string };
       if (!res.ok || !data.volger) throw new Error(data.fout ?? "Kon het adres niet toevoegen.");
       const nieuw = data.volger;
-      setVolgers((oud) => [...(oud ?? []).filter((v) => v.id !== nieuw.id), nieuw]);
+      zetVolgers([...(volgers ?? []).filter((v) => v.id !== nieuw.id), nieuw]);
       if (adres !== null) setEmail("");
     } catch (err) {
       setFout(err instanceof Error ? err.message : String(err));
@@ -60,7 +79,7 @@ export default function VolgersBlok({ campagneId }: { campagneId: string }) {
       const res = await fetch(`${basis}&id=${encodeURIComponent(v.id)}`, { method: "DELETE" });
       const data = (await res.json().catch(() => ({}))) as { fout?: string };
       if (!res.ok) throw new Error(data.fout ?? "Kon het adres niet weghalen.");
-      setVolgers((oud) => (oud ?? []).filter((x) => x.id !== v.id));
+      zetVolgers((volgers ?? []).filter((x) => x.id !== v.id));
     } catch (err) {
       setFout(err instanceof Error ? err.message : String(err));
     } finally {
@@ -69,14 +88,13 @@ export default function VolgersBlok({ campagneId }: { campagneId: string }) {
   }
 
   return (
-    <section className="rounded-panel border border-line bg-card px-6 py-5 shadow-subtle">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="label-theme text-label text-ink-muted">Mail bij een nieuwe analyse</h2>
-          <p className="mt-1 max-w-[80ch] text-meta text-ink-faint">
-            Wie hier staat, krijgt een mail met de samenvatting en een link zodra er een nieuwe versie van deze analyse klaarstaat.
-          </p>
-        </div>
+    <Drawer title={`Mail bij een nieuwe analyse — ${naam}`} onClose={onClose}>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col items-start gap-3">
+        <p className="text-sm text-ink-muted">
+          Wie hier staat, krijgt een mail met de samenvatting en een link zodra er een nieuwe versie van deze analyse klaarstaat.
+          Afmelden kan ook via de link onderaan elke mail.
+        </p>
         {volgers && (
           <button
             type="button"
@@ -93,38 +111,37 @@ export default function VolgersBlok({ campagneId }: { campagneId: string }) {
         )}
       </div>
 
-      {volgers === null && !fout && <p className="mt-3 text-sm text-ink-faint">Laden…</p>}
+      {volgers === null && !fout && <p className="text-sm text-ink-faint">Laden…</p>}
 
       {volgers && volgers.length > 0 && (
-        <ul className="mt-3 flex flex-wrap gap-2">
+        <ul className="divide-y divide-line-soft rounded-card border border-line-soft">
           {volgers.map((v) => (
-            <li
-              key={v.id}
-              className="flex items-center gap-1.5 rounded-full border border-line-soft bg-surface-tint py-1 pl-3 pr-1.5 text-sm text-ink"
-            >
-              <span>{v.email}</span>
-              {v.ikZelf && <span className="text-meta text-ink-faint">(jij)</span>}
+            <li key={v.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm text-ink">
+              <span className="min-w-0 truncate">
+                {v.email}
+                {v.ikZelf && <span className="ml-1.5 text-meta text-ink-faint">(jij)</span>}
+              </span>
               {v.magVerwijderen && (
                 <button
                   type="button"
                   onClick={() => verwijder(v)}
                   disabled={bezig !== null}
-                  aria-label={`${v.email} weghalen`}
-                  title="Weghalen"
-                  className="flex h-5 w-5 items-center justify-center rounded-full text-ink-faint transition-colors hover:bg-line-soft hover:text-ink disabled:opacity-50"
+                  aria-label={`${v.email} verwijderen`}
+                  title="Verwijderen"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-control text-ink-faint transition-colors hover:bg-surface hover:text-negative disabled:opacity-50"
                 >
-                  ×
+                  <IconTrash className="h-4 w-4" />
                 </button>
               )}
             </li>
           ))}
         </ul>
       )}
-      {volgers && volgers.length === 0 && <p className="mt-3 text-sm text-ink-faint">Nog niemand volgt deze campagne.</p>}
+      {volgers && volgers.length === 0 && <p className="text-sm text-ink-faint">Nog niemand volgt deze analyse.</p>}
 
       {volgers && (
         <form
-          className="mt-3 flex flex-wrap items-center gap-2"
+          className="flex flex-wrap items-center gap-2"
           onSubmit={(e) => {
             e.preventDefault();
             if (email.trim()) voegToe(email.trim());
@@ -148,7 +165,8 @@ export default function VolgersBlok({ campagneId }: { campagneId: string }) {
         </form>
       )}
 
-      {fout && <p className="mt-2 text-sm text-negative">{fout}</p>}
-    </section>
+      {fout && <p className="text-sm text-negative">{fout}</p>}
+    </div>
+    </Drawer>
   );
 }

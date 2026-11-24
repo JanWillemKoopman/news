@@ -82,7 +82,7 @@ function naarKolommen(i: MaCampagneInvoer) {
 
 /** Alle campagnes, met per campagne de laatste analyse (alleen de kerncijfers). */
 export async function lijstOverzicht(supabase: SupabaseClient): Promise<MaOverzichtRegel[]> {
-  const [campagnes, versies] = await Promise.all([
+  const [campagnes, versies, volgers] = await Promise.all([
     supabase.schema(SCHEMA).from(CAMPAGNES).select(CAMPAGNE_KOLOMMEN),
     // Niet het resultaat zelf: dat kan honderden kB per analyse zijn.
     supabase
@@ -90,9 +90,16 @@ export async function lijstOverzicht(supabase: SupabaseClient): Promise<MaOverzi
       .from(VERSIES)
       .select("id, campagne_id, versie, label, geanalyseerd_op, kerncijfers")
       .order("versie", { ascending: false }),
+    // Alleen tellen; het afmeldtoken is voor ingelogde gebruikers niet eens leesbaar (0043).
+    supabase.schema(SCHEMA).from("marketing_analyse_volgers").select("campagne_id"),
   ]);
   if (campagnes.error) throw new Error(campagnes.error.message);
   if (versies.error) throw new Error(versies.error.message);
+  const aantalVolgers = new Map<string, number>();
+  // Lukt het tellen niet, dan staat er gewoon geen getal bij het icoontje.
+  for (const v of volgers.error ? [] : (volgers.data ?? [])) {
+    aantalVolgers.set(v.campagne_id as string, (aantalVolgers.get(v.campagne_id as string) ?? 0) + 1);
+  }
 
   const perCampagne = new Map<string, Record<string, unknown>[]>();
   for (const v of versies.data ?? []) {
@@ -108,6 +115,7 @@ export async function lijstOverzicht(supabase: SupabaseClient): Promise<MaOverzi
     return {
       ...campagne,
       aantalAnalyses: lijst.length,
+      aantalVolgers: aantalVolgers.get(campagne.id) ?? 0,
       laatsteAnalyse: laatste
         ? {
             id: laatste.id as string,

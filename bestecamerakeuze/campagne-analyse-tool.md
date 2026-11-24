@@ -24,7 +24,7 @@ Drie kennislagen sturen de analyse:
 |---|---|---|
 | 1 | Campagnes uit de sheet | **Nee.** Campagnes worden alleen in het dashboard opgegeven (de briefing). |
 | 2–3 | Doel | **Open tekstveld** in de briefing. De analyse krijgt het doel als context en beoordeelt zelf hoe het ervoor staat. Wat het doel is, staat in de briefing. |
-| 4 | Kosten | Mediakosten uit de advertentieaccounts (via Windsor) **plus** de extra kanaalkosten uit `dataloket.lead_kanaalkosten` (bijv. gaspedaal.nl / referral), verdeeld over de sessies (zie §5.3). |
+| 4 | Kosten | Mediakosten uit de advertentieaccounts (via Windsor). **Gewijzigd 24 november 2026:** bij een campagne-analyse tellen de extra kanaalkosten uit `dataloket.lead_kanaalkosten` (bijv. gaspedaal.nl / referral) **niet** meer mee; alleen een rapportage mag ze gebruiken, apart genoemd (zie §5.3). |
 | 5 | Orders | **Niet** meenemen. |
 | 6 | Leads | Uit de leads-kopie: **totaal aantal leads**, **hoeveel via Internet** en **welke soort leads**. Welke soort een lead is, leidt de analyse af uit de zes kolommen volgens de semantic layer van Data leads (er is geen kolom Lead Type). |
 | 7 | E-mailcijfers (Selligent) | **Nu niet**, later misschien. E-mail alleen vanaf de klik (GA4). |
@@ -126,7 +126,7 @@ Analyse (versie N) ◀───────────── 6. wegschrijven al
 
 | # | Stap | Bron |
 |---|---|---|
-| 1 | **Investering**: mediakosten per platform/campagne + extra kanaalkosten, tegen het totaalbudget en het tempo | Windsor ads + `lead_kanaalkosten` |
+| 1 | **Investering**: mediakosten per platform/campagne, tegen het totaalbudget en het tempo (geen extra kanaalkosten meer, besluit 24 november 2026) | Windsor ads |
 | 2 | **Bereik**: vertoningen en bereik, betaald en organisch apart | Windsor ads + organisch |
 | 3 | **Klikken**: CTR, CPC, per advertentie | Windsor ads |
 | 4 | **Organische posts** die de campagne promoten | Windsor organisch |
@@ -141,7 +141,7 @@ Analyse (versie N) ◀───────────── 6. wegschrijven al
 
 Windsor levert voor GA4 de combinatie **`landing_page` × `event_name` × `event_count`**, met `sessions`, `engaged_sessions`, `session_default_channel_group` en `session_source_medium`. In GA4 hoort de landingspagina bij de hele sessie. Daarmee tellen we precies de events in sessies die op de campagnepagina begonnen, ook als het event later op een andere pagina viel. Dat beantwoordt de vraag "deden ze later in hun sessie een lead-event". De events die als lead tellen, staan in de semantic layer van GA4.
 
-### 5.3 Extra kanaalkosten verdelen over sessies
+### 5.3 Extra kanaalkosten verdelen over sessies (alleen nog voor rapportages)
 
 Per bron/medium per maand staat er een bedrag in `lead_kanaalkosten`, bijvoorbeeld gaspedaal.nl / referral. Het deel dat bij de campagne hoort:
 

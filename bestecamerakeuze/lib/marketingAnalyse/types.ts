@@ -116,11 +116,13 @@ export interface DoelOordeel {
  * bepalen; `leadsSyntec` is bij elk ander bedrijf dan Van den Udenhout altijd null (n.v.t.).
  */
 export interface MaKerncijfers {
-  /** Mediakosten (advertentieaccounts) plus de verdeelde extra kanaalkosten, in euro. */
+  /** Mediakosten uit de advertentieplatformen (Google Ads, Meta Ads, LinkedIn Ads), in euro. Geen extra kanaalkosten. */
   kosten?: number | null;
   /** Vertoningen betaald + organisch. */
   vertoningen?: number | null;
-  /** Klikken op advertenties. */
+  /** Alleen de vertoningen van de advertenties (Google Ads, Meta Ads, LinkedIn Ads samen); noemer van de CTR. */
+  vertoningenAds?: number | null;
+  /** Klikken op advertenties (Google Ads clicks, Meta link clicks, LinkedIn clicks samen); teller van de CTR. */
   klikken?: number | null;
   /** Sessies die op de campagnepagina('s) begonnen (GA4). */
   sessies?: number | null;
@@ -259,6 +261,8 @@ export interface MaOverzichtRegel extends MaCampagne {
     kerncijfers: MaKerncijfers;
   } | null;
   aantalAnalyses: number;
+  /** Hoeveel adressen een mail krijgen bij een nieuwe versie. */
+  aantalVolgers: number;
 }
 
 /** Iemand die een mail krijgt bij een nieuwe analyse van een campagne. */

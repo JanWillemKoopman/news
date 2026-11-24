@@ -1668,7 +1668,9 @@ lees dat eerst voordat je hier iets verandert.
 
 - **Harde regel voor de data** (besluit van de eigenaar, november 2026): een analyse gebruikt
   alleen Windsor **live** (Google, Meta en LinkedIn Ads, de organische kanalen en GA4), de
-  leads-kopie `marketing_analyse_leads` (alleen voor Van den Udenhout) en `lead_kanaalkosten`.
+  leads-kopie `marketing_analyse_leads` (alleen voor Van den Udenhout) en `lead_kanaalkosten`
+  (die laatste **niet** bij een campagne-analyse: daar zijn de kosten alleen de mediakosten uit
+  Google Ads, Meta Ads en LinkedIn Ads; besluit van de eigenaar, 24 november 2026).
   **Niet** de andere tabellen in Supabase, ook niet `windsor_*`, `leads_raw` of `v_leads`. Die
   regel staat in de skill, in de standaard-hoofdprompt en in de verantwoording van elke analyse.
 - **Leads-kopie** (`marketing_analyse_leads`, gevuld door `/api/sync` uit dezelfde keer lezen
@@ -1698,7 +1700,9 @@ lees dat eerst voordat je hier iets verandert.
   alleen als de analyse **uitsluitend** over Van den Udenhout gaat (`leadBron`).
 - **Overzicht campagne-analyses** (verzoek van de eigenaar, november 2026): kolommen Ronde
   (klein schuifje vooraan), Campagne (met de laatste analyse eronder), Uitgaven (balkje
-  tegen het budget, rood boven 100%), Leads (Syntec bij alleen Van den Udenhout met modellen,
+  tegen het budget, rood boven 100%), CTR (gezamenlijk over Google, Meta en LinkedIn Ads:
+  `klikken` ÷ `vertoningenAds`, gewogen, nooit over de vertoningen inclusief organisch),
+  Bezoekers (`sessies`: sessies die op de campagnepagina begonnen, uit elk kanaal), Leads (Syntec bij alleen Van den Udenhout met modellen,
   anders lead-events in Google Analytics, met de bron eronder) en Doel leads (balkje, groen
   vanaf 100%). Het leaddoel komt uit `kerncijfers.doelLeads` (de analyse leest het uit het
   vrije doel), anders het eerste getal in het doel (`overzichtCijfers` in `rekenen.ts`,
@@ -1713,8 +1717,10 @@ lees dat eerst voordat je hier iets verandert.
   opslaan alleen de eigenaar (`isBeheerder`), elke opslag een nieuwe versie. Data correctie:
   iedereen.
 - **Mail bij een nieuwe analyse** (migratie 0043, `lib/marketingAnalyse/notificatie.ts` en
-  `mail.ts`). Op de analysepagina kan iedereen een campagne volgen (eigen adres met één klik)
-  of een ander adres toevoegen (`marketing_analyse_volgers`, route `volgers`; weghalen: de
+  `mail.ts`). In het overzicht staat helemaal rechts op elke regel een mail-icoontje met het
+  aantal volgers; een klik opent een zijbalk (`VolgersZijbalk.tsx`, verzoek van de eigenaar:
+  niet meer als blok op de analysepagina) waarin iedereen de analyse kan volgen (eigen adres met
+  één klik) of een ander adres toevoegen of verwijderen (`marketing_analyse_volgers`, route `volgers`; weghalen: de
   volger zelf, wie het toevoegde, of de eigenaar). Een insert in `marketing_analyse_versies`
   laat een trigger via pg_net `POST /api/marketing-analyse/notificatie` doen; die claimt de
   versie (`notificatie_verstuurd_op`) en mailt elke volger via het **gedeelde Gmail-account**
