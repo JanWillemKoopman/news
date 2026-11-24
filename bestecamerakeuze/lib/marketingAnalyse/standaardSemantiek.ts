@@ -67,7 +67,8 @@ export const STANDAARD_SEMANTIEK: SemantiekInhoud = {
 
     google_ads: `- Campagnetypes: Search, Performance Max, Demand Gen en Display. Het type staat vaak vóór in de naam ("Demand Gen | …").
 - Google levert geen eigen leadveld: het leadcijfer zit in de conversies (conversie-acties die in Google Ads zijn ingesteld). Gebruik conversies alleen als aanvulling; GA4 is leidend voor wat er op de website gebeurt.
-- In GA4 komt Google Ads-verkeer binnen als "google / cpc"; Performance Max en Demand Gen staan in GA4's kanaalgroep soms als "Cross-network".`,
+- In GA4 komt Google Ads-verkeer binnen als "google / cpc"; Performance Max en Demand Gen staan in GA4's kanaalgroep soms als "Cross-network".
+- **Demand Gen beoordeel je op sessies in GA4, niet op klikken in Google Ads** (besluit van de eigenaar, november 2026). Google telt bij Demand Gen (YouTube, Discover, Gmail) ook interacties met de advertentie als klik, zoals een video openen of door een carrousel swipen, zonder dat iemand de website bezoekt. Reken kosten per sessie (kosten ÷ GA4-sessies uit google / cpc en Cross-network op de campagnepagina) in plaats van kosten per klik, en noem het verschil tussen klikken en sessies.`,
 
     meta_ads: `- Eén account per bedrijf (zie Algemeen); Meta Ads omvat Facebook, Instagram, Messenger en Audience Network.
 - Advertentienamen: "PR" = prospecting (nieuwe doelgroep), "RT" = retargeting. Vergelijk die twee apart.
