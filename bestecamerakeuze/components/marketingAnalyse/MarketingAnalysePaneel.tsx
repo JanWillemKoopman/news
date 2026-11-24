@@ -1,16 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Inlogprompt from "@/components/Inlogprompt";
 import AnalyseWeergave, { DoelRegel, LabelBadge } from "@/components/marketingAnalyse/AnalyseWeergave";
 import CampagneZijbalk from "@/components/marketingAnalyse/CampagneZijbalk";
-import HoofdpromptZijbalk from "@/components/marketingAnalyse/HoofdpromptZijbalk";
+import AnalysePromptZijbalk from "@/components/marketingAnalyse/AnalysePromptZijbalk";
 import SemantiekZijbalk from "@/components/marketingAnalyse/SemantiekZijbalk";
 import { getBrandLogo } from "@/components/brandLogos";
 import { IconBook, IconBrain, IconChevronDown, IconPencil, IconPlus } from "@/components/icons";
 import { deelOpInLopendEnAfgelopen, formatWaarde, looptijdLabel, vandaagNL, versieLabel } from "@/lib/marketingAnalyse/rekenen";
 import { STANDAARD_SEMANTIEK } from "@/lib/marketingAnalyse/standaardSemantiek";
-import { BEDRIJF_MET_SYNTEC, type MaCampagne, type MaKerncijfers, type MaOverzichtRegel } from "@/lib/marketingAnalyse/types";
+import {
+  BEDRIJF_MET_SYNTEC,
+  type MaCampagne,
+  type MaKerncijfers,
+  type MaOpzet,
+  type MaOverzichtRegel,
+} from "@/lib/marketingAnalyse/types";
 
 /** De funnelcijfers in het overzicht, in funnelvolgorde. */
 const KOLOMMEN: { sleutel: keyof MaKerncijfers; label: string; eenheid: "euro" | "aantal"; titel: string }[] = [
@@ -56,14 +62,105 @@ function RondeSchakelaar({ aan, bezig, onWissel, naam }: { aan: boolean; bezig: 
   );
 }
 
+/**
+ * Het menu Analyse prompts: per opzet de prompt openen, en voor de eigenaar "Nieuwe opzet".
+ * Een opzet zonder prompt zegt dat erbij; uitgezette opzetten ziet alleen de eigenaar.
+ */
+function AnalysePromptsMenu({
+  opzetten,
+  isEigenaar,
+  onKies,
+  onNieuw,
+}: {
+  opzetten: MaOpzet[];
+  isEigenaar: boolean;
+  onKies: (opzet: MaOpzet) => void;
+  onNieuw: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function buiten(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    function toets(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", buiten);
+    document.addEventListener("keydown", toets);
+    return () => {
+      document.removeEventListener("mousedown", buiten);
+      document.removeEventListener("keydown", toets);
+    };
+  }, [open]);
+
+  const zichtbaar = opzetten.filter((o) => o.actief || isEigenaar);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        className="flex items-center gap-2 rounded-button border border-line bg-card px-4 py-2 text-sm font-medium text-ink transition-colors duration-[var(--duur-snel)] hover:bg-surface"
+      >
+        <IconBrain className="h-4 w-4 text-ink-muted" />
+        Analyse prompts
+        <IconChevronDown className={`h-4 w-4 text-ink-faint transition-transform duration-[var(--duur-snel)] ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div role="menu" className="absolute right-0 z-40 mt-2 w-80 overflow-hidden rounded-card border border-line bg-card py-1 shadow-dropdown">
+          {zichtbaar.length === 0 && <p className="px-4 py-2 text-sm text-ink-muted">Laden…</p>}
+          {zichtbaar.map((o) => (
+            <button
+              key={o.id}
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                onKies(o);
+              }}
+              className="flex w-full items-center justify-between gap-3 px-4 py-2 text-left text-sm transition-colors hover:bg-surface"
+            >
+              <span className={o.actief ? "text-ink" : "text-ink-faint"}>{o.naam}</span>
+              <span className="whitespace-nowrap text-meta text-ink-faint">
+                {!o.actief ? "uitgezet" : !o.heeftPrompt ? "nog geen prompt" : o.standaard ? "standaard" : ""}
+              </span>
+            </button>
+          ))}
+          {isEigenaar && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                onNieuw();
+              }}
+              className="flex w-full items-center gap-2 border-t border-line-soft px-4 py-2.5 text-left text-sm font-medium text-ink transition-colors hover:bg-surface"
+            >
+              <IconPlus className="h-4 w-4 text-ink-muted" />
+              Nieuwe opzet
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CampagneTabel({
   campagnes,
+  opzetten,
   rondeBezig,
   onOpen,
   onBewerk,
   onRonde,
 }: {
   campagnes: MaOverzichtRegel[];
+  opzetten: Map<string, MaOpzet>;
   rondeBezig: Set<string>;
   onOpen: (id: string) => void;
   onBewerk: (c: MaOverzichtRegel) => void;
@@ -96,6 +193,9 @@ function CampagneTabel({
             const Logo = c.merk ? getBrandLogo(c.merk) : null;
             const k = c.laatsteAnalyse?.kerncijfers;
             const zonderSyntec = c.bedrijf !== BEDRIJF_MET_SYNTEC;
+            const opzet = opzetten.get(c.opzetId);
+            // Alleen een campagne-analyse heeft funnelcijfers, doel en kosten op schema.
+            const rapportage = opzet?.formulier === "rapportage";
             return (
               <tr
                 key={c.id}
@@ -110,12 +210,14 @@ function CampagneTabel({
                     </p>
                   </div>
                   <p className="mt-0.5 text-meta text-ink-faint">
-                    {c.bedrijf} · {looptijdLabel(c.startdatum, c.einddatum)}
-                    {c.budget != null && ` · ${formatWaarde(c.budget, "euro")}`}
+                    {opzet && !opzet.standaard && `${opzet.naam} · `}
+                    {c.bedrijf} ·{" "}
+                    {rapportage ? c.periodeTekst || "Geen periode" : looptijdLabel(c.startdatum, c.einddatum)}
+                    {!rapportage && c.budget != null && ` · ${formatWaarde(c.budget, "euro")}`}
                   </p>
                 </td>
                 <td className="max-w-[220px] px-3 py-3 text-ink-muted">
-                  <p className="line-clamp-2">{c.doel || "—"}</p>
+                  {!rapportage && <p className="line-clamp-2">{c.doel || "—"}</p>}
                 </td>
                 <td className="px-3 py-3">
                   <RondeSchakelaar aan={c.analyseRonde} bezig={rondeBezig.has(c.id)} onWissel={() => onRonde(c)} naam={c.naam} />
@@ -126,10 +228,18 @@ function CampagneTabel({
                       <span className="whitespace-nowrap text-ink">{versieLabel(c.laatsteAnalyse.versie, c.laatsteAnalyse.geanalyseerdOp)}</span>
                       <LabelBadge label={c.laatsteAnalyse.label} />
                     </div>
+                  ) : opzet && !opzet.heeftPrompt ? (
+                    <span className="text-negative" title={`Er is nog geen prompt voor ${opzet.naam}; Claude weigert de analyse`}>
+                      Nog geen prompt
+                    </span>
                   ) : (
                     <span className="text-ink-faint">Nog niet geanalyseerd</span>
                   )}
                 </td>
+                {rapportage ? (
+                  <td colSpan={KOLOMMEN.length + 1} aria-hidden="true" />
+                ) : (
+                  <>
                 {KOLOMMEN.map((kol) => (
                   <td key={kol.sleutel} className="whitespace-nowrap px-3 py-3 text-right tabular-nums text-ink">
                     {kol.sleutel === "leadsSyntec" && zonderSyntec ? (
@@ -147,6 +257,8 @@ function CampagneTabel({
                 <td className="whitespace-nowrap px-3 py-3" title={k?.doel?.toelichting}>
                   <DoelRegel doel={k?.doel} />
                 </td>
+                  </>
+                )}
                 <td className="px-4 py-3 text-right">
                   <button
                     type="button"
@@ -182,21 +294,28 @@ function CampagneTabel({
  */
 export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean }) {
   const [campagnes, setCampagnes] = useState<MaOverzichtRegel[] | null>(null);
+  const [opzetten, setOpzetten] = useState<MaOpzet[]>([]);
   const [bedrijven, setBedrijven] = useState<string[]>(STANDAARD_SEMANTIEK.bedrijven);
   const [isEigenaar, setIsEigenaar] = useState(false);
   const [fout, setFout] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [zijbalk, setZijbalk] = useState<{ campagne: MaCampagne | null } | null>(null);
-  const [paneel, setPaneel] = useState<"prompt" | "semantiek" | null>(null);
+  const [paneel, setPaneel] = useState<{ soort: "prompt"; opzetId: string | null } | { soort: "semantiek" } | null>(null);
   const [afgelopenOpen, setAfgelopenOpen] = useState(false);
   const [rondeBezig, setRondeBezig] = useState<Set<string>>(new Set());
 
   const laad = useCallback(() => {
     fetch("/api/marketing-analyse")
       .then(async (res) => {
-        const data = (await res.json().catch(() => ({}))) as { campagnes?: MaOverzichtRegel[]; isEigenaar?: boolean; fout?: string };
+        const data = (await res.json().catch(() => ({}))) as {
+          campagnes?: MaOverzichtRegel[];
+          opzetten?: MaOpzet[];
+          isEigenaar?: boolean;
+          fout?: string;
+        };
         if (!res.ok) throw new Error(data.fout ?? "Kon de campagnes niet laden.");
         setCampagnes(data.campagnes ?? []);
+        setOpzetten(data.opzetten ?? []);
         setIsEigenaar(Boolean(data.isEigenaar));
         setFout(null);
       })
@@ -260,22 +379,22 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
   if (!ingelogd) return <Inlogprompt tekst="Log in om de marketing analyses te bekijken." />;
 
   const geopend = campagnes?.find((c) => c.id === openId) ?? null;
+  const opzetPerId = new Map(opzetten.map((o) => [o.id, o]));
+  const promptOpzet = paneel?.soort === "prompt" && paneel.opzetId ? (opzetPerId.get(paneel.opzetId) ?? null) : null;
   const { lopend, afgelopen } = deelOpInLopendEnAfgelopen(campagnes ?? [], vandaagNL());
   const inRonde = (campagnes ?? []).filter((c) => c.analyseRonde).length;
 
   const knoppen = (
     <div className="flex items-center gap-2">
+      <AnalysePromptsMenu
+        opzetten={opzetten}
+        isEigenaar={isEigenaar}
+        onKies={(o) => setPaneel({ soort: "prompt", opzetId: o.id })}
+        onNieuw={() => setPaneel({ soort: "prompt", opzetId: null })}
+      />
       <button
         type="button"
-        onClick={() => setPaneel("prompt")}
-        className="flex items-center gap-2 rounded-button border border-line bg-card px-4 py-2 text-sm font-medium text-ink transition-colors duration-[var(--duur-snel)] hover:bg-surface"
-      >
-        <IconBrain className="h-4 w-4 text-ink-muted" />
-        Hoofdprompt
-      </button>
-      <button
-        type="button"
-        onClick={() => setPaneel("semantiek")}
+        onClick={() => setPaneel({ soort: "semantiek" })}
         className="flex items-center gap-2 rounded-button border border-line bg-card px-4 py-2 text-sm font-medium text-ink transition-colors duration-[var(--duur-snel)] hover:bg-surface"
       >
         <IconBook className="h-4 w-4 text-ink-muted" />
@@ -288,13 +407,14 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
           className="flex items-center gap-2 rounded-button bg-primary px-4 py-2 text-sm font-medium text-on-primary transition-colors duration-[var(--duur-snel)] hover:bg-primary-dark"
         >
           <IconPlus className="h-4 w-4" />
-          Nieuwe campagne
+          Nieuwe analyse
         </button>
       )}
     </div>
   );
 
   const tabelProps = {
+    opzetten: opzetPerId,
     rondeBezig,
     onOpen: (id: string) => open(id),
     onBewerk: (c: MaOverzichtRegel) => setZijbalk({ campagne: c }),
@@ -309,6 +429,7 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
           <AnalyseWeergave
             key={geopend.id}
             campagne={geopend}
+            opzet={opzetPerId.get(geopend.opzetId) ?? null}
             isEigenaar={isEigenaar}
             onTerug={() => {
               open(null);
@@ -323,10 +444,10 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
           <section className="kaart-accent overflow-hidden rounded-panel border border-line bg-card shadow-card">
             <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line-soft px-6 py-4">
               <div>
-                <h2 className="label-theme text-label text-ink-muted">Lopende campagnes</h2>
+                <h2 className="label-theme text-label text-ink-muted">Lopende analyses</h2>
                 <p className="mt-0.5 text-meta text-ink-faint">
-                  Cijfers uit de laatste analyse. Klik op een campagne voor de volledige analyse.
-                  {inRonde > 0 && ` ${inRonde} ${inRonde === 1 ? "campagne staat" : "campagnes staan"} in de analyseronde.`}
+                  Cijfers uit de laatste analyse. Klik op een regel voor de volledige analyse.
+                  {inRonde > 0 && ` ${inRonde} ${inRonde === 1 ? "staat" : "staan"} in de analyseronde.`}
                 </p>
               </div>
               {knoppen}
@@ -336,9 +457,9 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
               !fout && <p className="px-6 py-5 text-sm text-ink-muted">Laden…</p>
             ) : lopend.length === 0 ? (
               <div className="px-6 py-10 text-center">
-                <p className="font-semibold text-ink">Geen lopende campagnes</p>
+                <p className="font-semibold text-ink">Geen lopende analyses</p>
                 <p className="mx-auto mt-1 max-w-lg text-sm text-ink-muted">
-                  Maak een campagne aan met naam, bedrijf, looptijd, doel en budget. Zeg daarna in Claude Code dat hij de analyse moet
+                  Maak met Nieuwe analyse een campagne-analyse of een rapportage aan. Zeg daarna in Claude Code dat hij de analyse moet
                   maken; het resultaat verschijnt hier.
                 </p>
               </div>
@@ -373,6 +494,7 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
       {zijbalk && (
         <CampagneZijbalk
           campagne={zijbalk.campagne}
+          opzetten={opzetten}
           bedrijven={bedrijven}
           isEigenaar={isEigenaar}
           onClose={() => setZijbalk(null)}
@@ -383,8 +505,24 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
           }}
         />
       )}
-      {paneel === "prompt" && <HoofdpromptZijbalk onClose={() => setPaneel(null)} />}
-      {paneel === "semantiek" && (
+      {paneel?.soort === "prompt" && (paneel.opzetId === null || promptOpzet) && (
+        <AnalysePromptZijbalk
+          key={paneel.opzetId ?? "nieuw"}
+          opzet={promptOpzet}
+          bedrijven={bedrijven}
+          isEigenaar={isEigenaar}
+          onOpzetOpgeslagen={(o) => {
+            setOpzetten((lijst) => (lijst.some((x) => x.id === o.id) ? lijst.map((x) => (x.id === o.id ? o : x)) : [...lijst, o]));
+            setPaneel({ soort: "prompt", opzetId: o.id });
+          }}
+          onOpzetVerwijderd={(id) => {
+            setOpzetten((lijst) => lijst.filter((x) => x.id !== id));
+            setPaneel(null);
+          }}
+          onClose={() => setPaneel(null)}
+        />
+      )}
+      {paneel?.soort === "semantiek" && (
         <SemantiekZijbalk onClose={() => setPaneel(null)} onOpgeslagen={(inhoud) => setBedrijven(inhoud.bedrijven)} />
       )}
     </div>

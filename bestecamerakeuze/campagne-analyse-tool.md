@@ -1,6 +1,6 @@
 # Campagne-analysetool (Marketing analyse) — plan
 
-*Versie 6 · 24 november 2026 · status: fase 1 gebouwd (zie §10a); fase 2 (analyse opzetten) in voorbereiding (zie §13)*
+*Versie 6 · 24 november 2026 · status: fase 1 gebouwd (zie §10a); fase 2 (analyse opzetten) gebouwd (zie §13)*
 
 ## 1. Waar het om gaat
 
@@ -307,7 +307,7 @@ Geen. Alle vragen uit de rondes 1 tot en met 4 zijn beantwoord en verwerkt in §
 | Per ongeluk andere Supabase-tabellen gebruikt | Bronnenregel in skill, hoofdprompt en verantwoording |
 | Bestaand beveiligingspunt: 15 `dataloket`-tabellen zonder RLS | Los van deze tool oppakken |
 
-## 13. Fase 2 — Analyse opzetten (concept, nog niet gebouwd)
+## 13. Fase 2 — Analyse opzetten (gebouwd 24 november 2026, migratie 0044)
 
 Naast de campagne-analyse komen er andere soorten analyses: de **analyse opzet** (analysetype).
 Elke opzet heeft een eigen prompt; de semantic layer blijft één en dezelfde.
@@ -325,6 +325,9 @@ Elke opzet heeft een eigen prompt; de semantic layer blijft één en dezelfde.
 | 7 | Leads VDU-rapportage | Alle Syntec-leads van de periode, uitgesplitst naar merk en kanaalgroep. PGZ: alleen GA4. Dataregel (§3) geldt voor elke opzet. |
 | 8 | Volgen per opzet | Later. |
 | 9 | Nieuwe opzetten | De eigenaar wil later **zelf** opzetten kunnen toevoegen (in het dashboard, niet via code). |
+| 10 | Rapportages in het overzicht | Een eigen regel, net als een campagne, maar zonder funnelcijfers, doel en kosten. |
+| 11 | Zelf opzetten toevoegen | Alleen de eigenaar, via Analyse prompts → Nieuwe opzet: naam, formulier (campagne/rapportage), bedrijf (vast of kiezen). Verwijderen alleen zonder analyses, anders uitzetten. |
+| 12 | Gedeelde regels | Dataregel, schrijfstijl voor de marketeer en managementsamenvatting van vijf regels gelden voor elke opzet (staan in de skill); een opzetprompt beschrijft alleen het eigene. |
 
 ### 13.2 Startlijst
 
@@ -345,7 +348,7 @@ met elke nieuwe versie. Is de tekst niet eenduidig, dan kiest Claude de redelijk
 meldt die in de verantwoording. Een rapportage heeft geen start- en einddatum in de briefing,
 dus de indeling Lopend/Afgelopen (§8) werkt alleen voor campagnes.
 
-### 13.4 Ontwerp (voorstel)
+### 13.4 Ontwerp (zo gebouwd)
 
 - Tabel `marketing_analyse_opzetten` (naam, formulier `campagne`/`rapportage`, vast bedrijf of
   leeg, volgorde, actief). Prompts per opzet in `marketing_analyse_prompts` (kolom `opzet_id`,

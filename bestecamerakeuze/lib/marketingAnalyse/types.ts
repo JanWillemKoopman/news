@@ -2,8 +2,10 @@
  * Marketing analyse — de vormen die Claude Code wegschrijft en het dashboard toont.
  *
  * De verdeling van werk (zie campagne-analyse-tool.md):
- *  - De **hoofdprompt** (`marketing_analyse_prompts`) zegt hoe er geanalyseerd en geoordeeld
- *    wordt, met een hoofdstuk per label (tussentijdse evaluatie, eindevaluatie).
+ *  - De **analyse opzet** (`marketing_analyse_opzetten`) is de soort analyse: Campagne analyse
+ *    (de standaard) of bijv. een maandrapportage. Hij bepaalt het briefingformulier en de prompt.
+ *  - De **prompt** van de opzet (`marketing_analyse_prompts`) zegt hoe er geanalyseerd en
+ *    geoordeeld wordt; bij Campagne analyse met een hoofdstuk per label.
  *  - De **semantic layer** (`marketing_analyse_semantiek`) zegt per databron hoe de data te
  *    lezen is, en in het blok Algemeen welke accounts bij welk bedrijf horen.
  *  - De **Data correctie** (per campagne) zegt wat er bij een vorige analyse niet klopte.
@@ -24,15 +26,47 @@ export const LABEL_NAAM: Record<Label, string> = {
   eind: "Eindevaluatie",
 };
 
+/** Het id van de standaardopzet Campagne analyse (vast, migratie 0044). */
+export const STANDAARD_OPZET_ID = "7d0c0000-0000-4000-8000-000000000001";
+
+/**
+ * Welk briefingformulier een opzet heeft. `campagne`: de volledige briefing, met funnel en
+ * kosten in het overzicht en een label. `rapportage`: naam, open periode, omschrijving.
+ */
+export type Formulier = "campagne" | "rapportage";
+
+export const FORMULIER_NAAM: Record<Formulier, string> = {
+  campagne: "Campagne (volledige briefing, funnel en kosten)",
+  rapportage: "Rapportage (naam, periode en omschrijving)",
+};
+
+/** Een analyse opzet (analysetype), elk met een eigen prompt. */
+export interface MaOpzet {
+  id: string;
+  naam: string;
+  formulier: Formulier;
+  /** Vast bedrijf; null = de gebruiker kiest het in de briefing. */
+  bedrijf: string | null;
+  volgorde: number;
+  actief: boolean;
+  standaard: boolean;
+  /** Er staat een prompt voor deze opzet (Campagne analyse heeft altijd de standaardtekst). */
+  heeftPrompt: boolean;
+  aantalCampagnes: number;
+}
+
 /** De briefing die het team invult. */
 export interface MaCampagne {
   id: string;
+  opzetId: string;
   naam: string;
   bedrijf: string;
   merk: string | null;
   modellen: string[];
   startdatum: string | null;
   einddatum: string | null;
+  /** De open periode van een rapportage ("Afgelopen 3 maanden"); Claude legt hem bij elke analyse uit. */
+  periodeTekst: string | null;
   doel: string | null;
   budget: number | null;
   omschrijving: string | null;
@@ -46,7 +80,18 @@ export interface MaCampagne {
 /** Wat de gebruiker in het briefingformulier invult. */
 export type MaCampagneInvoer = Pick<
   MaCampagne,
-  "naam" | "bedrijf" | "merk" | "modellen" | "startdatum" | "einddatum" | "doel" | "budget" | "omschrijving" | "dataCorrectie"
+  | "opzetId"
+  | "naam"
+  | "bedrijf"
+  | "merk"
+  | "modellen"
+  | "startdatum"
+  | "einddatum"
+  | "periodeTekst"
+  | "doel"
+  | "budget"
+  | "omschrijving"
+  | "dataCorrectie"
 >;
 
 export type DoelStatus = "voor" | "op-koers" | "achter" | "onbekend";
@@ -202,7 +247,8 @@ export interface MaOverzichtRegel extends MaCampagne {
   laatsteAnalyse: {
     id: string;
     versie: number;
-    label: Label;
+    /** Null bij een rapportage. */
+    label: Label | null;
     geanalyseerdOp: string;
     kerncijfers: MaKerncijfers;
   } | null;
@@ -222,7 +268,7 @@ export interface MaVolger {
 export interface MaVersie {
   id: string;
   versie: number;
-  label: Label;
+  label: Label | null;
   geanalyseerdOp: string;
 }
 
@@ -230,11 +276,11 @@ export interface MaAnalyse {
   id: string;
   campagneId: string;
   versie: number;
-  label: Label;
+  label: Label | null;
   geanalyseerdOp: string;
   periodeVan: string | null;
   periodeTot: string | null;
-  briefing: Partial<MaCampagneInvoer>;
+  briefing: Partial<MaCampagneInvoer> & { opzet?: string; formulier?: Formulier };
   promptVersie: number | null;
   semantiekVersie: number | null;
   model: string | null;
@@ -244,11 +290,12 @@ export interface MaAnalyse {
 
 export interface MaPrompt {
   id: string | null;
+  opzetId: string;
   versie: number;
   inhoud: string;
   opgeslagenOp: string | null;
   opgeslagenDoorNaam: string | null;
-  /** Nog niets opgeslagen: de standaardtekst uit de code geldt. */
+  /** Nog niets opgeslagen: de standaardtekst uit de code geldt (bij een andere opzet dan Campagne analyse: leeg). */
   standaard: boolean;
 }
 

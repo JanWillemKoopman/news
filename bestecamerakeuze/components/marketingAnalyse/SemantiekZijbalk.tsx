@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Drawer from "@/components/Drawer";
-import { opgeslagenRegel } from "@/components/marketingAnalyse/HoofdpromptZijbalk";
+import { opgeslagenRegel } from "@/components/marketingAnalyse/AnalysePromptZijbalk";
 import { SEMANTIEK_BLOKKEN, type MaSemantiek, type SemantiekInhoud, type SemantiekSleutel } from "@/lib/marketingAnalyse/types";
 
 type Props = {

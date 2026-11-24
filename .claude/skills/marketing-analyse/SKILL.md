@@ -1,6 +1,6 @@
 ---
 name: marketing-analyse
-description: Maak een full-funnel Marketing analyse van een campagne van de groep Van den Udenhout en zet het resultaat in het campagnedashboard (Campagnes → Marketing analyse). Gebruik dit als de gebruiker vraagt om een (marketing) analyse, campagne-analyse of funnelanalyse van een campagne ("maak een marketing analyse van de Audi A2", "voer de analyseronde uit", "nieuwe versie van de A2-analyse"), of om een campagne voor Marketing analyse aan te maken.
+description: Maak een Marketing analyse (full-funnel campagne-analyse of een rapportage zoals de VDU- of PGZ-maand- en kwartaalrapportage) van de groep Van den Udenhout en zet het resultaat in het campagnedashboard (Campagnes → Marketing analyse). Gebruik dit als de gebruiker vraagt om een (marketing) analyse, campagne-analyse, funnelanalyse of rapportage ("maak een marketing analyse van de Audi A2", "maak de VDU maandrapportage", "voer de analyseronde uit", "nieuwe versie van de A2-analyse"), of om een campagne of rapportage voor Marketing analyse aan te maken.
 ---
 
 # Marketing analyse — een analyse maken
@@ -11,8 +11,16 @@ analyses; jij maakt ze. Het plan en alle besluiten van de eigenaar staan in
 ("MMM"), schema `dataloket`.
 
 ## Wie bepaalt wat
-- **Hoofdprompt** (`marketing_analyse_prompts`): hoe je analyseert en oordeelt, met een
-  hoofdstuk per label. Volg hem; hij gaat vóór deze skill waar het om inhoud gaat.
+- **Analyse opzet** (`marketing_analyse_opzetten`, kolom `opzet_id` op de campagne): de soort
+  analyse. **Campagne analyse** is de standaard (formulier `campagne`: volledige briefing,
+  funnel, kosten, label). Andere opzetten, zoals VDU/PGZ maand- en kwartaalrapportage, hebben
+  formulier `rapportage`: naam, bedrijf, een **open periode** (`periode_tekst`) en
+  omschrijving, geen label. De eigenaar kan zelf opzetten toevoegen.
+- **Prompt van de opzet** (`marketing_analyse_prompts`, per `opzet_id`): hoe je analyseert en
+  oordeelt; bij Campagne analyse met een hoofdstuk per label. Volg hem; hij gaat vóór deze
+  skill waar het om inhoud gaat. **Altijd geldend, welke opzet ook** (besluit van de eigenaar):
+  de harde dataregel hieronder, schrijven voor de marketeer, en een managementsamenvatting van
+  hoogstens vijf regels. Een opzetprompt hoeft die niet te herhalen.
 - **Semantic layer** (`marketing_analyse_semantiek`): per databron hoe je de data leest. In
   het blok Algemeen: welke accounts en GA4-properties bij welk bedrijf horen en welke bronnen
   per bedrijf van toepassing zijn. Volg hem altijd.
@@ -34,36 +42,52 @@ analyses; jij maakt ze. Het plan en alle besluiten van de eigenaar staan in
 `v_leads`. De tabellen van de tool zelf (`marketing_analyse_campagnes`, `_prompts`,
 `_semantiek`, `_versies`) lees en schrijf je wel; dat is geen analysedata.
 
-## Stap 0 — Welke campagne(s)
+## Stap 0 — Welke campagne(s) of rapportage(s)
 ```sql
-select id, naam, bedrijf, merk, modellen, startdatum, einddatum, doel, budget, omschrijving,
-       data_correctie, analyse_ronde, laatste_versie
-from dataloket.marketing_analyse_campagnes
-where naam ilike '%<deel van de naam>%';     -- "voer de analyseronde uit": where analyse_ronde
+select c.id, c.naam, c.bedrijf, c.merk, c.modellen, c.startdatum, c.einddatum, c.periode_tekst,
+       c.doel, c.budget, c.omschrijving, c.data_correctie, c.analyse_ronde, c.laatste_versie,
+       o.id as opzet_id, o.naam as opzet, o.formulier
+from dataloket.marketing_analyse_campagnes c
+join dataloket.marketing_analyse_opzetten o on o.id = c.opzet_id
+where c.naam ilike '%<deel van de naam>%';   -- "voer de analyseronde uit": where c.analyse_ronde
 ```
-- **Analyseronde**: alle campagnes met `analyse_ronde = true`, één voor één. Sla een campagne
+- **Analyseronde**: alle regels met `analyse_ronde = true`, één voor één. Sla een campagne
   over waarvan de startdatum nog niet bereikt is, en meld dat.
-- Bestaat de campagne niet en geeft de gebruiker de gegevens in de chat: maak hem aan met
-  `insert into dataloket.marketing_analyse_campagnes (naam, bedrijf, merk, modellen, startdatum, einddatum, doel, budget, omschrijving) values (…) returning id;`
-  Naam en bedrijf zijn verplicht; vraag ontbrekende essentiële gegevens eerst.
+- Bestaat hij niet en geeft de gebruiker de gegevens in de chat: maak hem aan met
+  `insert into dataloket.marketing_analyse_campagnes (opzet_id, naam, bedrijf, merk, modellen, startdatum, einddatum, periode_tekst, doel, budget, omschrijving) values (…) returning id;`
+  Naam en bedrijf zijn verplicht (een opzet met vast `bedrijf` bepaalt het bedrijf); bij een
+  rapportage ook `periode_tekst`, en blijven merk, modellen, data, doel en budget leeg. Zonder
+  `opzet_id` wordt het Campagne analyse. Vraag ontbrekende essentiële gegevens eerst.
 - Meerdere treffers: vraag welke.
 
 ## Stap 1 — Opdracht ophalen
 ```sql
-select id, versie, inhoud from dataloket.marketing_analyse_prompts order by versie desc limit 1;
+select id, versie, inhoud from dataloket.marketing_analyse_prompts
+where opzet_id = '<opzet_id>' order by versie desc limit 1;
 select id, versie, inhoud from dataloket.marketing_analyse_semantiek order by versie desc limit 1;
 select versie, label, geanalyseerd_op, kerncijfers, resultaat->'samenvatting' as samenvatting
 from dataloket.marketing_analyse_versies where campagne_id = '<id>' order by versie desc limit 1;
 ```
-Geen prompt of semantic layer opgeslagen? Dan gelden de standaardteksten in
-`bestecamerakeuze/lib/marketingAnalyse/standaardPrompt.ts` en `standaardSemantiek.ts`, en is
-het id null. Lees ze volledig.
+- **Geen prompt bij een andere opzet dan Campagne analyse: stop.** Maak geen analyse en meld:
+  "Er is nog geen prompt voor <opzet>. De eigenaar schrijft hem in het dashboard via Analyse
+  prompts." Val nooit terug op de campagneprompt (besluit van de eigenaar). In een analyseronde
+  sla je zo'n regel over en meld je hem.
+- Geen prompt bij Campagne analyse, of geen semantic layer opgeslagen? Dan gelden de
+  standaardteksten in `bestecamerakeuze/lib/marketingAnalyse/standaardPrompt.ts` en
+  `standaardSemantiek.ts`, en is het id null. Lees ze volledig.
 
 ## Stap 2 — Periode en label
-- **Periode**: van `startdatum` t/m `einddatum`; ligt de einddatum op of na vandaag (of is hij
-  leeg): t/m **gisteren**. Niets daarbuiten.
-- **Label** (bepaalt de functie bij het opslaan, jij past het hoofdstuk toe): einddatum vóór
-  vandaag = **Eindevaluatie**; anders **Tussentijdse evaluatie**.
+- **Campagne** — periode: van `startdatum` t/m `einddatum`; ligt de einddatum op of na vandaag
+  (of is hij leeg): t/m **gisteren**. Niets daarbuiten. Label (bepaalt de functie bij het
+  opslaan, jij past het hoofdstuk toe): einddatum vóór vandaag = **Eindevaluatie**; anders
+  **Tussentijdse evaluatie**.
+- **Rapportage** — de periode is vrije tekst (`periode_tekst`). Zet hem om in een begin- en
+  einddatum, gerekend vanaf vandaag (Nederlandse kalender): "Afgelopen 3 maanden" = de drie
+  volle kalendermaanden vóór de lopende maand, "Q4 2026" = 1 okt t/m 31 dec 2026, "november
+  2026" = de hele maand, "1 januari t/m 10 februari 2026" letterlijk. Nooit later dan
+  gisteren; een periode die nog loopt, kap je af op gisteren en dat meld je. Is de tekst niet
+  eenduidig, kies dan de redelijkste uitleg en zet die in `datakwaliteit`. Bewaar de datums als
+  `p_periode_van`/`p_periode_tot`. Rapportages hebben **geen label**.
 
 ## Stap 3 — Data ophalen
 - **Windsor**: filter altijd op periode en account; vraag per bron op. Een pull kan "pending"
@@ -76,6 +100,9 @@ het id null. Lees ze volledig.
     `sessions`/`engaged_sessions`/`user_engagement_duration`, en `landing_page` × `event_name`
     × `event_count` (landing page hoort bij de sessie: events in sessies die op de
     campagnepagina begonnen). E-mail en lead-events volgens de semantic layer.
+- **Rapportage**: alle accounts en properties van het bedrijf over de hele periode (geen
+  campagnefilter). Leads bij Van den Udenhout: alle leads van de periode, uitgesplitst naar
+  merk en kanaalgroep. PGZ en andere bedrijven: alleen GA4.
 - **Leads** (alleen Van den Udenhout):
   ```sql
   select count(*) totaal, count(*) filter (where kanaalgroep = 'Internet') internet, …
@@ -134,6 +161,9 @@ semantic layer nooit zelf aan.
   "doel": { "status": "achter", "toelichting": "…" } }
 ```
 `leadsSyntec` en `leadsSyntecInternet` zijn null bij elk ander bedrijf dan Van den Udenhout.
+Bij een **rapportage** toont het overzicht geen kerncijfers: geef `{}` mee (of vul in wat
+vanzelf meekomt), laat `doel` weg en gebruik `funnel` alleen als de prompt erom vraagt (`[]`
+mag).
 
 ## Stap 5 — Wegschrijven
 Schrijf de JSON eerst naar een bestand in je scratchpad en controleer hem (`node -e` met

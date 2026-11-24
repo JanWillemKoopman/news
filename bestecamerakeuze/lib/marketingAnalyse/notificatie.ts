@@ -74,7 +74,7 @@ export async function verstuurNotificaties(client: Client, analyseId: string): P
   const claim = await client.query<{
     campagne_id: string;
     versie: number;
-    label: Label;
+    label: Label | null;
     geanalyseerd_op: Date;
     resultaat: { samenvatting?: { kop?: unknown; regels?: unknown }; doel?: DoelOordeel | null } | null;
     samenvatting: string | null;

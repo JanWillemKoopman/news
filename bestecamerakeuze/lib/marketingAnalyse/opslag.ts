@@ -1,16 +1,19 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { leesSemantiek, normaliseerResultaat } from "./rekenen";
+import { leesSemantiek, normaliseerResultaat, sorteerOpzetten } from "./rekenen";
 import { STANDAARD_HOOFDPROMPT } from "./standaardPrompt";
 import { STANDAARD_SEMANTIEK } from "./standaardSemantiek";
-import type {
-  Label,
-  MaAnalyse,
-  MaCampagne,
-  MaCampagneInvoer,
-  MaKerncijfers,
-  MaOverzichtRegel,
-  MaVersie,
-  SemantiekInhoud,
+import {
+  STANDAARD_OPZET_ID,
+  type Formulier,
+  type Label,
+  type MaAnalyse,
+  type MaCampagne,
+  type MaCampagneInvoer,
+  type MaKerncijfers,
+  type MaOpzet,
+  type MaOverzichtRegel,
+  type MaVersie,
+  type SemantiekInhoud,
 } from "./types";
 
 /**
@@ -23,9 +26,10 @@ const CAMPAGNES = "marketing_analyse_campagnes";
 const VERSIES = "marketing_analyse_versies";
 const PROMPTS = "marketing_analyse_prompts";
 const SEMANTIEK = "marketing_analyse_semantiek";
+const OPZETTEN = "marketing_analyse_opzetten";
 
 const CAMPAGNE_KOLOMMEN =
-  "id, naam, bedrijf, merk, modellen, startdatum, einddatum, doel, budget, omschrijving, data_correctie, data_correctie_bijgewerkt_op, analyse_ronde, aangemaakt_op, bijgewerkt_op";
+  "id, opzet_id, naam, bedrijf, merk, modellen, startdatum, einddatum, periode_tekst, doel, budget, omschrijving, data_correctie, data_correctie_bijgewerkt_op, analyse_ronde, aangemaakt_op, bijgewerkt_op";
 
 function getalOfNull(x: unknown): number | null {
   if (x === null || x === undefined || x === "") return null;
@@ -40,12 +44,14 @@ function tekst(x: unknown): string | null {
 function naarCampagne(r: Record<string, unknown>): MaCampagne {
   return {
     id: r.id as string,
+    opzetId: (r.opzet_id as string) ?? STANDAARD_OPZET_ID,
     naam: r.naam as string,
     bedrijf: r.bedrijf as string,
     merk: tekst(r.merk),
     modellen: Array.isArray(r.modellen) ? (r.modellen as string[]) : [],
     startdatum: tekst(r.startdatum),
     einddatum: tekst(r.einddatum),
+    periodeTekst: tekst(r.periode_tekst),
     doel: tekst(r.doel),
     // numeric komt als string terug uit PostgREST.
     budget: getalOfNull(r.budget),
@@ -60,12 +66,14 @@ function naarCampagne(r: Record<string, unknown>): MaCampagne {
 
 function naarKolommen(i: MaCampagneInvoer) {
   return {
+    opzet_id: i.opzetId,
     naam: i.naam,
     bedrijf: i.bedrijf,
     merk: i.merk,
     modellen: i.modellen,
     startdatum: i.startdatum,
     einddatum: i.einddatum,
+    periode_tekst: i.periodeTekst,
     doel: i.doel,
     budget: i.budget,
     omschrijving: i.omschrijving,
@@ -104,7 +112,7 @@ export async function lijstOverzicht(supabase: SupabaseClient): Promise<MaOverzi
         ? {
             id: laatste.id as string,
             versie: laatste.versie as number,
-            label: laatste.label as Label,
+            label: (laatste.label as Label | null) ?? null,
             geanalyseerdOp: laatste.geanalyseerd_op as string,
             kerncijfers: (laatste.kerncijfers as MaKerncijfers) ?? {},
           }
@@ -186,7 +194,7 @@ export async function lijstVersies(supabase: SupabaseClient, campagneId: string)
   return (data ?? []).map((r) => ({
     id: r.id as string,
     versie: r.versie as number,
-    label: r.label as Label,
+    label: (r.label as Label | null) ?? null,
     geanalyseerdOp: r.geanalyseerd_op as string,
   }));
 }
@@ -211,7 +219,7 @@ export async function haalAnalyse(supabase: SupabaseClient, id: string): Promise
     id: data.id as string,
     campagneId: data.campagne_id as string,
     versie: data.versie as number,
-    label: data.label as Label,
+    label: (data.label as Label | null) ?? null,
     geanalyseerdOp: data.geanalyseerd_op as string,
     periodeVan: tekst(data.periode_van),
     periodeTot: tekst(data.periode_tot),
@@ -243,11 +251,16 @@ interface Opgeslagen<T> {
   standaard: boolean;
 }
 
-async function haalLaatste<T>(supabase: SupabaseClient, tabel: string, standaard: T, lees: (x: unknown) => T): Promise<Opgeslagen<T>> {
-  const { data, error } = await supabase
-    .schema(SCHEMA)
-    .from(tabel)
-    .select("id, versie, inhoud, opgeslagen_op, opgeslagen_door")
+async function haalLaatste<T>(
+  supabase: SupabaseClient,
+  tabel: string,
+  standaard: T,
+  lees: (x: unknown) => T,
+  opzetId?: string,
+): Promise<Opgeslagen<T>> {
+  let query = supabase.schema(SCHEMA).from(tabel).select("id, versie, inhoud, opgeslagen_op, opgeslagen_door");
+  if (opzetId) query = query.eq("opzet_id", opzetId);
+  const { data, error } = await query
     .order("versie", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -271,6 +284,7 @@ async function bewaarNieuweVersie<T>(
   huidig: () => Promise<Opgeslagen<T>>,
   gelijk: (a: T, b: T) => boolean,
   lees: (x: unknown) => T,
+  extra: Record<string, unknown> = {},
 ): Promise<Opgeslagen<T>> {
   for (let poging = 0; poging < 2; poging++) {
     const nu = await huidig();
@@ -278,7 +292,7 @@ async function bewaarNieuweVersie<T>(
     const { data, error } = await supabase
       .schema(SCHEMA)
       .from(tabel)
-      .insert({ versie: nu.versie + 1, inhoud, opgeslagen_door: gebruikerId })
+      .insert({ versie: nu.versie + 1, inhoud, opgeslagen_door: gebruikerId, ...extra })
       .select("id, versie, inhoud, opgeslagen_op, opgeslagen_door")
       .single();
     if (!error) {
@@ -299,12 +313,103 @@ async function bewaarNieuweVersie<T>(
 
 const leesTekst = (x: unknown) => (typeof x === "string" ? x : "");
 
-export function haalPrompt(supabase: SupabaseClient) {
-  return haalLaatste(supabase, PROMPTS, STANDAARD_HOOFDPROMPT, leesTekst);
+/**
+ * De laatste prompt van een opzet. Zonder opgeslagen versie: bij Campagne analyse de
+ * standaardtekst uit de code, bij elke andere opzet een lege prompt (dan weigert de skill).
+ */
+export function haalPrompt(supabase: SupabaseClient, opzetId: string = STANDAARD_OPZET_ID) {
+  return haalLaatste(supabase, PROMPTS, opzetId === STANDAARD_OPZET_ID ? STANDAARD_HOOFDPROMPT : "", leesTekst, opzetId);
 }
 
-export function bewaarPrompt(supabase: SupabaseClient, inhoud: string, gebruikerId: string) {
-  return bewaarNieuweVersie(supabase, PROMPTS, inhoud, gebruikerId, () => haalPrompt(supabase), (a, b) => a === b, leesTekst);
+export function bewaarPrompt(supabase: SupabaseClient, opzetId: string, inhoud: string, gebruikerId: string) {
+  return bewaarNieuweVersie(
+    supabase,
+    PROMPTS,
+    inhoud,
+    gebruikerId,
+    () => haalPrompt(supabase, opzetId),
+    (a, b) => a === b,
+    leesTekst,
+    { opzet_id: opzetId },
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Analyse opzetten
+// ---------------------------------------------------------------------------
+
+const OPZET_KOLOMMEN = "id, naam, formulier, bedrijf, volgorde, actief, standaard";
+
+function naarOpzet(r: Record<string, unknown>, metPrompt: Set<string>, aantallen: Map<string, number>): MaOpzet {
+  const id = r.id as string;
+  return {
+    id,
+    naam: r.naam as string,
+    formulier: r.formulier as Formulier,
+    bedrijf: tekst(r.bedrijf),
+    volgorde: Number(r.volgorde ?? 100),
+    actief: Boolean(r.actief),
+    standaard: Boolean(r.standaard),
+    heeftPrompt: Boolean(r.standaard) || metPrompt.has(id),
+    aantalCampagnes: aantallen.get(id) ?? 0,
+  };
+}
+
+/** Alle opzetten, met per opzet of er een prompt is en hoeveel analyses hem gebruiken. */
+export async function lijstOpzetten(supabase: SupabaseClient): Promise<MaOpzet[]> {
+  const [opzetten, prompts, campagnes] = await Promise.all([
+    supabase.schema(SCHEMA).from(OPZETTEN).select(OPZET_KOLOMMEN),
+    supabase.schema(SCHEMA).from(PROMPTS).select("opzet_id"),
+    supabase.schema(SCHEMA).from(CAMPAGNES).select("opzet_id"),
+  ]);
+  if (opzetten.error) throw new Error(opzetten.error.message);
+  if (prompts.error) throw new Error(prompts.error.message);
+  if (campagnes.error) throw new Error(campagnes.error.message);
+  const metPrompt = new Set((prompts.data ?? []).map((p) => p.opzet_id as string));
+  const aantallen = new Map<string, number>();
+  for (const c of campagnes.data ?? []) aantallen.set(c.opzet_id as string, (aantallen.get(c.opzet_id as string) ?? 0) + 1);
+  return sorteerOpzetten((opzetten.data ?? []).map((r) => naarOpzet(r, metPrompt, aantallen)));
+}
+
+export async function haalOpzet(supabase: SupabaseClient, id: string): Promise<MaOpzet | null> {
+  const lijst = await lijstOpzetten(supabase);
+  return lijst.find((o) => o.id === id) ?? null;
+}
+
+export interface OpzetVelden {
+  naam: string;
+  formulier: Formulier;
+  bedrijf: string | null;
+  actief: boolean;
+}
+
+function opzetFout(error: { code?: string; message: string }): Error {
+  return new Error(error.code === "23505" ? "Er bestaat al een opzet met die naam." : error.message);
+}
+
+export async function maakOpzet(supabase: SupabaseClient, velden: OpzetVelden, gebruikerId: string): Promise<string> {
+  const huidige = await lijstOpzetten(supabase);
+  const volgorde = Math.max(0, ...huidige.map((o) => o.volgorde)) + 10;
+  const { data, error } = await supabase
+    .schema(SCHEMA)
+    .from(OPZETTEN)
+    .insert({ ...velden, volgorde, aangemaakt_door: gebruikerId })
+    .select("id")
+    .single();
+  if (error) throw opzetFout(error);
+  return data.id as string;
+}
+
+export async function werkOpzetBij(supabase: SupabaseClient, id: string, velden: OpzetVelden): Promise<boolean> {
+  const { data, error } = await supabase.schema(SCHEMA).from(OPZETTEN).update(velden).eq("id", id).select("id");
+  if (error) throw opzetFout(error);
+  return (data ?? []).length > 0;
+}
+
+export async function verwijderOpzet(supabase: SupabaseClient, id: string): Promise<boolean> {
+  const { data, error } = await supabase.schema(SCHEMA).from(OPZETTEN).delete().eq("id", id).select("id");
+  if (error) throw new Error(error.message);
+  return (data ?? []).length > 0;
 }
 
 const leesSem = (x: unknown) => leesSemantiek(x, STANDAARD_SEMANTIEK);

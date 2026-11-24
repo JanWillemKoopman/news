@@ -29,7 +29,8 @@ export interface MailInvoer {
   campagneNaam: string;
   bedrijf: string;
   versie: number;
-  label: Label;
+  /** Null bij een rapportage. */
+  label: Label | null;
   geanalyseerdOp: string;
   kop: string;
   regels: string[];
@@ -53,14 +54,15 @@ function datum(op: string): string {
 
 /** De mail: kop, de vijf regels, het doeloordeel, een knop naar de analyse en een afmeldlink. */
 export function bouwMail(i: MailInvoer): Mail {
-  const label = LABEL_NAAM[i.label] ?? i.label;
+  const label = i.label ? (LABEL_NAAM[i.label] ?? i.label) : null;
+  const versieRegel = [`Versie ${i.versie}`, label, datum(i.geanalyseerdOp)].filter(Boolean).join(" · ");
   const regels = i.regels.filter((r) => typeof r === "string" && r.trim()).slice(0, 5);
   const doel = i.doel ? `${DOEL_STATUS_NAAM[i.doel.status] ?? i.doel.status}${i.doel.toelichting ? ` — ${i.doel.toelichting}` : ""}` : null;
-  const onderwerp = `Nieuwe marketing analyse: ${i.campagneNaam} (v${i.versie}, ${label.toLowerCase()})`;
+  const onderwerp = `Nieuwe marketing analyse: ${i.campagneNaam} (v${i.versie}${label ? `, ${label.toLowerCase()}` : ""})`;
 
   const tekst = [
     `Er staat een nieuwe analyse klaar van ${i.campagneNaam} (${i.bedrijf}).`,
-    `Versie ${i.versie} · ${label} · ${datum(i.geanalyseerdOp)}`,
+    versieRegel,
     "",
     i.kop,
     "",
@@ -79,7 +81,7 @@ export function bouwMail(i: MailInvoer): Mail {
 <tr><td style="padding:24px 28px;">
 <p style="margin:0 0 4px 0;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#6b6f76;">Marketing analyse · ${ontsnap(i.bedrijf)}</p>
 <h1 style="margin:0 0 4px 0;font-size:20px;">${ontsnap(i.campagneNaam)}</h1>
-<p style="margin:0 0 20px 0;font-size:13px;color:#6b6f76;">Versie ${i.versie} · ${ontsnap(label)} · ${ontsnap(datum(i.geanalyseerdOp))}</p>
+<p style="margin:0 0 20px 0;font-size:13px;color:#6b6f76;">${ontsnap(versieRegel)}</p>
 <p style="margin:0 0 12px 0;font-size:16px;font-weight:bold;line-height:1.4;">${ontsnap(i.kop)}</p>
 ${lijst ? `<ul style="margin:0 0 16px 0;padding-left:20px;font-size:14px;line-height:1.5;">${lijst}</ul>` : ""}
 ${doel ? `<p style="margin:0 0 20px 0;font-size:14px;line-height:1.5;"><span style="color:#6b6f76;">Doel:</span> ${ontsnap(doel)}</p>` : ""}

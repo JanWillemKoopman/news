@@ -42,6 +42,12 @@ test("de mail heeft onderwerp, regels, doel en links", () => {
   assert.match(m.html, /25 november 2026/);
 });
 
+test("rapportage: geen label in onderwerp en tekst", () => {
+  const m = bouwMail({ ...invoer, label: null, campagneNaam: "VDU maandrapportage november 2026" });
+  assert.equal(m.onderwerp, "Nieuwe marketing analyse: VDU maandrapportage november 2026 (v2)");
+  assert.match(m.tekst, /Versie 2 · 25 november 2026/);
+});
+
 test("zonder doel geen doelregel", () => {
   const m = bouwMail({ ...invoer, doel: null, label: "eind" });
   assert.doesNotMatch(m.tekst, /Doel:/);

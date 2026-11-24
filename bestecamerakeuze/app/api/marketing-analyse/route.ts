@@ -4,6 +4,8 @@ import { isBeheerder } from "@/lib/gebruikersbeheer";
 import { leesCampagneInvoer } from "@/lib/marketingAnalyse/rekenen";
 import {
   haalCampagne,
+  haalOpzet,
+  lijstOpzetten,
   lijstOverzicht,
   maakCampagne,
   verwijderCampagne,
@@ -12,15 +14,18 @@ import {
   zetDataCorrectie,
 } from "@/lib/marketingAnalyse/opslag";
 import { createClient } from "@/lib/supabase/server";
+import { STANDAARD_OPZET_ID } from "@/lib/marketingAnalyse/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
 /**
  * Marketing analyse — de campagnes (briefings).
  *
- * GET                               → alle campagnes met de kerncijfers van hun laatste analyse
- * POST { naam, bedrijf, … }         → nieuwe campagne (iedereen die ingelogd is)
- * PATCH ?id=… { naam, bedrijf, … }  → briefing bijwerken
+ * GET                               → alle campagnes met de kerncijfers van hun laatste analyse,
+ *                                     plus de analyse opzetten
+ * POST { opzetId, naam, bedrijf, … }→ nieuwe campagne of rapportage (iedereen die ingelogd is)
+ * PATCH ?id=… { opzetId, naam, … }  → briefing bijwerken (de opzet mag veranderen)
  * PATCH ?id=… { analyseRonde }      → schakelaar Analyse ronde
  * PATCH ?id=… { dataCorrectie }     → alleen de Data correctie (vanaf de analysepagina)
  * DELETE ?id=…                      → campagne met al zijn analyses weg (alleen de eigenaar)
@@ -34,12 +39,21 @@ function fout(err: unknown, status = 500) {
   return NextResponse.json({ fout: err instanceof Error ? err.message : String(err) }, { status });
 }
 
+/** De briefing lezen tegen de gekozen opzet (zonder opzet: Campagne analyse). */
+async function leesBriefing(supabase: SupabaseClient, body: unknown) {
+  const gevraagd = (body as { opzetId?: unknown } | null)?.opzetId;
+  const opzet = await haalOpzet(supabase, typeof gevraagd === "string" && gevraagd ? gevraagd : STANDAARD_OPZET_ID);
+  if (!opzet) return { ok: false as const, fout: "Onbekende analyse opzet." };
+  return leesCampagneInvoer(body, opzet);
+}
+
 export async function GET() {
   const gebruiker = await getGebruiker();
   if (!gebruiker) return NextResponse.json({ fout: "Niet ingelogd." }, { status: 401 });
   try {
-    const campagnes = await lijstOverzicht(await createClient());
-    return NextResponse.json({ campagnes, isEigenaar: isBeheerder(gebruiker.email) });
+    const supabase = await createClient();
+    const [campagnes, opzetten] = await Promise.all([lijstOverzicht(supabase), lijstOpzetten(supabase)]);
+    return NextResponse.json({ campagnes, opzetten, isEigenaar: isBeheerder(gebruiker.email) });
   } catch (err) {
     return fout(err);
   }
@@ -48,10 +62,12 @@ export async function GET() {
 export async function POST(request: Request) {
   const gebruiker = await getGebruiker();
   if (!gebruiker) return NextResponse.json({ fout: "Niet ingelogd." }, { status: 401 });
-  const uitkomst = leesCampagneInvoer(await request.json().catch(() => null));
-  if (!uitkomst.ok) return NextResponse.json({ fout: uitkomst.fout }, { status: 400 });
+  const body = await request.json().catch(() => null);
   try {
-    return NextResponse.json({ campagne: await maakCampagne(await createClient(), uitkomst.invoer, gebruiker.id) });
+    const supabase = await createClient();
+    const uitkomst = await leesBriefing(supabase, body);
+    if (!uitkomst.ok) return NextResponse.json({ fout: uitkomst.fout }, { status: 400 });
+    return NextResponse.json({ campagne: await maakCampagne(supabase, uitkomst.invoer, gebruiker.id) });
   } catch (err) {
     return fout(err);
   }
@@ -73,7 +89,7 @@ export async function PATCH(request: Request) {
       const tekst = typeof body.dataCorrectie === "string" ? body.dataCorrectie.trim().slice(0, MAX_CORRECTIE) : "";
       campagne = await zetDataCorrectie(supabase, id, tekst || null);
     } else {
-      const uitkomst = leesCampagneInvoer(body);
+      const uitkomst = await leesBriefing(supabase, body);
       if (!uitkomst.ok) return NextResponse.json({ fout: uitkomst.fout }, { status: 400 });
       const vorige = await haalCampagne(supabase, id);
       if (!vorige) return NextResponse.json({ fout: "Campagne niet gevonden." }, { status: 404 });

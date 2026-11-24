@@ -2,11 +2,14 @@
 
 import { useState } from "react";
 import Drawer from "@/components/Drawer";
-import type { MaCampagne } from "@/lib/marketingAnalyse/types";
+import { rapportageNaam } from "@/lib/marketingAnalyse/rekenen";
+import { STANDAARD_OPZET_ID, type MaCampagne, type MaOpzet } from "@/lib/marketingAnalyse/types";
 
 type Props = {
   /** Zonder campagne: een nieuwe aanmaken. */
   campagne: MaCampagne | null;
+  /** De analyse opzetten voor het uitklapmenu bovenaan. */
+  opzetten: MaOpzet[];
   /** De keuzelijst Bedrijf, uit het blok Algemeen van de semantic layer. */
   bedrijven: string[];
   isEigenaar: boolean;
@@ -16,12 +19,14 @@ type Props = {
 };
 
 type Velden = {
+  opzetId: string;
   naam: string;
   bedrijf: string;
   merk: string;
   modellen: string;
   startdatum: string;
   einddatum: string;
+  periodeTekst: string;
   budget: string;
   doel: string;
   omschrijving: string;
@@ -30,12 +35,14 @@ type Velden = {
 
 function beginwaarden(c: MaCampagne | null): Velden {
   return {
+    opzetId: c?.opzetId ?? STANDAARD_OPZET_ID,
     naam: c?.naam ?? "",
     bedrijf: c?.bedrijf ?? "",
     merk: c?.merk ?? "",
     modellen: c?.modellen.join(", ") ?? "",
     startdatum: c?.startdatum ?? "",
     einddatum: c?.einddatum ?? "",
+    periodeTekst: c?.periodeTekst ?? "",
     budget: c?.budget != null ? String(c.budget).replace(".", ",") : "",
     doel: c?.doel ?? "",
     omschrijving: c?.omschrijving ?? "",
@@ -64,12 +71,21 @@ function Veld({ label, verplicht, hint, children }: { label: string; verplicht?:
 }
 
 /**
- * De briefing van een campagne, in de zijbalk: aanmaken én bewerken. Claude Code haalt hem
- * op bij een analyse; elke analyse legt de briefing (en de Data correctie) van dat moment
- * vast, dus een latere wijziging verandert een oude versie niet.
+ * De briefing van een analyse, in de zijbalk: aanmaken én bewerken. Bovenaan kies je de
+ * analyse opzet; die bepaalt het formulier eronder (campagne: de volledige briefing;
+ * rapportage: naam, open periode en omschrijving) en of het bedrijf vastligt. Claude Code
+ * haalt de briefing op bij een analyse; elke analyse legt hem (en de Data correctie) van dat
+ * moment vast, dus een latere wijziging verandert een oude versie niet.
  */
-export default function CampagneZijbalk({ campagne, bedrijven, isEigenaar, onClose, onOpgeslagen, onVerwijderd }: Props) {
+export default function CampagneZijbalk({ campagne, opzetten, bedrijven, isEigenaar, onClose, onOpgeslagen, onVerwijderd }: Props) {
   const [v, setV] = useState<Velden>(() => beginwaarden(campagne));
+  // De naam van een rapportage loopt mee met opzet en periode, tot iemand hem zelf aanpast.
+  const [naamAangepast, setNaamAangepast] = useState(Boolean(campagne));
+  const opzet = opzetten.find((o) => o.id === v.opzetId) ?? null;
+  const rapportage = opzet?.formulier === "rapportage";
+  // Uitgezette opzetten staan alleen in de lijst als deze analyse er al een heeft.
+  const opzetOpties = opzetten.filter((o) => o.actief || o.id === v.opzetId);
+  const vastBedrijf = opzet?.bedrijf ?? null;
   const [bezig, setBezig] = useState(false);
   const [fout, setFout] = useState<string | null>(null);
   const [bevestigWeg, setBevestigWeg] = useState(false);
@@ -78,6 +94,16 @@ export default function CampagneZijbalk({ campagne, bedrijven, isEigenaar, onClo
 
   const zet = (veld: keyof Velden) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setV((huidig) => ({ ...huidig, [veld]: e.target.value }));
+
+  /** Opzet of periode gewijzigd: bij een rapportage de voorgestelde naam bijwerken. */
+  function zetMetNaam(wijziging: Partial<Velden>) {
+    setV((huidig) => {
+      const nieuw = { ...huidig, ...wijziging };
+      const o = opzetten.find((x) => x.id === nieuw.opzetId);
+      if (!naamAangepast && o?.formulier === "rapportage") nieuw.naam = rapportageNaam(o.naam, nieuw.periodeTekst);
+      return nieuw;
+    });
+  }
 
   async function verstuur(url: string, method: string, body?: unknown) {
     setBezig(true);
@@ -102,8 +128,9 @@ export default function CampagneZijbalk({ campagne, bedrijven, isEigenaar, onClo
   async function opslaan(e: React.FormEvent) {
     e.preventDefault();
     if (bezig) return;
-    if (!v.naam.trim()) return setFout("Geef de campagne een naam.");
-    if (!v.bedrijf.trim()) return setFout("Kies voor welk bedrijf de campagne is.");
+    if (!v.naam.trim()) return setFout("Geef de analyse een naam.");
+    if (!vastBedrijf && !v.bedrijf.trim()) return setFout("Kies voor welk bedrijf de analyse is.");
+    if (rapportage && !v.periodeTekst.trim()) return setFout("Vul de periode in.");
     const data = campagne
       ? await verstuur(`/api/marketing-analyse?id=${encodeURIComponent(campagne.id)}`, "PATCH", v)
       : await verstuur("/api/marketing-analyse", "POST", v);
@@ -124,21 +151,67 @@ export default function CampagneZijbalk({ campagne, bedrijven, isEigenaar, onClo
   }
 
   return (
-    <Drawer title={campagne ? `Briefing — ${campagne.naam}` : "Nieuwe campagne"} onClose={onClose}>
+    <Drawer title={campagne ? `Briefing — ${campagne.naam}` : "Nieuwe analyse"} onClose={onClose}>
       <form onSubmit={opslaan} className="flex flex-col gap-4">
-        <Veld label="Naam van de campagne" verplicht hint="De interne naam, bijv. “Audi A2”.">
-          <input className={INVOER} value={v.naam} onChange={zet("naam")} disabled={bezig} autoFocus={!campagne} />
-        </Veld>
-        <Veld label="Bedrijf" verplicht hint="Voor welk van onze bedrijven. Bepaalt in welke accounts en websites de analyse kijkt.">
-          <select className={INVOER} value={v.bedrijf} onChange={zet("bedrijf")} disabled={bezig}>
-            <option value="">Kies een bedrijf…</option>
-            {opties.map((b) => (
-              <option key={b} value={b}>
-                {b}
+        <Veld label="Analyse opzet" hint="Welke soort analyse. Bepaalt de prompt en het formulier hieronder.">
+          <select className={INVOER} value={v.opzetId} onChange={(e) => zetMetNaam({ opzetId: e.target.value })} disabled={bezig || opzetten.length === 0}>
+            {opzetOpties.length === 0 && <option value={v.opzetId}>Campagne analyse</option>}
+            {opzetOpties.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.naam}
+                {!o.heeftPrompt ? " (nog geen prompt)" : ""}
+                {!o.actief ? " (uitgezet)" : ""}
               </option>
             ))}
           </select>
         </Veld>
+        {opzet && !opzet.heeftPrompt && (
+          <p className="-mt-2 text-meta text-negative">
+            Voor deze opzet is nog geen prompt. Aanmaken kan, maar Claude weigert de analyse tot de prompt er staat.
+          </p>
+        )}
+        <Veld
+          label={rapportage ? "Naam" : "Naam van de campagne"}
+          verplicht
+          hint={rapportage ? "Vult zich vanzelf met opzet en periode; pas hem gerust aan." : "De interne naam, bijv. “Audi A2”."}
+        >
+          <input
+            className={INVOER}
+            value={v.naam}
+            onChange={(e) => {
+              setNaamAangepast(true);
+              zet("naam")(e);
+            }}
+            disabled={bezig}
+            autoFocus={!campagne}
+          />
+        </Veld>
+        {vastBedrijf ? (
+          <Veld label="Bedrijf" hint="Ligt vast voor deze opzet.">
+            <p className="rounded-control border border-line-soft bg-surface-tint px-3 py-2 text-sm text-ink">{vastBedrijf}</p>
+          </Veld>
+        ) : (
+          <Veld label="Bedrijf" verplicht hint="Voor welk van onze bedrijven. Bepaalt in welke accounts en websites de analyse kijkt.">
+            <select className={INVOER} value={v.bedrijf} onChange={zet("bedrijf")} disabled={bezig}>
+              <option value="">Kies een bedrijf…</option>
+              {opties.map((b) => (
+                <option key={b} value={b}>
+                  {b}
+                </option>
+              ))}
+            </select>
+          </Veld>
+        )}
+        {rapportage ? (
+          <Veld
+            label="Periode"
+            verplicht
+            hint="In je eigen woorden, bijv. “Afgelopen 3 maanden”, “Q4 2026” of “1 januari t/m 10 februari 2026”. Claude zet het bij elke analyse om in datums; een relatieve periode schuift dus mee."
+          >
+            <input className={INVOER} value={v.periodeTekst} onChange={(e) => zetMetNaam({ periodeTekst: e.target.value })} disabled={bezig} />
+          </Veld>
+        ) : (
+        <>
         <div className="grid grid-cols-2 gap-3">
           <Veld label="Merk" hint="Het automerk.">
             <input className={INVOER} value={v.merk} onChange={zet("merk")} disabled={bezig} placeholder="Audi" />
@@ -159,13 +232,19 @@ export default function CampagneZijbalk({ campagne, bedrijven, isEigenaar, onClo
         <Veld label="Doel van de campagne" hint="In je eigen woorden, bijv. “20 proefritaanvragen”. De analyse beoordeelt hoe het ervoor staat.">
           <textarea className={`${INVOER} min-h-16 resize-y`} value={v.doel} onChange={zet("doel")} disabled={bezig} />
         </Veld>
-        <Veld label="Omschrijving">
+        </>
+        )}
+        <Veld label={rapportage ? "Omschrijving en aandachtspunten" : "Omschrijving"}>
           <textarea
             className={`${INVOER} min-h-28 resize-y`}
             value={v.omschrijving}
             onChange={zet("omschrijving")}
             disabled={bezig}
-            placeholder="Waar gaat de campagne over, voor wie, welke kanalen, bijzonderheden (events, acties)."
+            placeholder={
+              rapportage
+                ? "Waar moet de rapportage extra op letten? Bijv. een actie of event in de periode, een kanaal dat nieuw is."
+                : "Waar gaat de campagne over, voor wie, welke kanalen, bijzonderheden (events, acties)."
+            }
           />
         </Veld>
         <Veld
@@ -191,7 +270,7 @@ export default function CampagneZijbalk({ campagne, bedrijven, isEigenaar, onClo
             disabled={bezig}
             className="rounded-button bg-primary px-4 py-2 text-sm font-medium text-on-primary transition-colors hover:bg-primary-dark disabled:cursor-wait disabled:opacity-60"
           >
-            {bezig ? "Opslaan…" : campagne ? "Opslaan" : "Campagne aanmaken"}
+            {bezig ? "Opslaan…" : campagne ? "Opslaan" : "Aanmaken"}
           </button>
         </div>
       </form>
@@ -212,7 +291,7 @@ export default function CampagneZijbalk({ campagne, bedrijven, isEigenaar, onClo
             disabled={bezig}
             className="self-start text-sm text-negative underline-offset-2 hover:underline disabled:opacity-60"
           >
-            {bevestigWeg ? "Zeker weten? Ook alle analyses van deze campagne gaan weg." : "Campagne verwijderen"}
+            {bevestigWeg ? "Zeker weten? Ook alle versies van deze analyse gaan weg." : "Verwijderen"}
           </button>
         )}
       </div>

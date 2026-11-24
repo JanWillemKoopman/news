@@ -6,6 +6,7 @@ import {
   SEMANTIEK_BLOKKEN,
   type Eenheid,
   type FunnelStap,
+  type Formulier,
   type MaCampagneInvoer,
   type MaResultaat,
   type SemantiekInhoud,
@@ -64,13 +65,48 @@ export function leesModellen(waarde: unknown): string[] {
 
 export type InvoerUitkomst = { ok: true; invoer: MaCampagneInvoer } | { ok: false; fout: string };
 
-/** De invoer uit het briefingformulier, gecontroleerd. Naam en bedrijf zijn verplicht. */
-export function leesCampagneInvoer(body: unknown): InvoerUitkomst {
+/** Wat de invoercontrole van de gekozen opzet moet weten. */
+export interface OpzetVoorInvoer {
+  id: string;
+  formulier: Formulier;
+  bedrijf: string | null;
+}
+
+/**
+ * De invoer uit het briefingformulier, gecontroleerd tegen de gekozen opzet. Naam en bedrijf
+ * zijn altijd verplicht; een vast bedrijf van de opzet gaat vóór wat er is ingevuld. Bij een
+ * rapportage is de periode verplicht en vallen merk, modellen, looptijd, budget en doel weg.
+ */
+export function leesCampagneInvoer(body: unknown, opzet: OpzetVoorInvoer): InvoerUitkomst {
   const b = (body ?? {}) as Record<string, unknown>;
   const naam = tekstOfNull(b.naam, MAX_KORT);
-  if (!naam) return { ok: false, fout: "Geef de campagne een naam." };
-  const bedrijf = tekstOfNull(b.bedrijf, MAX_KORT);
-  if (!bedrijf) return { ok: false, fout: "Kies voor welk bedrijf de campagne is." };
+  if (!naam) return { ok: false, fout: "Geef de analyse een naam." };
+  const bedrijf = opzet.bedrijf ?? tekstOfNull(b.bedrijf, MAX_KORT);
+  if (!bedrijf) return { ok: false, fout: "Kies voor welk bedrijf de analyse is." };
+  const omschrijving = tekstOfNull(b.omschrijving, MAX_LANG);
+  const dataCorrectie = tekstOfNull(b.dataCorrectie, MAX_LANG);
+
+  if (opzet.formulier === "rapportage") {
+    const periodeTekst = tekstOfNull(b.periodeTekst, MAX_KORT);
+    if (!periodeTekst) return { ok: false, fout: "Vul de periode in, bijvoorbeeld “Afgelopen 3 maanden” of “1 januari t/m 10 februari 2026”." };
+    return {
+      ok: true,
+      invoer: {
+        opzetId: opzet.id,
+        naam,
+        bedrijf,
+        merk: null,
+        modellen: [],
+        startdatum: null,
+        einddatum: null,
+        periodeTekst,
+        doel: null,
+        budget: null,
+        omschrijving,
+        dataCorrectie,
+      },
+    };
+  }
 
   const startdatum = datumOfNull(b.startdatum);
   const einddatum = datumOfNull(b.einddatum);
@@ -86,17 +122,48 @@ export function leesCampagneInvoer(body: unknown): InvoerUitkomst {
   return {
     ok: true,
     invoer: {
+      opzetId: opzet.id,
       naam,
       bedrijf,
       merk: tekstOfNull(b.merk, MAX_KORT),
       modellen: leesModellen(b.modellen),
       startdatum,
       einddatum,
+      periodeTekst: null,
       doel: tekstOfNull(b.doel, MAX_LANG),
       budget,
-      omschrijving: tekstOfNull(b.omschrijving, MAX_LANG),
-      dataCorrectie: tekstOfNull(b.dataCorrectie, MAX_LANG),
+      omschrijving,
+      dataCorrectie,
     },
+  };
+}
+
+/** De voorgestelde naam van een rapportage: "VDU maandrapportage november 2026". */
+export function rapportageNaam(opzetNaam: string, periodeTekst: string): string {
+  const periode = periodeTekst.trim();
+  return periode ? `${opzetNaam} ${periode}` : opzetNaam;
+}
+
+/** Opzetten in de volgorde van het menu: actief eerst, dan op volgorde en naam. */
+export function sorteerOpzetten<T extends { volgorde: number; naam: string; actief: boolean }>(opzetten: readonly T[]): T[] {
+  return [...opzetten].sort(
+    (a, b) => Number(b.actief) - Number(a.actief) || a.volgorde - b.volgorde || a.naam.localeCompare(b.naam, "nl"),
+  );
+}
+
+export type OpzetInvoerUitkomst =
+  | { ok: true; invoer: { naam: string; formulier: Formulier; bedrijf: string | null; actief: boolean } }
+  | { ok: false; fout: string };
+
+/** Een nieuwe of gewijzigde opzet uit het dashboard, gecontroleerd. */
+export function leesOpzetInvoer(body: unknown): OpzetInvoerUitkomst {
+  const b = (body ?? {}) as Record<string, unknown>;
+  const naam = tekstOfNull(b.naam, 80);
+  if (!naam) return { ok: false, fout: "Geef de opzet een naam." };
+  if (b.formulier !== "campagne" && b.formulier !== "rapportage") return { ok: false, fout: "Kies een formulier." };
+  return {
+    ok: true,
+    invoer: { naam, formulier: b.formulier, bedrijf: tekstOfNull(b.bedrijf, MAX_KORT), actief: b.actief !== false },
   };
 }
 
