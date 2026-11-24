@@ -1686,6 +1686,19 @@ lees dat eerst voordat je hier iets verandert.
   (wat er bij een vorige analyse niet klopte). Hoofdprompt en semantic layer: lezen iedereen,
   opslaan alleen de eigenaar (`isBeheerder`), elke opslag een nieuwe versie. Data correctie:
   iedereen.
+- **Mail bij een nieuwe analyse** (migratie 0043, `lib/marketingAnalyse/notificatie.ts` en
+  `mail.ts`). Op de analysepagina kan iedereen een campagne volgen (eigen adres met één klik)
+  of een ander adres toevoegen (`marketing_analyse_volgers`, route `volgers`; weghalen: de
+  volger zelf, wie het toevoegde, of de eigenaar). Een insert in `marketing_analyse_versies`
+  laat een trigger via pg_net `POST /api/marketing-analyse/notificatie` doen; die claimt de
+  versie (`notificatie_verstuurd_op`) en mailt elke volger via het **gedeelde Gmail-account**
+  (`smtp.gmail.com`, nodemailer). Env in Vercel: `GMAIL_GEBRUIKER` en `GMAIL_APP_WACHTWOORD`
+  (een app-wachtwoord, nooit in code of chat); optioneel `DASHBOARD_URL` voor de links. De
+  route en `/api/marketing-analyse/afmelden` (link in de mail, GET toont een knop, POST meldt
+  af) staan buiten de inlog in `lib/toegang.ts`; de notificatieroute verstuurt alleen een
+  bestaande, nog niet verstuurde versie van hoogstens zeven dagen oud. Mislukt het, dan blijft
+  de fout in `notificatie_fout` staan en probeert `/api/sync` het 's nachts opnieuw. De
+  trigger-URL staat vast in de migratie (productie, `news-ten-chi.vercel.app`).
 - **Versies en label.** `marketing_analyse_bewaar` kent het versienummer toe uit
   `laatste_versie` op de campagne (een verwijderde versie wordt nooit hergebruikt), bepaalt het
   label (**Eindevaluatie** als de einddatum vóór vandaag ligt, anders **Tussentijdse

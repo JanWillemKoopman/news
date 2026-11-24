@@ -5,6 +5,7 @@ import { bouwBlokInsert, inBlokken, rijenAlsRecords, teBewarenAfwijkingen } from
 import { controleerVerbindingssnaar } from "@/lib/verbindingssnaar";
 import { analyseLeadRecords } from "@/lib/sync/analyseLeads";
 import { vandaagNL } from "@/lib/marketingAnalyse/rekenen";
+import { verstuurOpenstaande } from "@/lib/marketingAnalyse/notificatie";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -213,7 +214,12 @@ export async function POST(request: Request) {
       );
     }
     if (leadRijen) resultaten.push(await syncAnalyseLeads(client, leadRijen));
-    return NextResponse.json({ status: "klaar", resultaten });
+    // Vangnet voor de mails bij een nieuwe Marketing analyse: wat de trigger niet verstuurd
+    // kreeg, gaat nu alsnog. Een fout hier mag de sync niet laten mislukken.
+    const notificaties = await verstuurOpenstaande(client).catch((err) => ({
+      fout: err instanceof Error ? err.message : String(err),
+    }));
+    return NextResponse.json({ status: "klaar", resultaten, notificaties });
   } catch (err) {
     const bericht = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ fout: bericht }, { status: 500 });

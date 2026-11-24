@@ -156,8 +156,14 @@ De functie kent het versienummer toe (nooit hergebruikt), bepaalt het label, leg
 en de Data correctie van dat moment vast, en zet de Analyse ronde uit na een eindevaluatie. Te
 groot (> ~2 MB)? Maak het resultaat compacter, niet in stukken.
 
+Na het bewaren mailt het dashboard vanzelf de volgers van de campagne (trigger in migratie
+0043, via het gedeelde Gmail-account). Daar hoef je niets voor te doen; de mail bevat de kop,
+de vijf regels en het doeloordeel, dus schrijf die zo dat ze zonder de rest te begrijpen zijn.
+
 ## Stap 6 — Terugmelden
 Per campagne: versie, label, periode, de kop en de vijf regels, het doeloordeel, wat er met de
 Data correctie is gedaan, eventuele voorstellen voor de semantic layer en kanttekeningen. De
 analyse staat in het dashboard onder Campagnes → Marketing analyse
-(`?tab=marketing-analyse&analyse=<campagne-id>`).
+(`?tab=marketing-analyse&analyse=<campagne-id>`). Meld ook of de volgers gemaild zijn: kijk
+een halve minuut na het bewaren naar `notificatie_verstuurd_op`, `notificatie_aantal` en
+`notificatie_fout` van de nieuwe versie.
