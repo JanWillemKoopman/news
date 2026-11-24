@@ -9,8 +9,7 @@
  *    uit deze lijst halen.
  *  - **Alleen voor de eigenaar** (zijn twee accounts, `BEPERKTE_TABBLADEN`): Instellingen. Online
  *    leads (view `leads`) stond hier tot eind november 2026 ook; sindsdien is het voor iedereen,
- *    alleen het bewerken van de Kostenverdeling blijft voor de eigenaar
- *    (`/api/leads/kanaalkosten`).
+ *    inclusief het invullen/bewerken van de Kostenverdeling (`/api/leads/kanaalkosten`).
  *
  * Zelfde twee adressen als de beheerders in `lib/gebruikersbeheer.ts`, maar bewust een
  * eigen module: deze wordt ook in de browser geladen (Sidebar, AppShell), en

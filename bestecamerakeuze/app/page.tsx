@@ -30,7 +30,7 @@ import CampagneTijdlijn from "@/components/tijdlijn/CampagneTijdlijn";
 import MarketingAnalysePaneel from "@/components/marketingAnalyse/MarketingAnalysePaneel";
 import { getCampagnes } from "@/lib/sheet";
 import { getGebruiker } from "@/lib/auth";
-import { magBeperkteTabbladenZien, magTabbladZien } from "@/lib/beperkteTabbladen";
+import { magTabbladZien } from "@/lib/beperkteTabbladen";
 import { CampagneFilterProvider } from "@/lib/campagneFilterContext";
 import { Ga4KoppelingProvider } from "@/lib/ga4KoppelingContext";
 import { chatGereedheid, isSupabaseGeconfigureerd } from "@/lib/config";
@@ -111,8 +111,8 @@ export default async function DashboardPage() {
         accountOntwikkeling={<AccountPaneel ingelogd={ingelogd} />}
         website={<WebsitePaneel ingelogd={ingelogd} />}
         leads={
-          // Voor iedereen; alleen de Kostenverdeling (handmatige kosten) blijft voor de eigenaar.
-          <LeadsPaneel ingelogd={ingelogd} magKostenBewerken={magBeperkteTabbladenZien(gebruiker.email)} />
+          // Voor iedereen, inclusief de Kostenverdeling (handmatige kosten invullen en bewerken).
+          <LeadsPaneel ingelogd={ingelogd} />
         }
         leadsSyntec={<LeadsSyntecPaneel ingelogd={ingelogd} />}
         selligent={<SelligentPaneel ingelogd={ingelogd} />}
