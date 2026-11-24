@@ -95,12 +95,14 @@ export const STANDAARD_SEMANTIEK: SemantiekInhoud = {
 - Een campagnepagina vind je via de bestemmings-URL's van de advertenties en via landing_page met het model of de actie in het pad (bijv. /acties/a2-e-tron). Er kunnen meerdere pagina's zijn.
 - **landing_page hoort bij de hele sessie.** Vraag events op met landing_page × event_name × event_count: dan tel je de events in sessies die op de campagnepagina begonnen, ook als het event later elders op de site viel.
 - Sessies tellen op over dagen, gebruikers niet.
+- **Een voorraadpagina (/auto/<merk>/<model>/…) is nooit de campagnepagina van een actiecampagne** (Campagne analyse; besluit van de eigenaar, november 2026). Het zijn detailpagina's van voorraadauto's, vooral via Gaspedaal. Tel sessies die daar begonnen niet mee, ook niet als het model in het pad staat.
 
 ## E-mailverkeer herkennen
 - E-mail = session_default_channel_group = "Email" **of** (session_source_medium = "(direct) / (none)" **en** landing_page_plus_query_string bevat "M_BT="). Reden: de tracking vanuit Selligent ging mis, waardoor klikken uit mailings als direct binnenkomen met M_BT= in de URL. Alleen op hostnames udenhout.nl en www.udenhout.nl.
 
 ## Welke events tellen als lead (Van den Udenhout)
 - Alle events met "lead" in de naam, waaronder: generate_lead_proefrit, generate_lead_offerte, generate_lead_onderhoudsofferte, generate_lead_verhuur, generate_lead_privatelease, generate_lead_private_lease, generate_lead_zakelijk_lease, generate_lead_zakelijk_offerte, generate_lead_leasecontact, generate_lead_werkplaats.
+- generate_lead_HMODH is de knop **"Houd me op de hoogte"**: een aanmelding om op de hoogte te blijven, geen proefrit- of offerteaanvraag. Telt als lead-event, maar noem hem apart als "Houd me op de hoogte".
 - generate_lead_vacature is een sollicitatie, geen autolead: apart noemen.
 - bedanktpagina_werkplaatsplanner telt als lead (werkplaatsafspraak) maar is veel groter dan de rest; apart noemen.
 - Op proefrit-, offerte-, private lease- en financieringsformulieren zitten de parameters customevent_car_brand en customevent_car_model: daarmee is te zien voor welk merk en model de lead was.
