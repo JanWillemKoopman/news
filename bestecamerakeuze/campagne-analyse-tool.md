@@ -1,6 +1,6 @@
 # Campagne-analysetool (Marketing analyse) — plan
 
-*Versie 4 · 24 november 2026 · status: plan rond, klaar om te bouwen (fase 1)*
+*Versie 4.1 · 24 november 2026 · status: plan, laatste ronde vragen (ronde 4)*
 
 ## 1. Waar het om gaat
 
@@ -267,9 +267,29 @@ De eerste opzet (branch `claude/campaign-insight-analysis-inbofg`) blijft de bas
 | **2** | Hoofdprompt en semantic layer aanscherpen op basis van v1; data correctie invullen; v2 draaien en controleren dat de correcties zijn toegepast |
 | **3** | Later: e-mailcijfers uit Selligent, benchmarks tussen campagnes, automatisch wekelijks draaien |
 
-## 11. Open vragen
+## 11. Open vragen (ronde 4)
 
-Geen. Alle vragen uit de rondes 1 tot en met 3 zijn beantwoord en verwerkt in §2. Nieuwe vragen die tijdens het bouwen opkomen, komen hier te staan.
+Alle vragen uit de rondes 1 tot en met 3 zijn verwerkt in §2. Deze vragen beïnvloeden de bouw nog; bij elke vraag staat een voorstel.
+
+**Briefing**
+
+1. **Meerdere modellen of bedrijven in één campagne?** Een campagne kan over meerdere modellen gaan (bijv. een e-tron-actie met A2, Q4 en Q6), of over meerdere bedrijven tegelijk. *Voorstel: Model mag meerdere waarden hebben; Bedrijf blijft één keuze.* Een gezamenlijke campagne van twee bedrijven wordt dan twee campagnes.
+2. **Budget inclusief of exclusief btw?** De advertentieplatforms rapporteren hun kosten exclusief btw. Is het totaalbudget dat je in de briefing invult ook exclusief btw? *Voorstel: ja, exclusief btw, en dat staat bij het veld.*
+
+**De analyse**
+
+3. **Voor wie schrijft de analyse?** Voor de marketeer die de campagne bijstuurt (concreet, kanaal- en advertentieniveau), of ook voor het management (kort, op hoofdlijnen)? *Voorstel: voor de marketeer, met bovenaan een samenvatting van vijf regels die ook het management kan lezen.*
+4. **Eén hoofdprompt of twee?** De tussentijdse evaluatie en de eindevaluatie hebben een andere focus. *Voorstel: één hoofdprompt met een apart hoofdstuk per label,* zodat het gedeelde deel (bronnen, rekenregels, opbouw) maar één keer bestaat.
+
+**Data correctie en semantic layer**
+
+5. **Wie mag de Data correctie invullen?** Die stuurt de volgende analyse. *Voorstel: iedereen die ingelogd is* (de collega's kennen hun campagnes het best). Bij elke versie wordt vastgelegd welke tekst er toen stond.
+6. **Van correctie naar algemene kennis.** Sommige correcties gelden voor álle campagnes, bijvoorbeeld "events op /werkplaatsplanner zijn nooit campagne". *Voorstel: de analyse meldt zulke correcties als voorstel voor de semantic layer; jij beslist of ze erin komen.* De analyse past de semantic layer zelf nooit aan.
+
+**Overzicht en beheer**
+
+7. **Een foute versie verwijderen?** Als een analyse duidelijk mis is (bijvoorbeeld door een verkeerde koppeling), mag die versie dan weg? *Voorstel: alleen jij kunt een versie verwijderen. De nummering schuift niet op, dus na het verwijderen van v2 is de volgende v3.*
+8. **Afgelopen campagnes in het overzicht.** De lijst groeit. *Voorstel: lopende campagnes bovenaan op startdatum, afgelopen campagnes eronder in een inklapbaar blok "Afgelopen".*
 
 ## 12. Risico's
 
