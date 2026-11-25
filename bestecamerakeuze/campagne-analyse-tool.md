@@ -508,3 +508,19 @@ een planning, en bepaalt de database welke regels aan de beurt zijn.
   `RondeBalk.tsx`; PATCH `{ planning }` op `/api/marketing-analyse`.
 - De skill `marketing-analyse` vraagt de ronde op met `select * from dataloket.marketing_analyse_ronde()`
   en maakt alleen de regels met `aan_de_beurt`.
+
+## 18. Verzonden e-mails (verzoek van de eigenaar, 25 november 2026)
+
+Achter het schildje Beheer, naast Analyse prompts en Semantic layer, staat de knop **Verzonden
+e-mails**: per adres wie wanneer welke analyse per mail kreeg.
+
+- **Alleen de eigenaar** ziet de knop en het overzicht (keuze van Claude: het zijn de adressen van
+  collega's en het is een beheerscherm).
+- **Per adres gelogd vanaf 25 november 2026** (migratie 0050, `marketing_analyse_mail_log`), ook als
+  een mail mislukt, met de fout. Campagnenaam, versie en label worden meegeschreven, zodat het
+  logboek blijft kloppen als een analyse later wordt verwijderd.
+- **Eerder verstuurde mails** zijn niet per adres terug te halen: de versie bewaarde alleen het
+  aantal. Die staan erin als "Verstuurd aan 1 adres, welke is niet bewaard".
+- **Een analyse zonder mail** staat er ook, met de reden: geen volgers, of niet verstuurd (met de
+  fout, bijvoorbeeld een ontbrekend Gmail-wachtwoord).
+

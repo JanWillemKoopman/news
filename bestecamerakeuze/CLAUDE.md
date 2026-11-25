@@ -1766,6 +1766,14 @@ lees dat eerst voordat je hier iets verandert.
   bestaande, nog niet verstuurde versie van hoogstens zeven dagen oud. Mislukt het, dan blijft
   de fout in `notificatie_fout` staan en probeert `/api/sync` het 's nachts opnieuw. De
   trigger-URL staat vast in de migratie (productie, `news-ten-chi.vercel.app`).
+- **Verzonden e-mails** (25 november 2026, migratie 0050, op verzoek van de eigenaar). Elke mail wordt
+  per adres gelogd in `marketing_analyse_mail_log` (campagnenaam, versie, label, adres, tijdstip,
+  gelukt of fout; `logMail` in `notificatie.ts`, een logfout stopt het mailen nooit). Achter het
+  schildje Beheer staat voor de eigenaar de knop **Verzonden e-mails** (`MailLogZijbalk.tsx`, route
+  `mails`, alleen `isBeheerder`, leest via de dienstverbinding: de tabel heeft geen leesrecht voor
+  ingelogde collega's). Per regel wie wanneer welke analyse kreeg, nieuwste eerst, zoekbaar op adres
+  of campagne. Versies zonder logregel staan er ook in (`mailOverzicht` in `mailLog.ts`, getest): van
+  vóór het logboek met alleen het aantal, zonder volgers ("Geen mail") of niet verstuurd met de fout.
 - **E-mail settings: adressen per merk** (25 november 2026, migratie 0047, op verzoek). Per automerk
   de adressen die standaard volger worden van elke nieuwe analyse voor dat merk, zodat niemand ze per
   analyse opnieuw hoeft op te geven (`MerkMailZijbalk.tsx`, route `merk-mail`, tabel
@@ -1808,7 +1816,7 @@ lees dat eerst voordat je hier iets verandert.
   Afgelopen (rapportages hebben geen einddatum en staan altijd bij lopend); per regel de
   planning (uitklapmenu) en bij campagnes de kerncijfers uit de laatste analyse.
   Rechtsboven (25 november 2026, op verzoek) een schildje **Beheer**, dan **E-mail settings** en Nieuwe
-  analyse. Analyse prompts en Semantic layer staan achter het schildje (vooral voor beheerders, maar
+  analyse. Analyse prompts, Semantic layer en (alleen voor de eigenaar) Verzonden e-mails staan achter het schildje (vooral voor beheerders, maar
   iedereen kan ze openen); open of dicht wordt per browser onthouden. De open analyse staat in de URL
   (`?analyse=<campagne-id>`).
 - **Voorgestelde campagne analyses** (25 november 2026, migratie 0046, plan en besluiten in

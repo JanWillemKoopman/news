@@ -10,12 +10,13 @@ import AnalysePromptZijbalk from "@/components/marketingAnalyse/AnalysePromptZij
 import SemantiekZijbalk from "@/components/marketingAnalyse/SemantiekZijbalk";
 import VolgersZijbalk from "@/components/marketingAnalyse/VolgersZijbalk";
 import MerkMailZijbalk from "@/components/marketingAnalyse/MerkMailZijbalk";
+import MailLogZijbalk from "@/components/marketingAnalyse/MailLogZijbalk";
 import VoorstellenBalk from "@/components/marketingAnalyse/VoorstellenBalk";
 import PlanningKeuze from "@/components/marketingAnalyse/PlanningKeuze";
 import RondeBalk from "@/components/marketingAnalyse/RondeBalk";
 import { dagNL, type PlanningInvoer } from "@/lib/marketingAnalyse/planning";
 import { getBrandLogo } from "@/components/brandLogos";
-import { IconBook, IconBrain, IconChevronDown, IconMail, IconPencil, IconPlus, IconShield } from "@/components/icons";
+import { IconBook, IconBrain, IconChevronDown, IconMail, IconNotes, IconPencil, IconPlus, IconShield } from "@/components/icons";
 import {
   bedrijvenLabel,
   deelOpInLopendEnAfgelopen,
@@ -492,7 +493,7 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
   const [voorstellen, setVoorstellen] = useState<Voorstellen | null>(null);
   const [voorstelBezig, setVoorstelBezig] = useState<Set<string>>(new Set());
   const [paneel, setPaneel] = useState<
-    { soort: "prompt"; opzetId: string | null } | { soort: "semantiek" } | { soort: "merk-mail" } | null
+    { soort: "prompt"; opzetId: string | null } | { soort: "semantiek" } | { soort: "merk-mail" } | { soort: "mails" } | null
   >(null);
   // Analyse prompts en Semantic layer staan achter het schildje: ze zijn vooral voor beheerders.
   const [beheerOpen, setBeheerOpen] = useState(false);
@@ -657,6 +658,17 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
             <IconBook className="h-4 w-4 text-ink-muted" />
             Semantic layer
           </button>
+          {isEigenaar && (
+            <button
+              type="button"
+              onClick={() => setPaneel({ soort: "mails" })}
+              title="Wie wanneer welke analyse per mail kreeg"
+              className="flex items-center gap-2 rounded-button border border-line bg-card px-4 py-2 text-sm font-medium text-ink transition-colors duration-[var(--duur-snel)] hover:bg-surface"
+            >
+              <IconNotes className="h-4 w-4 text-ink-muted" />
+              Verzonden e-mails
+            </button>
+          )}
         </div>
       )}
       <button
@@ -664,8 +676,8 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
         onClick={wisselBeheer}
         aria-expanded={beheerOpen}
         aria-controls="ma-beheer"
-        aria-label={beheerOpen ? "Beheer verbergen" : "Beheer: Analyse prompts en Semantic layer"}
-        title={beheerOpen ? "Beheer verbergen" : "Beheer: Analyse prompts en Semantic layer"}
+        aria-label={beheerOpen ? "Beheer verbergen" : "Beheer: Analyse prompts, Semantic layer en Verzonden e-mails"}
+        title={beheerOpen ? "Beheer verbergen" : "Beheer: Analyse prompts, Semantic layer en Verzonden e-mails"}
         className={`flex items-center justify-center self-stretch rounded-button border px-2.5 transition-colors duration-[var(--duur-snel)] ${
           beheerOpen ? "border-line bg-surface text-ink" : "border-line bg-card text-ink-muted hover:bg-surface hover:text-ink"
         }`}
@@ -840,6 +852,15 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
         />
       )}
       {paneel?.soort === "merk-mail" && <MerkMailZijbalk onClose={() => setPaneel(null)} onGewijzigd={laad} />}
+      {paneel?.soort === "mails" && (
+        <MailLogZijbalk
+          onClose={() => setPaneel(null)}
+          onOpen={(id) => {
+            setPaneel(null);
+            open(id);
+          }}
+        />
+      )}
       {paneel?.soort === "semantiek" && (
         <SemantiekZijbalk onClose={() => setPaneel(null)} onOpgeslagen={(inhoud) => setBedrijven(inhoud.bedrijven)} />
       )}
