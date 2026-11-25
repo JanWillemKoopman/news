@@ -28,7 +28,7 @@ export default function StapPagina({
   tab: AnalyseTab;
   nr: number;
   aantal: number;
-  formaat: 1 | 2;
+  formaat: 1 | 2 | 3;
   vorige: Buur;
   volgende: Buur;
   onKies: (sleutel: string) => void;
@@ -67,7 +67,7 @@ export default function StapPagina({
         </section>
       ) : (
         <>
-          {formaat === 2 && (
+          {formaat !== 1 && (
             <div className="grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] items-start gap-5">
               <section className={`${KAART} px-6 py-5`}>
                 <h3 className="text-sm font-semibold text-ink">Wat we zien</h3>

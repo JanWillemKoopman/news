@@ -1804,9 +1804,15 @@ lees dat eerst voordat je hier iets verandert.
 - **De analysepagina: de funnel als navigatie** (25 november 2026, opzet A, op verzoek; besluiten
   in §19 van het plan, eerdere opzet met tabbladen in §14). Links een vaste navigatie
   (`StapNavigatie.tsx`): bovenaan **Samenvatting**, dan de stappen van de funnel in hun groepen
-  (Media, Content, Website, Resultaat; `ANALYSE_TABBLADEN` in `types.ts`, indeling in
-  `tabbladenVoor` in `rekenen.ts`, getest), elk met nummer, hoofdgetal en stipje met het oordeel,
-  en onderaan **Verantwoording**. Rechts de open stap; de pagina opent op de samenvatting en de
+  (`ANALYSE_TABBLADEN` in `types.ts`, indeling in `tabbladenVoor` in `rekenen.ts`, getest), elk
+  met nummer, hoofdgetal en stipje met het oordeel, en onderaan **Verantwoording**.
+  - **De stappen (formaat 3, 25 november 2026, plan §21)**: Media: **Advertenties** (met bereik
+    en investering), **Organische social**, **E-mail**; Website: **Campagnepagina** (verkeer en
+    gedrag op de pagina), **Conversies** (lead-events en andere conversies, op de pagina of
+    elders), **Vervolg op de website** (waar bezoekers daarna heen gaan); Resultaat: **Leads in
+    Syntec**, **Orders in Syntec**. Versies in formaat 2 houden hun tien tabbladen van toen
+    (`ANALYSE_TABBLADEN_V2`): `tabbladenVoor` kiest de lijst op `formaat`. Verander je de stappen,
+    dan samen met de standaard-hoofdprompt en de skill, en met een nieuw formaatnummer. Rechts de open stap; de pagina opent op de samenvatting en de
   open stap staat in de URL (`mtab`, leeg = samenvatting). Dit vervangt de horizontale tabbalk en
   is daarmee nog steeds de derde uitzondering op "geen dubbele navigatie"; maak er geen precedent van.
   - **Samenvatting** (`SamenvattingPagina.tsx`): de conclusie (kop, regels, toelichting

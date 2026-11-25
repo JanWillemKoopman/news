@@ -70,7 +70,7 @@ Besluit van de eigenaar, 25 november 2026; ook in de semantic layer (Algemeen, G
   group by soort;   -- de view eist al Kanaalgroep = 'Internet' en udenhout.nl in Kanaal of Onderwerp
   ```
   Noemt het doel Syntec bij een ander bedrijf: tel in GA4 en meld het in `datakwaliteit`.
-- Nooit opgeteld, nooit gemengd. De andere bron mag als context in zijn eigen tabblad, maar niet
+- Nooit opgeteld, nooit gemengd. De andere bron mag als context in zijn eigen stap, maar niet
   in `leadsDoel` en niet in het doeloordeel. Het dashboard rekent de bron zelf ook na
   (`leadBron` in `rekenen.ts`: het woord Syntec in het doel én alleen Van den Udenhout) en toont
   niets als `kerncijfers.leadBron` daarvan afwijkt.
@@ -186,12 +186,21 @@ select id, versie, inhoud from dataloket.marketing_analyse_semantiek order by ve
     `sessions`/`engaged_sessions`/`user_engagement_duration`, en `landing_page` × `event_name`
     × `event_count` (landing page hoort bij de sessie: events in sessies die op de
     campagnepagina begonnen). E-mail en lead-events volgens de semantic layer.
+  - GA4 voor de stap **Vervolg op de website**: `landing_page` × `page_path` (of
+    `page_path_plus_query_string`) × `sessions`/`screen_page_views` voor de pagina's die bekeken
+    worden in sessies die op de campagnepagina begonnen; deel ze in paginagroepen in (modellen,
+    occasions en voorraad, configurator, acties, contact en vestigingen, overig). Daarnaast
+    `landing_page` × `page_path` × `event_name` × `event_count` voor de belangrijke events en of ze
+    op de campagnepagina zelf of elders vielen (dat laatste ook voor de stap Conversies). Het
+    aandeel sessies dat na de campagnepagina nog een andere pagina bekeek = sessies met meer dan
+    één paginaweergave ÷ alle sessies op de campagnepagina (`screen_page_views_per_session` of de
+    paginaweergaven per sessie); zeg in de `tekst` hoe je het hebt berekend.
 - **Rapportage**: alle accounts en properties van het bedrijf over de hele periode (geen
   campagnefilter). Leads bij Van den Udenhout: alle leads van de periode, uitgesplitst naar
   merk en kanaalgroep. PGZ en andere bedrijven: alleen GA4.
 - **Leads in Syntec bij een campagne** (alleen Van den Udenhout): uit
   `marketing_analyse_leads_website` per soort, zoals in de harde regel hierboven. Dat is het
-  leadcijfer als het doel Syntec noemt, anders context voor het tabblad Leads in Syntec. Soort
+  leadcijfer als het doel Syntec noemt, anders context voor de stap Leads in Syntec. Soort
   lead volgens de view (kolom `soort`). Controleer `max(aangelegd_op)` en meld tot wanneer de
   kopie loopt.
 - **Leads in Syntec bij een rapportage**: alle leads van de periode uit `marketing_analyse_leads`,
@@ -223,11 +232,12 @@ de leads-kopie.
     1.000 vertoningen bij Meta.
   - Organische posts: vertoningen per post, interacties per vertoning en klikken per post, per
     kanaal, tegen alle posts van dezelfde accounts (lifetime-cijfers, posts van minstens 14 dagen oud).
-  - Verkeer, gedrag en e-mail: betrokken sessies (%), betrokkenheidstijd per sessie en video- of
+  - Campagnepagina en e-mail: betrokken sessies (%), betrokkenheidstijd per sessie en video- of
     scroll-events per 100 sessies, tegen andere campagnepagina's op dezelfde property
     (bijvoorbeeld `/acties/…`, minstens 200 sessies). Bij e-mail alleen het e-mailverkeer naar die pagina's.
-  - Lead-events: lead-events van dezelfde soort per 100 sessies, tegen andere campagnepagina's.
-  - Niet bij investering (tempo tegen budget is geen vergelijking), niet bij orders en niet bij
+  - Conversies: conversies van dezelfde soort per 100 sessies, tegen andere campagnepagina's.
+  - Vervolg op de website: het aandeel sessies met nog een andere pagina, tegen andere campagnepagina's.
+  - Niet bij de mediakosten tegen het budget (tempo is geen vergelijking), niet bij orders en niet bij
     Syntec-leads, tenzij de prompt van de opzet erom vraagt.
 - **Minstens 5 items** in de groep, anders geen benchmark (het dashboard toont hem dan ook niet);
   zeg in `datakwaliteit` waar een benchmark ontbrak en waarom.
@@ -239,23 +249,29 @@ de leads-kopie.
   ("1.108 vertoningen per post, rond de mediaan van 940") en laat haar meewegen in `oordeel`.
 - Zet in `bronnen` welke data je voor de vergelijking hebt opgehaald.
 
-## Stap 4 — Het resultaat (`MaResultaat`, `formaat: 2`)
-De pagina toont bovenaan de samenvatting met de acties en daaronder **vaste tabbladen** in
-funnelvolgorde (`ANALYSE_TABBLADEN` in `types.ts`). Elke sectie hoort bij één tabblad via
-`tab`. Links (3/4) staan de kerncijfers, grafieken en tabellen; het **eerste kerncijfer is het
-hoofdgetal in de tabbalk**. Rechts (1/4) staan `kop`, `oordeel`, `bevindingen` en `acties`.
-Wat er per tabblad in hoort, staat in de prompt.
+## Stap 4 — Het resultaat (`MaResultaat`, `formaat: 3`)
+De pagina opent op de samenvatting (conclusie, voortgang, wat nu te doen) en heeft links een
+navigatie met de **vaste stappen van de funnel** (`ANALYSE_TABBLADEN` in `types.ts`, formaat 3
+sinds 25 november 2026; plan §21). Elke sectie hoort bij één stap via `tab`. Per stap staan
+eerst `kop`, `oordeel` en de kerncijfers (het **eerste kerncijfer is het hoofdgetal in de
+navigatie**), dan `bevindingen` naast `acties`, dan grafieken en tabellen, en ingeklapt de
+`tekst` (hoe gemeten). Wat er per stap in hoort, staat in de prompt.
 
-Tabbladsleutels, in deze volgorde: `bereik`, `investering`, `advertenties`, `organisch`,
-`email`, `verkeer`, `gedrag`, `lead-events`, `syntec` en `orders` (die laatste twee alleen als de
-analyse uitsluitend over Van den Udenhout gaat; anders weglaten). Een tabblad zonder data krijgt toch een sectie met
-`oordeel: "geen-data"` en de reden in `kop`. Een sectie zonder geldige `tab` wordt een los
-tabblad achteraan; doe dat alleen als de prompt van de opzet er echt om vraagt. Een
-**rapportage** toont elke sectie als eigen tabblad in de volgorde van `stap`; `tab` mag daar weg.
+Stapsleutels, in deze volgorde: `advertenties` (met bereik en investering), `organisch`,
+`email`, `campagnepagina` (verkeer en gedrag op de pagina), `conversies` (lead-events en andere
+conversies, op de pagina of elders), `vervolg` (waar bezoekers daarna heen gaan op de website),
+`syntec` en `orders` (die laatste twee alleen als de analyse uitsluitend over Van den Udenhout
+gaat; anders weglaten). De oude sleutels van formaat 2 (`bereik`, `investering`, `verkeer`,
+`gedrag`, `lead-events`) gebruik je niet meer: in formaat 3 worden ze een losse stap achteraan.
+Noemt de semantic layer nog een oud tabblad, lees dan: Bereik en Investering → Advertenties,
+Verkeer en Gedrag → Campagnepagina, Lead-events → Conversies. Een stap zonder data krijgt toch
+een sectie met `oordeel: "geen-data"` en de reden in `kop`. Een sectie zonder geldige `tab` wordt
+een losse stap achteraan; doe dat alleen als de prompt van de opzet er echt om vraagt. Een
+**rapportage** toont elke sectie als eigen stap in de volgorde van `stap`; `tab` mag daar weg.
 
 ```jsonc
 {
-  "formaat": 2,
+  "formaat": 3,
   "samenvatting": {
     "kop": "Eén zin met het oordeel",
     "regels": ["hoogstens vijf korte regels, ook voor het management"],
@@ -264,7 +280,7 @@ tabblad achteraan; doe dat alleen als de prompt van de opzet er echt om vraagt. 
   "doel": { "status": "voor|op-koers|achter|onbekend", "toelichting": "…" },
   "funnel": [],
   "secties": [ {
-    "stap": 2, "tab": "investering", "titel": "Investering", "ondertitel": "…",
+    "stap": 1, "tab": "advertenties", "titel": "Advertenties", "ondertitel": "…",
     "kerncijfers": [ { "label": "Besteed", "waarde": 1960.8, "eenheid": "euro",
                        "toelichting": "62% van het budget", "vergelijking": { "label": "Budget", "waarde": 3150 } },
                      { "label": "Kosten per sessie Meta", "waarde": 0.33, "eenheid": "euro",
@@ -298,11 +314,11 @@ tabblad achteraan; doe dat alleen als de prompt van de opzet er echt om vraagt. 
 ```
 Eenheden: `aantal | euro | procent | seconden | tekst` (procent als 3.2). Grafieken: hoogstens
 zes reeksen, één eenheid, datums `JJJJ-MM-DD`. Getallen als getal; wat een platform niet
-levert als tekst `"n.v.t."`, nooit als 0. `aanbevelingen` zijn in formaat 2 de **acties voor de
-campagne als geheel** (drie tot zes, met in `tabs` waar de onderbouwing staat); de pagina zet
-ze bovenaan, samen met alle `acties` uit de tabbladen op prioriteit. `inzichten` vervallen in
-formaat 2 (de bevindingen per tabblad nemen ze over). `funnel` wordt niet meer getoond (de
-hoofdgetallen staan in de tabbalk); `[]` mag. Bij een tussentijdse evaluatie zijn de acties
+levert als tekst `"n.v.t."`, nooit als 0. `aanbevelingen` zijn de **acties voor de
+campagne als geheel** (drie tot zes, met in `tabs` de stapsleutels waar de onderbouwing staat);
+de pagina zet ze in Wat nu te doen op de samenvatting, af te vinken door het team. `inzichten`
+vervallen (de bevindingen per stap nemen ze over). `funnel` wordt niet meer getoond (de
+hoofdgetallen staan in de navigatie); `[]` mag. Bij een tussentijdse evaluatie zijn de acties
 "nu bijsturen", bij een eindevaluatie "lessen". `semantiekVoorstellen` alleen voor bevindingen
 die voor álle campagnes gelden; je past de semantic layer nooit zelf aan.
 
@@ -331,8 +347,8 @@ vanzelf meekomt), laat `doel` weg en geef `funnel: []` mee.
 
 ## Stap 5 — Wegschrijven
 Schrijf de JSON eerst naar een bestand in je scratchpad en controleer hem (`node -e` met
-`JSON.parse`): `formaat` is 2; elke sectie heeft `stap`, `titel` en (bij een campagne) een
-geldige `tab`; elk tabblad hoogstens één keer; hoogstens vijf `regels` en vijf `bevindingen`;
+`JSON.parse`): `formaat` is 3; elke sectie heeft `stap`, `titel` en (bij een campagne) een
+geldige `tab` uit de stapsleutels hierboven; elke stap hoogstens één keer; hoogstens vijf `regels` en vijf `bevindingen`;
 elke actie en aanbeveling heeft een `prioriteit`; staat er een sectie `orders`, dan heeft die
 een tabel per klantgroep met een totaalregel; bij een campagne staan `leadBron`, `leadsDoel`
 en `leadsDoelSoort` in de kerncijfers en is `leadBron` alleen `"syntec"` als het doel Syntec noemt

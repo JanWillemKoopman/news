@@ -563,3 +563,25 @@ organische posts beter of slechter bereik en engagement halen dan soortgelijke p
 - Oude versies hebben geen benchmark en blijven er hetzelfde uitzien. De volgende analyse van een
   campagne vult ze.
 
+## 21. De stappen van de funnel, formaat 3 (verzoek van de eigenaar, 25 november 2026)
+
+Uit opzet A (§19) is de indeling van de stappen overgenomen, zoals de eigenaar de funnel
+beschreef: advertenties op verschillende platforms, organische posts en e-mail sturen verkeer naar
+de campagnepagina; daar kijken we wat bezoekers doen, welke conversies ze doen en wat ze daarna
+op de website doen; daarna leads en orders in Syntec.
+
+- **Acht stappen in drie groepen**: Media (Advertenties, Organische social, E-mail), Website
+  (Campagnepagina, Conversies, Vervolg op de website), Resultaat (Leads in Syntec, Orders in Syntec).
+- **Bereik en Investering zijn geen eigen stap meer**: ze horen bij Advertenties (de mediakosten
+  zijn daar het eerste kerncijfer; budget en tempo staan ook op de samenvatting). Organisch bereik
+  staat bij Organische social.
+- **Verkeer en Gedrag zijn samen Campagnepagina**, het belangrijkste punt van de funnel.
+- **Conversies** vervangt Lead-events en zegt per soort of hij op de campagnepagina zelf of elders
+  op de site viel. Het leadcijfer blijft hetzelfde (sessies die op de campagnepagina begonnen).
+- **Vervolg op de website is nieuw**: welke pagina's en paginagroepen bezoekers daarna bekijken,
+  welke belangrijke events ze daar doen en hoeveel er meteen weggaan. Keuze van Claude voor het
+  hoofdgetal: het aandeel sessies dat na de campagnepagina nog een andere pagina bekijkt.
+- **Formaat 3** in de code; versies in formaat 2 houden hun oude tabbladen. Prompt, skill en de
+  standaardtekst van de semantic layer zijn bijgewerkt. De opgeslagen semantic layer (versie 4)
+  noemt nog de oude namen Lead-events en Investering; de skill vertaalt die.
+

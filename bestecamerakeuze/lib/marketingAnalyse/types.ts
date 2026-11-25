@@ -248,14 +248,31 @@ export interface Grafiek {
 }
 
 /**
- * De vaste tabbladen van een campagne-analyse (formaat 2), in funnelvolgorde en in groepen. Een
- * sectie hoort bij een tabblad via `tab`. De volgorde en de groepen zijn een besluit van de
- * eigenaar (november 2026); verander ze samen met de prompt en de skill.
+ * De vaste stappen van een campagne-analyse, in funnelvolgorde en in groepen. Een sectie hoort bij
+ * een stap via `tab`. De volgorde en de groepen zijn een besluit van de eigenaar; verander ze samen
+ * met de prompt en de skill.
+ *
+ * Formaat 3 (25 november 2026, opzet A, plan §21): de funnel zoals de eigenaar hem beschreef.
+ * Advertenties (met bereik en investering), organische social en e-mail brengen verkeer naar de
+ * campagnepagina; daar kijken we wat bezoekers doen, welke conversies ze doen en waar ze daarna
+ * heen gaan op de website; daarna leads en orders in Syntec.
  */
 export const TAB_GROEPEN = ["Media", "Content", "Website", "Resultaat"] as const;
 export type TabGroep = (typeof TAB_GROEPEN)[number];
 
 export const ANALYSE_TABBLADEN = [
+  { sleutel: "advertenties", naam: "Advertenties", groep: "Media" },
+  { sleutel: "organisch", naam: "Organische social", groep: "Media" },
+  { sleutel: "email", naam: "E-mail", groep: "Media" },
+  { sleutel: "campagnepagina", naam: "Campagnepagina", groep: "Website" },
+  { sleutel: "conversies", naam: "Conversies", groep: "Website" },
+  { sleutel: "vervolg", naam: "Vervolg op de website", groep: "Website" },
+  { sleutel: "syntec", naam: "Leads in Syntec", groep: "Resultaat" },
+  { sleutel: "orders", naam: "Orders in Syntec", groep: "Resultaat" },
+] as const satisfies readonly { sleutel: string; naam: string; groep: TabGroep }[];
+
+/** Formaat 2 (24 november 2026, plan §14): de tabbladen van de versies van vóór formaat 3. */
+export const ANALYSE_TABBLADEN_V2 = [
   { sleutel: "bereik", naam: "Bereik", groep: "Media" },
   { sleutel: "investering", naam: "Investering", groep: "Media" },
   { sleutel: "advertenties", naam: "Advertenties", groep: "Media" },
@@ -268,7 +285,7 @@ export const ANALYSE_TABBLADEN = [
   { sleutel: "orders", naam: "Orders in Syntec", groep: "Resultaat" },
 ] as const satisfies readonly { sleutel: string; naam: string; groep: TabGroep }[];
 
-export type TabSleutel = (typeof ANALYSE_TABBLADEN)[number]["sleutel"];
+export type TabSleutel = (typeof ANALYSE_TABBLADEN)[number]["sleutel"] | (typeof ANALYSE_TABBLADEN_V2)[number]["sleutel"];
 
 /** Het oordeel over één tabblad: het stipje in de tabbalk. */
 export type TabOordeel = "goed" | "aandacht" | "probleem" | "geen-data";
@@ -354,10 +371,11 @@ export interface SemantiekVoorstel {
 export interface MaResultaat {
   /**
    * 1: secties onder elkaar, inzichten en aanbevelingen onderaan (versies tot 24 november 2026).
-   * 2: secties per tabblad met bevindingen en acties rechts; `aanbevelingen` zijn de acties
-   * voor de campagne als geheel en `inzichten` vervallen.
+   * 2: secties per tabblad met bevindingen en acties; `aanbevelingen` zijn de acties voor de
+   * campagne als geheel en `inzichten` vervallen (`ANALYSE_TABBLADEN_V2`).
+   * 3: hetzelfde, met de stappen van `ANALYSE_TABBLADEN` (vanaf 25 november 2026, plan §21).
    */
-  formaat: 1 | 2;
+  formaat: 1 | 2 | 3;
   samenvatting: {
     /** Eén zin: het oordeel. */
     kop: string;
@@ -372,7 +390,7 @@ export interface MaResultaat {
   secties: Sectie[];
   /** Alleen formaat 1. */
   inzichten?: Inzicht[];
-  /** Formaat 1: alle aanbevelingen. Formaat 2: de acties voor de campagne als geheel. */
+  /** Formaat 1: alle aanbevelingen. Formaat 2 en 3: de acties voor de campagne als geheel. */
   aanbevelingen?: Aanbeveling[];
   herkenning: Herkenning[];
   /** Welke bronnen er gebruikt zijn (bijv. "Windsor · Meta Ads · Van den Udenhout"). */
