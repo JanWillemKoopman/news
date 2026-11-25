@@ -28,7 +28,7 @@ Drie kennislagen sturen de analyse:
 | 2–3 | Doel | **Open tekstveld** in de briefing. De analyse krijgt het doel als context en beoordeelt zelf hoe het ervoor staat. Wat het doel is, staat in de briefing. |
 | 4 | Kosten | Mediakosten uit de advertentieaccounts (via Windsor). **Gewijzigd 24 november 2026:** bij een campagne-analyse tellen de extra kanaalkosten uit `dataloket.lead_kanaalkosten` (bijv. gaspedaal.nl / referral) **niet** meer mee; alleen een rapportage mag ze gebruiken, apart genoemd (zie §5.3). |
 | 5 | Orders | **Niet** meenemen. |
-| 6 | Leads | Uit de leads-kopie: **totaal aantal leads**, **hoeveel via Internet** en **welke soort leads**. Welke soort een lead is, leidt de analyse af uit de zes kolommen volgens de semantic layer van Data leads (er is geen kolom Lead Type). |
+| 6 | Leads | Uit de leads-kopie: **totaal aantal leads**, **hoeveel via Internet** en **welke soort leads**. Welke soort een lead is, leidt de analyse af uit de zes kolommen volgens de semantic layer van Data leads (er is geen kolom Lead Type). Vervangen door §15: één bron, en in Syntec alleen websiteleads via udenhout.nl. |
 | 7 | E-mailcijfers (Selligent) | **Nu niet**, later misschien. E-mail alleen vanaf de klik (GA4). |
 | 8 | Toerekening | Bij **elke** analyse grondig onderzoeken welke data bij de campagne hoort en dat tonen in het resultaat. Plus een open veld **Data correctie** per campagne (zie §6). |
 | 9 | Label | Analysedatum vóór de einddatum: **Tussentijdse evaluatie** (gericht op bijsturen). Einddatum verstreken: **Eindevaluatie** (terugblik op de hele campagne). |
@@ -39,7 +39,7 @@ Drie kennislagen sturen de analyse:
 | 14 | Migraties | Toegestaan. |
 | 15a | Periode | Alleen **binnen start- en einddatum**. Ligt de einddatum in de toekomst: tot en met **gisteren**. Het totaalbudget is wat marketing voor de hele periode beschikbaar heeft, om te beoordelen of de campagne op schema ligt. |
 | 15b | Supabase-queries | Toegestaan waar nodig (binnen de grenzen van §3). |
-| v2-A | Leads-data | Een **nachtelijke kopie** van "Data leads" in Supabase, alleen voor de analyse: zes kolommen (Ordersoort, Onderwerp, Kanaalgroep, Merk, Model, Aangelegd), de laatste 365 dagen, zonder rijen met "FW:" in Onderwerp (zie §3.1). |
+| v2-A | Leads-data | Een **nachtelijke kopie** van "Data leads" in Supabase, alleen voor de analyse: zes kolommen (Ordersoort, Onderwerp, Kanaalgroep, Merk, Model, Aangelegd), de laatste 365 dagen, zonder rijen met "FW:" in Onderwerp (zie §3.1). Sinds 25 november 2026 zeven: Kanaal kwam erbij (§15). |
 | v2-B | Kostenverdeling | De rekensom in §5.3 klopt. |
 | v2-C | GA4 udenhout.nl | Alleen property **"GA4_https://udenhout.nl"** (255949462) voor Van den Udenhout. |
 | v2-D | Analyse ronde | Springt automatisch op **Uit** na een eindevaluatie. |
@@ -205,7 +205,7 @@ Naast de knop **Hoofdprompt** komt een knop **Semantic layer**. Daarachter staat
 | **Instagram** | Accounts; organisch vs geboost bereik |
 | **LinkedIn organisch** | Bedrijfspagina's |
 | **Google Analytics 4** | Welke property bij welke website hoort; **hoe e-mailverkeer te herkennen** (kanaalgroep, utm_source/medium); **welke events als lead tellen**; welke andere events interessant zijn |
-| **Data leads (spreadsheet)** | De zes kolommen en wat ze betekenen; **welk soort lead een rij is** (af te leiden uit Onderwerp, Ordersoort enz.); "Internet" = online; modelnamen op veel manieren gespeld; "FW:" is er al uit; 365 dagen; alleen Van den Udenhout |
+| **Data leads (spreadsheet)** | De kolommen (sinds §15 zeven, met Kanaal) en wat ze betekenen; **welk soort lead een rij is** (af te leiden uit Onderwerp, Ordersoort enz.); "Internet" = online; modelnamen op veel manieren gespeld; "FW:" is er al uit; 365 dagen; alleen Van den Udenhout |
 | **Extra kanaalkosten** | Wat erin staat en hoe het te verdelen (§5.3) |
 
 - **Bewerken** alleen door de eigenaar, **lezen** door iedereen.
@@ -395,4 +395,37 @@ samenvatting met daaronder tabbladen. Besluiten:
 - Het open tabblad staat in de URL (`&mtab=investering`).
 - Dit is op verzoek een derde uitzondering op "geen dubbele navigatie" in het dashboard (naast
   Campagnebeheer en KPI's 2027).
+
+## 15. Leads: één bron, GA4 of Syntec (besluit van de eigenaar, 25 november 2026)
+
+Voor de opzet **Campagne analyse**. Het leadcijfer, het getal dat tegen het doel uit de briefing
+staat, komt altijd uit precies één bron. Nooit opgeteld, nooit gemengd.
+
+- **Standaard Google Analytics.** Zegt het veld "Doel van de campagne" niet expliciet uit welke
+  bron het doel komt, dan telt GA4: de lead-events van de soort uit het doel in sessies die op de
+  campagnepagina('s) begonnen. "20 proefritten" = 20 proefritleads op de website.
+- **Syntec alleen als het doel dat expliciet zegt** (het woord Syntec staat erin). Dan tellen alleen
+  leads met **Kanaalgroep = "Internet"** én **"udenhout.nl" in Kanaal of Onderwerp**
+  (hoofdletterongevoelig), voor merk en model, in de periode, van de soort uit het doel. Syntec kan
+  alleen bij een analyse die uitsluitend over Van den Udenhout gaat; anders telt GA4 en staat er een
+  melding.
+- **De kolom Kanaal kwam erbij** in de leads-kopie (migratie 0047; zes kolommen werden er zeven),
+  want zonder Kanaal is de regel niet toe te passen. De view `marketing_analyse_leads_website` past
+  de voorwaarden toe en geeft de soort (proefrit, private lease, offerte, inruil, overig, uit
+  Onderwerp en Kanaal; klopte in november 2026 voor 99,9% met Lead type in Syntec). Dezelfde logica
+  in TypeScript: `isWebsiteLead` en `soortWebsiteLead` in `lib/sync/analyseLeads.ts`, getest.
+- **Gemeten (laatste 365 dagen, november 2026)**: 38.296 leads in de kopie, 7.217 websiteleads van
+  udenhout.nl, 2.236 proefritten. "Udenhout.nl" staat in de praktijk in Kanaal; in Onderwerp kwam
+  het dat jaar niet voor.
+- **Kerncijfers**: `leadBron` (`ga4` of `syntec`), `leadsDoel` (het leadcijfer) en `leadsDoelSoort`.
+  Het overzicht rekent de bron zelf na uit het doel en de bedrijven (`leadBron` in `rekenen.ts`) en
+  toont niets als de analyse uit een andere bron telde. Een analyse van vóór dit besluit toont bij
+  GA4 nog de lead-events met de vermelding "alle lead-events"; bij Syntec niets tot de volgende
+  analyse, want die telling volgde de regel niet.
+- **Waar het staat**: semantic layer versie 3 (Algemeen "Leads bij een Campagne analyse", Google
+  Analytics 4 "Leads tegen het doel", Data leads), de standaard-hoofdprompt ("Leads tegen het
+  doel"), de skill, en de uitleg bij het doelveld in de briefing.
+- **Keuze van Claude, ter controle door de eigenaar**: bij een doel in "leads" zonder soort tellen
+  in GA4 alle lead-events behalve vacature, "Houd me op de hoogte" (HMODH) en de
+  werkplaatsplanner; die staan apart.
 

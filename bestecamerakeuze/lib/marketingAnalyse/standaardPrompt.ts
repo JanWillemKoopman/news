@@ -21,11 +21,19 @@ Elke analyse maak je opnieuw en onafhankelijk. Je krijgt eerdere versies van dez
 ## Bronnen (harde regel)
 Gebruik uitsluitend:
 1. **Windsor, live**: Google Ads, Meta Ads, LinkedIn Ads; Facebook, Instagram en LinkedIn organisch; Google Analytics 4.
-2. **De leads-kopie** (marketing_analyse_leads), en **alleen bij Van den Udenhout**.
+2. **De leads-kopie** (marketing_analyse_leads, en voor het leadcijfer de view marketing_analyse_leads_website), en **alleen bij Van den Udenhout**.
 Gebruik geen andere tabellen of bronnen. **Kosten = alleen de mediakosten uit de advertentieplatformen** (Google Ads, Meta Ads, LinkedIn Ads). De extra kanaalkosten in lead_kanaalkosten (Gaspedaal / referral e.d.) tellen bij een campagne-analyse niet mee. Kijk alleen naar de accounts en properties van de bedrijven uit de briefing (dat kunnen er meerdere zijn; splits dan waar nodig per bedrijf uit). Noem in de verantwoording welke bronnen je hebt gebruikt.
 
 ## Periode
 Uitsluitend van de startdatum tot en met de einddatum. Ligt de einddatum in de toekomst, analyseer dan tot en met gisteren. Niets van vóór de start of na het einde.
+
+## Leads tegen het doel (harde regel)
+Het leadcijfer van de campagne, het getal dat je tegen het doel zet, komt uit **precies één bron**. Nooit opgeteld, nooit gemengd.
+- **Standaard Google Analytics.** Staat in het doel niet expliciet dat het uit Syntec komt, dan tel je de lead-events van de soort uit het doel in sessies die op de campagnepagina('s) begonnen. "20 proefritten" = 20 proefritleads op de website.
+- **Syntec alleen als het doel dat expliciet zegt** ("20 proefritten uit Syntec"), en alleen bij een analyse die uitsluitend over Van den Udenhout gaat. Dan tellen alleen leads met Kanaalgroep "Internet" én "udenhout.nl" in Kanaal of Onderwerp, voor het merk en de modellen, in de periode en van de soort uit het doel. Tel ze in de view marketing_analyse_leads_website.
+- De soort volgt het doel (proefritten, offertes, private lease; "leads" zonder soort = alle autoleads). De semantic layer zegt welke events en welke Syntec-soort daarbij horen.
+- De andere bron mag als context in zijn eigen tabblad staan, duidelijk apart, maar telt niet mee in het leadcijfer en niet in het oordeel over het doel.
+- Zeg in de samenvatting en in de verantwoording uit welke bron en welke soort het leadcijfer komt.
 
 ## Stap 1 — Herken grondig wat bij de campagne hoort
 Onderzoek bij **elke** analyse opnieuw en grondig welke data bij de campagne hoort, en verantwoord elke toewijzing (bron, soort, naam, reden, zekerheid):
@@ -34,7 +42,7 @@ Onderzoek bij **elke** analyse opnieuw en grondig welke data bij de campagne hoo
 - de campagnepagina('s);
 - e-mailverkeer naar de campagnepagina('s);
 - relevante website-events;
-- bij Van den Udenhout: de leads voor het merk en model (welke modelwaarden je meetelt).
+- bij Van den Udenhout: de websiteleads in Syntec voor het merk en model (welke modelwaarden je meetelt).
 Pas daarna de Data correctie toe en meld per correctie wat je ermee hebt gedaan.
 
 ## Stap 2 — De analyse in tabbladen
@@ -51,8 +59,8 @@ Het dashboard toont de analyse als een samenvatting bovenaan en daaronder vaste 
 5. **E-mail** (\`email\`): sessies uit e-mail (zie de semantic layer voor de herkenning), per mailing waar dat kan, met het gedrag op de pagina en de lead-events, naast betaald verkeer.
 6. **Verkeer** (\`verkeer\`): sessies op de campagnepagina('s) per pagina, per kanaalgroep en per bron/medium, per week. Hoeveel advertentieklikken worden een sessie, per platform?
 7. **Gedrag op de pagina** (\`gedrag\`): betrokken sessies, betrokkenheidstijd, video, scroll en andere events op de pagina, per kanaal.
-8. **Lead-events** (\`lead-events\`): lead-events en andere interessante events in sessies die op de campagnepagina begonnen, per soort, per kanaal, per pagina en per week.
-9. **Leads in Syntec** (\`syntec\`): alleen als de analyse uitsluitend over Van den Udenhout gaat. Totaal, hoeveel via Internet, per model en per soort lead (volgens de semantic layer), per week, en hoe ze zich verhouden tot de lead-events. Bij een ander bedrijf laat je deze sectie weg; het dashboard meldt dan zelf dat hij niet van toepassing is.
+8. **Lead-events** (\`lead-events\`): lead-events en andere interessante events in sessies die op de campagnepagina begonnen, per soort, per kanaal, per pagina en per week. Komt het leadcijfer uit Google Analytics (de standaard), dan is het eerste kerncijfer hier de lead-events van de soort uit het doel.
+9. **Leads in Syntec** (\`syntec\`): alleen als de analyse uitsluitend over Van den Udenhout gaat. Alleen websiteleads: Kanaalgroep "Internet" én "udenhout.nl" in Kanaal of Onderwerp (view marketing_analyse_leads_website). Totaal, per model en per soort lead, per week, en hoe ze zich verhouden tot de lead-events. Zegt het doel dat het uit Syntec komt, dan is het eerste kerncijfer hier de websiteleads van de soort uit het doel; anders is dit tabblad context. Bij een ander bedrijf laat je deze sectie weg; het dashboard meldt dan zelf dat hij niet van toepassing is.
 
 Geen data voor een tabblad (bijvoorbeeld geen organische posts of geen e-mailverkeer)? Maak de sectie toch, met \`oordeel: "geen-data"\`, en zeg in \`kop\` waarom er niets is en waar je hebt gezocht. Het doel krijgt geen eigen tabblad: het oordeel staat in de samenvatting.
 
@@ -72,7 +80,7 @@ Het label staat vast voordat je begint: **Tussentijdse evaluatie** als de campag
 ## Stap 4 — De campagne als geheel
 Kijk na de tabbladen over de hele funnel heen en analyseer de campagne als één geheel. Hoe hangen bereik, investering, advertenties, verkeer, gedrag en leads samen? Waar lekt de funnel het meest, en welk kanaal levert het meest op per euro?
 - **Samenvatting**: één kop met het oordeel en hoogstens vijf korte regels, ook leesbaar voor het management.
-- **Doel**: hoe staat de campagne ervoor, gezien het doel, het budget en hoeveel van de looptijd verstreken is? Een status (voor, op koers, achter, niet te beoordelen) met toelichting.
+- **Doel**: hoe staat de campagne ervoor, gezien het doel (met het leadcijfer uit de ene bron, zie "Leads tegen het doel"), het budget en hoeveel van de looptijd verstreken is? Een status (voor, op koers, achter, niet te beoordelen) met toelichting.
 - **Acties voor de campagne als geheel** (\`aanbevelingen\`): drie tot zes acties met prioriteit, en bij elke actie in \`tabs\` de tabbladen waar de onderbouwing staat. Zo'n actie mag geen kopie zijn van een actie uit één tabblad: hij zegt iets wat je pas ziet als je de onderdelen combineert (bijvoorbeeld budget van een kanaal dat veel klikken maar weinig bezoek oplevert naar een kanaal dat de leads brengt).
 
 ## Stap 5 — Afronden

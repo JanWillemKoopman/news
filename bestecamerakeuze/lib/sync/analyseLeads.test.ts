@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { analyseLeadRecords, eersteDag, isDoorgestuurd, leesAangelegd } from "@/lib/sync/analyseLeads";
+import {
+  analyseLeadRecords,
+  eersteDag,
+  isDoorgestuurd,
+  isWebsiteLead,
+  leesAangelegd,
+  soortWebsiteLead,
+} from "@/lib/sync/analyseLeads";
 
 function rij(waarden: Record<string, string>, rijnummer = 2) {
   return { rijnummer, waarden: { Kanaal: "Udenhout.nl", Lead: "x", ...waarden } };
@@ -32,7 +39,7 @@ test("FW: ergens in het onderwerp, hoofdletterongevoelig", () => {
   assert.equal(isDoorgestuurd(null), false);
 });
 
-test("alleen de zes kolommen, 1-op-1, binnen 365 dagen en zonder FW:", () => {
+test("alleen de zeven kolommen, 1-op-1, binnen 365 dagen en zonder FW:", () => {
   const rijen = [
     rij({ Ordersoort: "Nieuw", Onderwerp: "Proefrit A2", Kanaalgroep: "Internet", Merk: "Audi", Model: "A2 e-tron", Aangelegd: "23-11-2026 7:40", Sluitreden: "Dubbel" }),
     rij({ Onderwerp: "FW: Proefrit A2", Kanaalgroep: "Internet", Aangelegd: "23-11-2026 8:00" }),
@@ -44,6 +51,7 @@ test("alleen de zes kolommen, 1-op-1, binnen 365 dagen en zonder FW:", () => {
   const uit = analyseLeadRecords(rijen, "2026-11-24");
   assert.deepEqual(uit.map((r) => r.onderwerp), ["Proefrit A2", "Precies 365 dagen"]);
   assert.deepEqual(uit[0], {
+    kanaal: "Udenhout.nl",
     ordersoort: "Nieuw",
     onderwerp: "Proefrit A2",
     kanaalgroep: "Internet",
@@ -53,4 +61,25 @@ test("alleen de zes kolommen, 1-op-1, binnen 365 dagen en zonder FW:", () => {
     aangelegd_op: "2026-11-23T07:40:00+01:00",
   });
   assert.equal(uit[1].merk, null);
+});
+
+test("websitelead: kanaalgroep Internet én udenhout.nl in Kanaal of Onderwerp", () => {
+  assert.equal(isWebsiteLead({ kanaalgroep: "Internet", kanaal: "Udenhout.nl", onderwerp: "Proefrit aanvraag" }), true);
+  assert.equal(isWebsiteLead({ kanaalgroep: "Internet", kanaal: "Udenhout.nl proefritaanv.", onderwerp: null }), true);
+  assert.equal(isWebsiteLead({ kanaalgroep: "Internet", kanaal: "Audi.nl", onderwerp: "Aanvraag via udenhout.nl" }), true);
+  // Niet: een ander kanaal, een andere kanaalgroep, of een naam die alleen op udenhout lijkt.
+  assert.equal(isWebsiteLead({ kanaalgroep: "Internet", kanaal: "Volkswagen.nl", onderwerp: "Proefrit" }), false);
+  assert.equal(isWebsiteLead({ kanaalgroep: "Showroom", kanaal: "Udenhout.nl", onderwerp: "Proefrit" }), false);
+  assert.equal(isWebsiteLead({ kanaalgroep: null, kanaal: "Udenhout.nl", onderwerp: null }), false);
+  assert.equal(isWebsiteLead({ kanaalgroep: "Internet", kanaal: "UdenhoutPrivateLease.nl", onderwerp: null }), false);
+});
+
+test("soort websitelead uit Onderwerp en Kanaal, proefrit eerst", () => {
+  assert.equal(soortWebsiteLead({ kanaal: "Udenhout.nl", onderwerp: "Proefrit aanvraag" }), "proefrit");
+  assert.equal(soortWebsiteLead({ kanaal: "Udenhout.nl proefritaanv.", onderwerp: null }), "proefrit");
+  assert.equal(soortWebsiteLead({ kanaal: "Udenhout.nl", onderwerp: "Offerte private lease" }), "private lease");
+  assert.equal(soortWebsiteLead({ kanaal: "Udenhout.nl privatelease aanv.", onderwerp: "Aanvraag" }), "private lease");
+  assert.equal(soortWebsiteLead({ kanaal: "Udenhout.nl offerteaanv.", onderwerp: "Module.Car.Index.Mail.Request.Subject.growLease" }), "offerte");
+  assert.equal(soortWebsiteLead({ kanaal: "Udenhout.nl", onderwerp: "inruilvoorstel" }), "inruil");
+  assert.equal(soortWebsiteLead({ kanaal: "Udenhout.nl contact", onderwerp: "Algemeen contactformulier" }), "overig");
 });

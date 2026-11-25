@@ -272,9 +272,17 @@ function BalkCel({
 
 const BRON_NAAM: Record<LeadBron, string> = { syntec: "Syntec", ga4: "Google Analytics" };
 const BRON_UITLEG: Record<LeadBron, string> = {
-  syntec: "Leads in Syntec (Data leads) voor het merk en de modellen uit de briefing",
-  ga4: "Lead-events in GA4 in sessies die op de campagnepagina('s) begonnen",
+  syntec:
+    "Syntec, omdat het doel dat zegt: alleen leads met kanaalgroep Internet en udenhout.nl in Kanaal of Onderwerp, van de soort uit het doel",
+  ga4: "Google Analytics (standaard): lead-events van de soort uit het doel, in sessies die op de campagnepagina('s) begonnen",
 };
+
+/** De regel onder het leadcijfer: bron, en welke soort er geteld is. */
+function leadOnderschrift(o: { bron: LeadBron; leadSoort: string | null; oudeTelling: boolean; syntecNietMogelijk: boolean }): string {
+  if (o.syntecNietMogelijk) return "Google Analytics · Syntec n.v.t.";
+  if (o.oudeTelling) return "Google Analytics · alle lead-events";
+  return o.leadSoort ? `${BRON_NAAM[o.bron]} · ${o.leadSoort}` : BRON_NAAM[o.bron];
+}
 
 /**
  * Campagne-analyses: Analyse ronde, campagne, uitgaven tegen budget, gezamenlijke CTR van de
@@ -365,10 +373,19 @@ function CampagneAnalyseTabel({ campagnes, opzetten, rondeBezig, onOpen, onBewer
                     <span className="text-meta text-ink-faint">Op de campagnepagina</span>
                   </div>
                 </td>
-                <td className="px-3 py-3" title={BRON_UITLEG[o.bron]}>
+                <td
+                  className="px-3 py-3"
+                  title={
+                    o.syntecNietMogelijk
+                      ? "Het doel noemt Syntec, maar Syntec geldt alleen voor een analyse die uitsluitend over Van den Udenhout gaat. Daarom Google Analytics."
+                      : o.oudeTelling
+                        ? "Uit een analyse van vóór de leadregel van 25 november 2026: alle lead-events in GA4. De volgende analyse telt alleen de soort uit het doel."
+                        : BRON_UITLEG[o.bron]
+                  }
+                >
                   <div className="flex min-w-[120px] flex-col gap-1.5">
                     <span className="tabular-nums text-ink">{geanalyseerd ? formatWaarde(o.leads) : "—"}</span>
-                    <span className="text-meta text-ink-faint">{BRON_NAAM[o.bron]}</span>
+                    <span className="text-meta text-ink-faint">{leadOnderschrift(o)}</span>
                   </div>
                 </td>
                 <td className="px-3 py-3">

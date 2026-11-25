@@ -117,6 +117,14 @@ export interface DoelOordeel {
 }
 
 /**
+ * Waar het leadcijfer van een Campagne analyse vandaan komt (besluit van de eigenaar,
+ * 25 november 2026): standaard Google Analytics; Syntec alleen als het doel in de briefing dat
+ * expliciet zegt, en dan alleen leads met Kanaalgroep "Internet" én "udenhout.nl" in Kanaal of
+ * Onderwerp (view `marketing_analyse_leads_website`). Nooit opgeteld of gemengd.
+ */
+export type LeadBron = "syntec" | "ga4";
+
+/**
  * De vaste cijfers per analyse voor de overzichtstabel. Null als de analyse het niet kon
  * bepalen; `leadsSyntec` is bij elk ander bedrijf dan Van den Udenhout altijd null (n.v.t.).
  */
@@ -131,12 +139,26 @@ export interface MaKerncijfers {
   klikken?: number | null;
   /** Sessies die op de campagnepagina('s) begonnen (GA4). */
   sessies?: number | null;
-  /** Lead-events in sessies die op de campagnepagina begonnen (GA4). */
+  /** Alle lead-events in sessies die op de campagnepagina begonnen (GA4); context. */
   leadEvents?: number | null;
-  /** Leads in Syntec (Data leads) voor merk/model in de periode; alleen Van den Udenhout. */
+  /**
+   * Leads in Syntec voor merk/model in de periode, alleen websiteleads van udenhout.nl
+   * (Kanaalgroep "Internet" én "udenhout.nl" in Kanaal of Onderwerp); alleen Van den Udenhout.
+   */
   leadsSyntec?: number | null;
-  /** Waarvan via kanaalgroep Internet. */
+  /** Vervallen sinds 25 november 2026 (alles in `leadsSyntec` is al Internet); oude versies hebben hem nog. */
   leadsSyntecInternet?: number | null;
+  /** Uit welke bron `leadsDoel` komt. */
+  leadBron?: LeadBron | null;
+  /**
+   * HET leadcijfer van de campagne, dat het overzicht tegen het doel zet: de leads van de soort
+   * uit het doel ("20 proefritten" → alleen proefritten), uit `leadBron`. Bij GA4 de lead-events
+   * van die soort in sessies die op de campagnepagina begonnen; bij Syntec de websiteleads van
+   * die soort.
+   */
+  leadsDoel?: number | null;
+  /** Welke soort er in `leadsDoel` is geteld, in gewone taal ("proefritten", "alle autoleads"). */
+  leadsDoelSoort?: string | null;
   /**
    * Het aantal leads uit het doel van de briefing (vrije tekst, bijv. "20 proefritten" → 20),
    * zoals de analyse het las. Null als het doel niet over een aantal leads gaat.

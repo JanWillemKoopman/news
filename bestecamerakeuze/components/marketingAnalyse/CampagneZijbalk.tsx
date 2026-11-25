@@ -275,7 +275,10 @@ export default function CampagneZijbalk({
         <Veld label="Totaalbudget" hint="Wat marketing voor de hele campagneperiode beschikbaar heeft.">
           <input className={`${INVOER} tabular-nums`} inputMode="decimal" value={v.budget} onChange={zet("budget")} disabled={bezig} placeholder="5.000" />
         </Veld>
-        <Veld label="Doel van de campagne" hint="In je eigen woorden, bijv. “20 proefritaanvragen”. De analyse beoordeelt hoe het ervoor staat.">
+        <Veld
+          label="Doel van de campagne"
+          hint="In je eigen woorden, bijv. “20 proefritten”. De leads tellen standaard in Google Analytics (20 proefritten = 20 proefritleads op de website). Schrijf “uit Syntec” erbij om ze in Syntec te tellen: dan alleen leads met kanaalgroep Internet via udenhout.nl."
+        >
           <textarea className={`${INVOER} min-h-16 resize-y`} value={v.doel} onChange={zet("doel")} disabled={bezig} />
         </Veld>
         <Veld

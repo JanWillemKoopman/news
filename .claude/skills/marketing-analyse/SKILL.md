@@ -36,10 +36,11 @@ analyses; jij maakt ze. Het plan en alle besluiten van de eigenaar staan in
    Alleen de accounts en properties van de bedrijven uit de briefing (`bedrijven`, kan er meer
    dan één zijn; semantic layer, Algemeen). Bij meerdere bedrijven: alle accounts van elk
    bedrijf, en splits de belangrijkste cijfers per bedrijf uit.
-2. **`dataloket.marketing_analyse_leads`**: de leads-kopie van "Data leads". **Alleen voor
-   Van den Udenhout**; voor elk ander bedrijf niet gebruiken. `leadsSyntec` alleen invullen als
-   de analyse uitsluitend over Van den Udenhout gaat, anders null (het overzicht toont dan de
-   lead-events uit GA4).
+2. **`dataloket.marketing_analyse_leads`**: de leads-kopie van "Data leads" (zeven kolommen,
+   met Kanaal), en de view **`dataloket.marketing_analyse_leads_website`** daarop (alleen
+   Kanaalgroep "Internet" én "udenhout.nl" in Kanaal of Onderwerp, met een kolom `soort`).
+   **Alleen voor Van den Udenhout**; voor elk ander bedrijf niet gebruiken. `leadsSyntec` alleen
+   invullen als de analyse uitsluitend over Van den Udenhout gaat, anders null.
 3. **`dataloket.lead_kanaalkosten`**: extra maandkosten per GA4-bron/medium. **Niet bij een
    campagne-analyse** (besluit van de eigenaar): daar zijn de kosten alleen de mediakosten uit
    Google Ads, Meta Ads en LinkedIn Ads. Alleen een rapportage mag deze tabel gebruiken, als de
@@ -49,6 +50,25 @@ analyses; jij maakt ze. Het plan en alle besluiten van de eigenaar staan in
 `v_leads`. De tabellen van de tool zelf (`marketing_analyse_campagnes`, `_prompts`,
 `_semantiek`) lees en schrijf je wel; dat is geen analysedata. `_versies` schrijf je alleen
 (via `marketing_analyse_bewaar`); eerdere versies lees je niet.
+
+## Harde regel: het leadcijfer komt uit één bron (Campagne analyse)
+Besluit van de eigenaar, 25 november 2026; ook in de semantic layer (Algemeen, GA4, Data leads).
+- **Standaard Google Analytics.** Zegt het veld `doel` niet expliciet dat het uit Syntec komt,
+  dan is het leadcijfer het aantal lead-events **van de soort uit het doel** in sessies die op de
+  campagnepagina('s) begonnen. "20 proefritten" = 20× `generate_lead_proefrit` op de website.
+- **Syntec alleen als het doel dat expliciet zegt** (het woord Syntec staat erin) **én** de
+  analyse uitsluitend over Van den Udenhout gaat. Tel dan in de view, nooit in de kale kopie:
+  ```sql
+  select soort, count(*) from dataloket.marketing_analyse_leads_website
+  where aangelegd_op >= '<start>' and aangelegd_op < '<eind + 1 dag>'
+    and merk ilike '%<merk>%' and model ilike '%<model>%'
+  group by soort;   -- de view eist al Kanaalgroep = 'Internet' en udenhout.nl in Kanaal of Onderwerp
+  ```
+  Noemt het doel Syntec bij een ander bedrijf: tel in GA4 en meld het in `datakwaliteit`.
+- Nooit opgeteld, nooit gemengd. De andere bron mag als context in zijn eigen tabblad, maar niet
+  in `leadsDoel` en niet in het doeloordeel. Het dashboard rekent de bron zelf ook na
+  (`leadBron` in `rekenen.ts`: het woord Syntec in het doel én alleen Van den Udenhout) en toont
+  niets als `kerncijfers.leadBron` daarvan afwijkt.
 
 ## Stap 0 — Welke campagne(s) of rapportage(s)
 ```sql
@@ -121,14 +141,13 @@ select id, versie, inhoud from dataloket.marketing_analyse_semantiek order by ve
 - **Rapportage**: alle accounts en properties van het bedrijf over de hele periode (geen
   campagnefilter). Leads bij Van den Udenhout: alle leads van de periode, uitgesplitst naar
   merk en kanaalgroep. PGZ en andere bedrijven: alleen GA4.
-- **Leads** (alleen Van den Udenhout):
-  ```sql
-  select count(*) totaal, count(*) filter (where kanaalgroep = 'Internet') internet, …
-  from dataloket.marketing_analyse_leads
-  where aangelegd_op >= '<start>' and aangelegd_op < '<eind + 1 dag>' and model ilike '%…%';
-  ```
-  Soort lead en ordersoort volgens de semantic layer. Controleer `max(aangelegd_op)` en meld tot
-  wanneer de kopie loopt.
+- **Leads in Syntec bij een campagne** (alleen Van den Udenhout): uit
+  `marketing_analyse_leads_website` per soort, zoals in de harde regel hierboven. Dat is het
+  leadcijfer als het doel Syntec noemt, anders context voor het tabblad Leads in Syntec. Soort
+  lead volgens de view (kolom `soort`). Controleer `max(aangelegd_op)` en meld tot wanneer de
+  kopie loopt.
+- **Leads in Syntec bij een rapportage**: alle leads van de periode uit `marketing_analyse_leads`,
+  uitgesplitst naar merk en kanaalgroep, tenzij de prompt van de opzet iets anders vraagt.
 - **Kosten bij een campagne-analyse**: alleen de mediakosten uit de advertentieplatformen.
   `kerncijfers.kosten` en de sectie Investering tellen geen `lead_kanaalkosten` mee.
 - **Extra kanaalkosten (alleen rapportages)**: `select bron_medium, maand, bedrag from
@@ -202,7 +221,7 @@ die voor álle campagnes gelden; je past de semantic layer nooit zelf aan.
 **Kerncijfers** (`MaKerncijfers`, voor het overzicht; null als onbekend):
 ```json
 { "kosten": 1960.8, "vertoningen": 520000, "vertoningenAds": 410000, "klikken": 12000, "sessies": 8000, "leadEvents": 25,
-  "leadsSyntec": 60, "leadsSyntecInternet": 41, "doelLeads": 20,
+  "leadsSyntec": 31, "leadBron": "ga4", "leadsDoel": 9, "leadsDoelSoort": "proefritten", "doelLeads": 20,
   "doel": { "status": "achter", "toelichting": "…" } }
 ```
 `vertoningen` = betaald + organisch. `vertoningenAds` = alleen de vertoningen van Google Ads,
@@ -210,11 +229,15 @@ Meta Ads en LinkedIn Ads samen, en `klikken` = hun klikken samen (Google Ads cli
 clicks, LinkedIn clicks). Het overzicht toont de gezamenlijke CTR als klikken ÷ vertoningenAds;
 vul daarom altijd allebei in. `sessies` = sessies die op de campagnepagina('s) begonnen, uit elk
 kanaal: dat zijn de "bezoekers" in het overzicht.
-`leadsSyntec` en `leadsSyntecInternet` zijn null tenzij de analyse uitsluitend over Van den
-Udenhout gaat. `doelLeads`: het aantal leads uit het doel van de briefing zoals jij het leest
-("20 proefritten" → 20; proefrit- en offerteaanvragen zijn leads), null als het doel niet over
-een aantal leads gaat. Het overzicht zet de leads (Syntec bij alleen Van den Udenhout met
-modellen, anders `leadEvents`) tegen dit doel, en de kosten tegen het budget.
+**Leads** (harde regel hierboven): `leadBron` is `"ga4"` (standaard) of `"syntec"` (alleen als het
+doel Syntec noemt en de analyse uitsluitend over Van den Udenhout gaat). `leadsDoel` is HET
+leadcijfer: de leads van de soort uit het doel uit die ene bron; `leadsDoelSoort` zegt welke
+soort ("proefritten", "alle autoleads"). Het overzicht zet `leadsDoel` tegen het doel, en de
+kosten tegen het budget. `leadEvents` = alle lead-events op de campagnepagina (context).
+`leadsSyntec` = alle websiteleads in Syntec voor merk en model (uit de view, alle soorten), null
+tenzij de analyse uitsluitend over Van den Udenhout gaat; `leadsSyntecInternet` vervalt.
+`doelLeads`: het aantal leads uit het doel zoals jij het leest ("20 proefritten uit Syntec" → 20),
+null als het doel niet over een aantal leads gaat.
 Bij een **rapportage** toont het overzicht geen kerncijfers: geef `{}` mee (of vul in wat
 vanzelf meekomt), laat `doel` weg en geef `funnel: []` mee.
 
@@ -222,7 +245,9 @@ vanzelf meekomt), laat `doel` weg en geef `funnel: []` mee.
 Schrijf de JSON eerst naar een bestand in je scratchpad en controleer hem (`node -e` met
 `JSON.parse`): `formaat` is 2; elke sectie heeft `stap`, `titel` en (bij een campagne) een
 geldige `tab`; elk tabblad hoogstens één keer; hoogstens vijf `regels` en vijf `bevindingen`;
-elke actie en aanbeveling heeft een `prioriteit`; geen tegel, regel of kolom met extra
+elke actie en aanbeveling heeft een `prioriteit`; bij een campagne staan `leadBron`, `leadsDoel`
+en `leadsDoelSoort` in de kerncijfers en is `leadBron` alleen `"syntec"` als het doel Syntec noemt
+en de analyse uitsluitend over Van den Udenhout gaat; geen tegel, regel of kolom met extra
 kanaalkosten bij een campagne-analyse. Sla op met
 dollar-quoting:
 ```sql
