@@ -112,3 +112,51 @@ export const GEEN_KLANTGROEP = "Geen klantgroep";
 export function klantgroepNaam(o: Pick<AnalyseOrderRecord, "klantgroep">): string {
   return o.klantgroep ?? GEEN_KLANTGROEP;
 }
+
+/**
+ * Het ordertype: een indeling van de klantgroep in een paar soorten, zodat de analyse altijd een
+ * totaal van alle orders kan geven met een uitsplitsing die te lezen is (verzoek van de eigenaar,
+ * 25 november 2026, campagne-analyse-tool.md §22). Handel gaat op ordersoort, de rest op
+ * klantgroep. "Dealer Lease" (en de Cupra- en _TB-varianten) telt als zakelijke lease. Gelijk aan
+ * de kolom `ordertype` in de view `marketing_analyse_orders_type` (migratie 0052); houd ze gelijk.
+ */
+export const ORDERTYPES = [
+  "Koop particulier",
+  "Koop zakelijk",
+  "Private lease",
+  "Zakelijke lease",
+  "Verhuur (Rent)",
+  "Demo",
+  "Handel",
+  "Overig",
+] as const;
+export type Ordertype = (typeof ORDERTYPES)[number];
+
+const ORDERTYPE_PER_KLANTGROEP: Record<string, Ordertype> = {
+  Handel: "Handel",
+  Rent: "Verhuur (Rent)",
+  "Rentals ext": "Verhuur (Rent)",
+  Demo: "Demo",
+  "Private lease": "Private lease",
+  "Private Groeilease": "Private lease",
+  "Cupra - Dealer Lease - Private Lease": "Private lease",
+  "Cupra - Uni Lease - Private Lease": "Private lease",
+  "Dealer Lease": "Zakelijke lease",
+  Lease: "Zakelijke lease",
+  "Occasion-Lease": "Zakelijke lease",
+  "Restmarge Dealer Lease": "Zakelijke lease",
+  "Cupra - Uni Lease - Zakelijk": "Zakelijke lease",
+  "Cupra - Dealer Lease - Zakelijk": "Zakelijke lease",
+  "Dealerlease Zakelijk_TB": "Zakelijke lease",
+  "Koop Particulier (BM)": "Koop particulier",
+  "Cupra - BM ovg Particulier": "Koop particulier",
+  PARTICULIER_TB: "Koop particulier",
+  "Koop Zakelijk (BM)": "Koop zakelijk",
+  "Cupra - BM ovg Zakelijk": "Koop zakelijk",
+  BEDRIJF_TB: "Koop zakelijk",
+};
+
+export function ordertypeVan(o: Pick<AnalyseOrderRecord, "ordersoort" | "klantgroep">): Ordertype {
+  if (o.ordersoort === "Handel") return "Handel";
+  return (o.klantgroep && ORDERTYPE_PER_KLANTGROEP[o.klantgroep]) || "Overig";
+}

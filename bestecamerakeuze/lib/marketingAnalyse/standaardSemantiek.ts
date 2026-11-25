@@ -10,7 +10,9 @@ import type { SemantiekInhoud } from "./types";
  * GA4 standaard, Syntec alleen als het doel dat zegt, met Kanaalgroep Internet en udenhout.nl)
  * staat in Algemeen, Google Analytics 4 en Data leads; besluit van 25 november 2026. De
  * orderregel (bron Syntec orders, altijd uitgesplitst per klantgroep) staat in Algemeen en in het
- * blok Syntec orders; verzoek van de eigenaar van dezelfde dag.
+ * blok Syntec orders; verzoek van de eigenaar van dezelfde dag. Het overzicht van alle leads en
+ * orders (views marketing_analyse_leads_soort en _orders_type) staat in Algemeen, Data leads en
+ * Syntec orders, en de benchmarkgroep van campagnepagina's in GA4 (versie 5, plan §22).
  */
 export const STANDAARD_SEMANTIEK: SemantiekInhoud = {
   bedrijven: [
@@ -48,6 +50,13 @@ Verzoek van de eigenaar, 25 november 2026. De bron **Syntec orders** (marketing_
 4. **Splits de orders altijd uit per klantgroep** (kolom klantgroep_naam; een lege klantgroep heet "Geen klantgroep", zodat de uitsplitsing optelt tot het totaal), en daarnaast in Nieuw en Gebruikt. Die uitsplitsing staat in elke analyse waarin orders voorkomen: in de stap Orders in Syntec, en noem de grootste klantgroepen ook in de bevindingen.
 5. Orders zijn **niet** het leadcijfer en tellen nooit mee in leadsDoel. Gaat het doel over verkochte auto's of orders ("30 verkochte auto's"), dan beoordeel je het doel op de orders en zeg je dat in de toelichting bij het doel.
 6. Er is **geen koppeling tussen een lead en een order**. Een order voor merk en model in de periode is dus niet per se door de campagne gekomen: schrijf "orders voor <model> in de periode", niet "orders uit de campagne". Een verhouding orders/leads is hoogstens een indicatie, en een order volgt vaak weken na de lead.
+
+## Overzicht van alle leads en orders (altijd, Van den Udenhout)
+Verzoek van de eigenaar, 25 november 2026. Naast het leadcijfer tegen het doel wil hij bij elke analyse die uitsluitend over Van den Udenhout gaat zien wat het merk en de modellen **in totaal** deden in Syntec, in de periode van de analyse:
+1. **Leads in Syntec** (view marketing_analyse_leads_soort): het totaal van **alle leads** voor merk en modellen (alle kanaalgroepen), daarvan hoeveel uit **Internet** (Kanaalgroep "Internet") en hoeveel offline (per kanaalgroep), en van de Internet-leads de verdeling per **soort lead** (proefrit, offerte, private lease, inruil, overig). Daarnaast hoeveel daarvan websiteleads van udenhout.nl zijn (kolom website). Bij veel Internet-leads met soort overig: noem de grootste kanalen (portals zeggen vaak niet wat voor aanvraag het is).
+2. **Orders in Syntec** (view marketing_analyse_orders_type): het totaal van **alle orders** voor merk en modellen, ook Handel en verhuur, met de uitsplitsing per **ordertype** (koop particulier, koop zakelijk, private lease, zakelijke lease, verhuur (Rent), demo, handel, overig). Daaronder blijft de tabel per klantgroep van de verkoop aan klanten staan (zie hierboven).
+3. Dit overzicht is **context**. Het leadcijfer tegen het doel blijft uit één bron komen (zie "Leads bij een Campagne analyse"); het totaal van alle leads of orders telt daar nooit in mee.
+4. Zoek merk en model in leads en orders op dezelfde manier en noem welke modelwaarden je meetelt. Leads en orders van hetzelfde model kunnen anders geschreven zijn (zie de blokken Data leads en Syntec orders).
 
 ## Accounts per bedrijf (Windsor)
 **Van den Udenhout**
@@ -131,6 +140,10 @@ Aanvullingen van de eigenaar voor de zoekronde naar live actiecampagnes (skill c
 - **landing_page hoort bij de hele sessie.** Vraag events op met landing_page × event_name × event_count: dan tel je de events in sessies die op de campagnepagina begonnen, ook als het event later elders op de site viel.
 - Sessies tellen op over dagen, gebruikers niet.
 
+## Benchmark: welke pagina's zijn campagnepagina's
+- Voor de vergelijking met eigen historie (benchmark per blok) tellen als campagnepagina's van Van den Udenhout: alle pagina's onder **/acties/** op udenhout.nl met minstens **200 sessies** in hun eigen looptijd, **behalve** acties voor after sales en service (onderhoud, APK, werkplaats, banden, winter- of zomercheck). Neem de pagina van de campagne zelf niet op in de groep.
+- Vergelijk per pagina over de eigen looptijd (eerste tot laatste dag met sessies), dus in verhoudingen (per sessie, per klik), niet in totalen. Noem in de benchmark de groep en het aantal pagina's; onder vijf pagina's geen benchmark.
+
 ## E-mailverkeer herkennen
 - E-mail = session_default_channel_group = "Email" **of** (session_source_medium = "(direct) / (none)" **en** landing_page_plus_query_string bevat "M_BT="). Reden: de tracking vanuit Selligent ging mis, waardoor klikken uit mailings als direct binnenkomen met M_BT= in de URL. Alleen op hostnames udenhout.nl en www.udenhout.nl.
 
@@ -163,6 +176,12 @@ Passen de parameters customevent_car_brand en customevent_car_model niet bij het
 - Dan telt een lead alleen als **Kanaalgroep = "Internet"** én **Kanaal of Onderwerp "udenhout.nl" bevat** (hoofdletterongevoelig). Dat zijn de websiteleads van udenhout.nl. Leads via merksites (Volkswagen.nl, Audi.nl …), portals (Autoscout24, ViaBOVAG …), WhatsApp of de showroom tellen niet.
 - De view **marketing_analyse_leads_website** past die voorwaarde toe en heeft een kolom **soort**. Tel altijd daarin, filter op merk, model, periode (aangelegd_op) en soort.
 - Ter vergelijking (laatste 365 dagen, november 2026): 38.296 leads in de kopie, waarvan 7.217 websiteleads van udenhout.nl, waarvan 2.236 proefritten. In de praktijk staat "Udenhout.nl" in Kanaal ("Udenhout.nl", "Udenhout.nl proefritaanv.", "Udenhout.nl offerteaanv." …); in Onderwerp kwam het in dat jaar niet voor.
+
+## Overzicht van alle leads (altijd)
+- Tel het totaal in de view **marketing_analyse_leads_soort**: alle leads uit de kopie met de kolommen **soort** (zelfde regel als hieronder), **internet** (Kanaalgroep "Internet"), **website** (Internet én udenhout.nl, gelijk aan de view marketing_analyse_leads_website) en **kanaalgroep_naam** ("Geen kanaalgroep" als hij leeg is). Filter op merk, model en periode (aangelegd_op).
+- Laat zien: alle leads; Internet tegen offline (offline per kanaalgroep); Internet per soort; en daarvan de websiteleads.
+- Ter vergelijking (laatste 365 dagen, 25 november 2026): 31.079 leads, waarvan 14.581 Internet (7.217 websiteleads van udenhout.nl) en offline 21.714 Showroom, 946 Acquisitie, 654 Mail en 400 Telefoon. Internet per soort: overig 6.319, proefrit 3.219, offerte 2.706, private lease 1.754, inruil 583. Van de websiteleads: offerte 2.619, proefrit 2.236, private lease 1.511, overig 638, inruil 213.
+- Bij Internet is overig groot omdat merksites en portals (Volkswagen.nl, Autoscout24, Gaspedaal …) vaak niet zeggen wat voor aanvraag het is. Noem dan de grootste kanalen.
 
 ## De kolommen
 - **Kanaal**: waar de lead binnenkwam ("Udenhout.nl", "Udenhout.nl proefritaanv.", "Volkswagen.nl", "CST" …). Tot april 2026 had elk formulier van udenhout.nl een eigen kanaal; sindsdien komt alles binnen onder "Udenhout.nl" en zegt Onderwerp wat het is.
@@ -199,11 +218,26 @@ Gecontroleerd in november 2026: dit klopt voor 99,9% met de kolom Lead type in S
 - De klantgroepen die met "Cupra - " beginnen (Uni Lease - Zakelijk, Dealer Lease - Zakelijk, BM ovg Particulier, BM ovg Zakelijk, Euromobi - Koop, Dealer Lease - Private Lease, Uni Lease - Private Lease; samen 751) horen allemaal bij CUPRA. CUPRA heeft dus eigen klantgroepen naast de algemene.
 - Gebruikt verkoopt vooral als Koop Particulier (BM) (2.037 van 3.080); Nieuw verdeelt zich over veel lease- en koopvormen.
 
+## Ordertype (altijd een totaal met uitsplitsing)
+- Tel het totaal van **alle orders** in de view **marketing_analyse_orders_type**: alle orders uit de kopie (ook Handel en verhuur) met de kolom **ordertype** en de vlag **klantorder** (Nieuw of Gebruikt). Filter op merk, model en periode (orderdatum_op).
+- Indeling (Handel op ordersoort, de rest op klantgroep):
+  - **Koop particulier**: Koop Particulier (BM), Cupra - BM ovg Particulier, PARTICULIER_TB;
+  - **Koop zakelijk**: Koop Zakelijk (BM), Cupra - BM ovg Zakelijk, BEDRIJF_TB;
+  - **Private lease**: Private lease, Private Groeilease, Cupra - Dealer Lease - Private Lease, Cupra - Uni Lease - Private Lease;
+  - **Zakelijke lease**: Dealer Lease, Lease, Occasion-Lease, Restmarge Dealer Lease, Cupra - Uni Lease - Zakelijk, Cupra - Dealer Lease - Zakelijk, Dealerlease Zakelijk_TB;
+  - **Verhuur (Rent)**: Rent, Rentals ext;
+  - **Demo**: Demo;
+  - **Handel**: Ordersoort Handel (of klantgroep Handel);
+  - **Overig**: Restmarge deal, Centrale Bestelling, Cupra - Euromobi - Koop en een lege klantgroep.
+- "Dealer Lease" is zakelijke lease (leasemaatschappij via de dealer). Klopt dat voor een campagne niet, zeg dat en laat de klantgroepentabel het detail geven.
+- **Verhuur (Rent) noem je altijd apart**: dat zijn auto's voor de eigen verhuurvloot of een verhuurder, geen verkoop aan een eindklant. Ze staan wel in marketing_analyse_orders_klant (Ordersoort Nieuw); tel ze daar mee in het klanttotaal maar zeg hoeveel het er waren.
+- Ter vergelijking (1 januari t/m 14 november 2026, alle merken): 12.926 orders: zakelijke lease 3.707, koop particulier 3.315, handel 1.716, koop zakelijk 1.502, private lease 1.329, overig 606, verhuur (Rent) 476, demo 275.
+
 ## De kolommen
 - **Ordersoort**: Nieuw, Gebruikt of Handel.
 - **Klantgroep**: aan welke klantgroep de auto is verkocht (zie hierboven).
 - **Merk**: de eigen merken staan netjes (Volkswagen, Škoda, Audi, CUPRA, Volkswagen Bedrijfswagens, SEAT, Porsche); andere merken in hoofdletters (FORD, TOYOTA …), vooral bij Gebruikt en Handel. "Onbekend", "Y" en "P" zijn opvulwaarden.
-- **Model**: staat op veel manieren geschreven ("Polo (6)", "up! (2) GP", "ID. Buzz"). Zoek breed op het model, controleer het merk en noem welke modelwaarden je meetelt.
+- **Model**: staat op veel manieren geschreven ("Polo (6)", "up! (2) GP", "ID. Buzz"). Een model kan in de orders anders heten dan in de leads en de campagne: de Audi A2 e-tron staat in de orders als "A2 e-tron (A1)". Zoek breed op het model, controleer het merk en noem welke modelwaarden je meetelt.
 - **Orderdatum**: de datum van de order, zonder tijd.
 - Niet in de kopie (bewust): Brandstof, Uitvoering, de weeknummers, Autoline Magic en Campagnes. De kolom Campagnes is een formule in de sheet en zegt niet welke campagne de verkoop bracht.`,
 
