@@ -530,3 +530,12 @@ export interface MaZoekronde {
   aantalOvergeslagen: number;
   aantalVerlopen: number;
 }
+
+/** Een afgevinkte actie uit "Wat nu te doen" van een versie (migratie 0051). */
+export interface MaActieKlaar {
+  /** `geheel-<plek in MaResultaat.aanbevelingen>` */
+  actie: string;
+  afgevinktOp: string;
+  /** Naam uit het profiel van wie afvinkte; null als die geen naam heeft. */
+  door: string | null;
+}
