@@ -63,7 +63,13 @@ export const STANDAARD_SEMANTIEK: SemantiekInhoud = {
 
 ## Naamgeving van campagnes
 - Actiecampagnes heten in de platforms meestal "Actie - …", "Acties - …" of "1. Acties - …", met het model erin (bijv. "1. Acties - Audi A2 e-tron -2026", "Demand Gen | Acties - Audi A2 e-tron - 2026").
-- Let op valse treffers: een korte modelnaam als "A2" komt ook in andere woorden voor. Controleer altijd merk, model en periode.`,
+- Let op valse treffers: een korte modelnaam als "A2" komt ook in andere woorden voor. Controleer altijd merk, model en periode.
+
+## Campagnevoorstellen
+Aanvullingen van de eigenaar voor de zoekronde naar live actiecampagnes (skill campagne-voorstellen). De skill oordeelt zelf en leest dit als leidraad. Denk aan:
+- wat bij een bedrijf wel of niet als campagnepagina telt (bijv. "pagina's onder /acties zijn altijd campagnepagina's");
+- campagnes die altijd aan staan en geen voorstel hoeven (branding, vacatures, algemene voorraad- en servicecampagnes);
+- hoe een bureau de campagnenamen opbouwt.`,
 
     google_ads: `- Campagnetypes: Search, Performance Max, Demand Gen en Display. Het type staat vaak vóór in de naam ("Demand Gen | …").
 - Google levert geen eigen leadveld: het leadcijfer zit in de conversies (conversie-acties die in Google Ads zijn ingesteld). Gebruik conversies alleen als aanvulling; GA4 is leidend voor wat er op de website gebeurt.

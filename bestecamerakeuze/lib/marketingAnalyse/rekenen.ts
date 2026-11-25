@@ -71,6 +71,57 @@ export function leesModellen(waarde: unknown): string[] {
   return uit.slice(0, 20);
 }
 
+/**
+ * Eén vorm van een URL om op te vergelijken: host zonder www, pad, kleine letters, zonder
+ * protocol, query, hash of slash aan het eind. Dezelfde regel als
+ * `dataloket.marketing_analyse_pagina_sleutel` (migratie 0046).
+ */
+export function paginaSleutel(url: string): string | null {
+  const s = url
+    .trim()
+    .toLowerCase()
+    .replace(/^[a-z]+:\/\//, "")
+    .replace(/[?#].*$/, "")
+    .replace(/^www\.|\/+$/g, "");
+  return s || null;
+}
+
+/**
+ * Campagnepagina's uit een lijst of tekst (één per regel of met komma's). Zonder protocol komt
+ * er https:// voor; query en hash gaan eraf (trackingparameters horen niet bij de pagina).
+ * Dubbele (zelfde paginasleutel) en wat geen webadres is, vallen weg.
+ */
+export function leesPaginas(waarde: unknown): string[] {
+  const ruw = Array.isArray(waarde) ? waarde : typeof waarde === "string" ? waarde.split(/[\s,;]+/) : [];
+  const gezien = new Set<string>();
+  const uit: string[] = [];
+  for (const p of ruw) {
+    if (typeof p !== "string") continue;
+    let s = p.trim().replace(/[?#].*$/, "");
+    if (!s) continue;
+    if (!/^[a-z]+:\/\//i.test(s)) s = `https://${s}`;
+    let url: URL;
+    try {
+      url = new URL(s);
+    } catch {
+      continue;
+    }
+    if (!/^https?:$/.test(url.protocol) || !url.hostname.includes(".")) continue;
+    const schoon = `${url.protocol}//${url.hostname.toLowerCase()}${url.pathname.replace(/\/+$/, "")}`.slice(0, 500);
+    const sleutel = paginaSleutel(schoon);
+    if (sleutel && !gezien.has(sleutel)) {
+      gezien.add(sleutel);
+      uit.push(schoon);
+    }
+  }
+  return uit.slice(0, 20);
+}
+
+/** Een campagnepagina kort voor op het scherm: "udenhout.nl/acties/a2-e-tron". */
+export function paginaKort(url: string): string {
+  return (url.trim().replace(/^[a-z]+:\/\//i, "").replace(/^www\./i, "").replace(/\/+$/, "") || url).slice(0, 80);
+}
+
 export type InvoerUitkomst = { ok: true; invoer: MaCampagneInvoer } | { ok: false; fout: string };
 
 /** Wat de invoercontrole van de gekozen opzet moet weten. */
@@ -125,6 +176,7 @@ export function leesCampagneInvoer(body: unknown, opzet: OpzetVoorInvoer): Invoe
         doel: null,
         budget: null,
         omschrijving,
+        campagnePaginas: [],
         dataCorrectie,
       },
     };
@@ -155,6 +207,7 @@ export function leesCampagneInvoer(body: unknown, opzet: OpzetVoorInvoer): Invoe
       doel: tekstOfNull(b.doel, MAX_LANG),
       budget,
       omschrijving,
+      campagnePaginas: leesPaginas(b.campagnePaginas),
       dataCorrectie,
     },
   };

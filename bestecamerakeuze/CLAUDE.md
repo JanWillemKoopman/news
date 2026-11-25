@@ -1762,6 +1762,25 @@ lees dat eerst voordat je hier iets verandert.
   schakelaar Analyse ronde en bij campagnes de kerncijfers uit de laatste analyse.
   Rechtsboven Analyse prompts, Semantic layer en Nieuwe analyse. De open analyse staat in de URL
   (`?analyse=<campagne-id>`).
+- **Voorgestelde campagne analyses** (25 november 2026, migratie 0046, plan en besluiten in
+  `campagne-voorstellen-plan.md`). Claude Code zoekt met de skill `campagne-voorstellen` op
+  verzoek in Windsor welke actiecampagnes van alle bedrijven nu live zijn (uitgaven in de laatste 7
+  dagen) en vult per campagne een voorzet voor de briefing in. Vertrekpunt zijn de advertenties,
+  dan de campagnepagina, dan social posts over hetzelfde onderwerp. Het oordeel wat een
+  campagnepagina is, ligt bij het taalmodel; de eigenaar stuurt bij via het kopje
+  Campagnevoorstellen in het blok Algemeen van de semantic layer (geen vaste URL-patronen in code).
+  Een actie zonder eigen pagina wordt een voorstel met zekerheid twijfel; één voorstel per bedrijf.
+  Opslag `marketing_analyse_voorstellen` (status open, toegevoegd, genegeerd, verlopen; `sleutel`
+  per bedrijf en pagina, zie `paginaSleutel` in `rekenen.ts` en de gelijke SQL-functie) en
+  `marketing_analyse_zoekrondes`. Schrijven alleen via `marketing_analyse_voorstellen_bewaar`
+  (slaat een pagina over die al een campagne heeft, laat genegeerd en toegevoegd staan, zet wat
+  niet meer live is op verlopen). In het overzicht staat de balk bovenaan
+  (`VoorstellenBalk.tsx`, eigen route `voorstellen`, zodat een fout de pagina niet raakt): Toevoegen
+  opent **altijd eerst de ingevulde briefing** (`CampagneZijbalk` met `voorstel`); opslaan doet
+  `marketing_analyse_voorstel_toevoegen` in één transactie (Campagne analyse, **Analyse ronde aan**,
+  `herkenning` = het bewijs). Negeren en terugzetten mag iedereen. De briefing kreeg het veld
+  **Campagnepagina('s)** (`campagnepaginas`); de skill `marketing-analyse` gebruikt pagina's en
+  herkenning als startpunt.
 - **Een eigen tabel, niet de sheet.** Dit is geen campagnelijst maar de briefing voor een
   analyse; de sheet blijft de bron van de campagnetabel.
 

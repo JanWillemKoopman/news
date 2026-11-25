@@ -8,6 +8,9 @@ import {
   leesBedrag,
   bedrijvenLabel,
   leesCampagneInvoer,
+  leesPaginas,
+  paginaKort,
+  paginaSleutel,
   leesDoelGetal,
   leadBron,
   overzichtCijfers,
@@ -345,4 +348,27 @@ test("Syntec alleen als de analyse uitsluitend over Van den Udenhout gaat", () =
   assert.equal(syntecVanToepassing(["Van den Udenhout", "PGZ"]), false);
   assert.equal(syntecVanToepassing([]), false);
   assert.equal(syntecVanToepassing(null), false);
+});
+
+test("paginasleutel: zelfde regel als de database (0046)", () => {
+  assert.equal(paginaSleutel("https://www.Udenhout.nl/acties/a2-e-tron/?utm_source=x#top"), "udenhout.nl/acties/a2-e-tron");
+  assert.equal(paginaSleutel("udenhout.nl/acties/a2-e-tron"), "udenhout.nl/acties/a2-e-tron");
+  assert.equal(paginaSleutel("  "), null);
+});
+
+test("campagnepagina's uit tekst: https erbij, zonder query, zonder dubbele", () => {
+  assert.deepEqual(
+    leesPaginas("www.udenhout.nl/acties/a2-e-tron/?utm_source=meta\nhttps://udenhout.nl/acties/a2-e-tron\nhttps://www.pgz.nl/lease#x, geen-url"),
+    ["https://www.udenhout.nl/acties/a2-e-tron", "https://www.pgz.nl/lease"],
+  );
+  assert.deepEqual(leesPaginas(["ftp://udenhout.nl/x", "https://Udenhout.NL/Acties"]), ["https://udenhout.nl/Acties"]);
+  assert.deepEqual(leesPaginas(undefined), []);
+  assert.equal(paginaKort("https://www.udenhout.nl/acties/a2-e-tron/"), "udenhout.nl/acties/a2-e-tron");
+});
+
+test("briefing: campagnepagina's bij een campagne, leeg bij een rapportage", () => {
+  const c = leesCampagneInvoer({ naam: "A2", bedrijf: "Van den Udenhout", campagnePaginas: "udenhout.nl/acties/a2-e-tron" }, CAMPAGNE);
+  assert.ok(c.ok && c.invoer.campagnePaginas[0] === "https://udenhout.nl/acties/a2-e-tron");
+  const r = leesCampagneInvoer({ naam: "VDU", periodeTekst: "november", campagnePaginas: "udenhout.nl/x" }, VDU_MAAND);
+  assert.ok(r.ok && r.invoer.campagnePaginas.length === 0);
 });
