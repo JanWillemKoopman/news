@@ -4,6 +4,7 @@
  */
 import {
   ANALYSE_TABBLADEN,
+  ANALYSE_TABBLADEN_V2,
   SEMANTIEK_BLOKKEN,
   type Aanbeveling,
   type Eenheid,
@@ -459,7 +460,7 @@ export function looptijdLabel(start: string | null | undefined, eind: string | n
  */
 const PRIORITEITEN: readonly Prioriteit[] = ["hoog", "middel", "laag"];
 const OORDELEN: readonly TabOordeel[] = ["goed", "aandacht", "probleem", "geen-data"];
-const TAB_SLEUTELS = new Set<string>(ANALYSE_TABBLADEN.map((t) => t.sleutel));
+const TAB_SLEUTELS = new Set<string>([...ANALYSE_TABBLADEN, ...ANALYSE_TABBLADEN_V2].map((t) => t.sleutel));
 
 function lijst<T>(x: T[] | undefined | null): T[] {
   return Array.isArray(x) ? x : [];
@@ -484,7 +485,7 @@ function leesAanbevelingen(ruw: unknown): Aanbeveling[] {
 export function normaliseerResultaat(ruw: unknown): MaResultaat {
   const r = (ruw ?? {}) as Partial<MaResultaat>;
   return {
-    formaat: r.formaat === 2 ? 2 : 1,
+    formaat: r.formaat === 3 ? 3 : r.formaat === 2 ? 2 : 1,
     samenvatting: {
       kop: r.samenvatting?.kop ?? "",
       regels: lijst(r.samenvatting?.regels).filter((x) => typeof x === "string").slice(0, 5),
@@ -563,10 +564,11 @@ function tabUitSecties(sleutel: string, naam: string, groep: string | null, sect
 }
 
 /**
- * De tabbladen van een analyse. Een campagne-analyse in formaat 2 krijgt altijd de vaste
- * tabbladen in vaste volgorde (een tabblad zonder sectie staat grijs met de reden), en daarachter
- * een eigen tabblad voor elke sectie zonder geldige `tab`. Een versie in formaat 1 en een
- * rapportage krijgen één tabblad per sectie, in de volgorde van de secties.
+ * De stappen van een analyse. Een campagne-analyse in formaat 3 krijgt altijd de vaste stappen
+ * van `ANALYSE_TABBLADEN`, in formaat 2 die van `ANALYSE_TABBLADEN_V2`, in vaste volgorde (een
+ * stap zonder sectie staat grijs met de reden), en daarachter een eigen stap voor elke sectie
+ * zonder geldige `tab`. Een versie in formaat 1 en een rapportage krijgen één stap per sectie, in
+ * de volgorde van de secties.
  */
 export function tabbladenVoor(
   resultaat: Pick<MaResultaat, "formaat" | "secties">,
@@ -574,20 +576,24 @@ export function tabbladenVoor(
 ): AnalyseTab[] {
   const losse = (secties: Sectie[]) =>
     secties.map((s, i) => tabUitSecties(`sectie-${i + 1}`, s.titel || `Onderdeel ${i + 1}`, null, [s], null));
-  if (resultaat.formaat !== 2 || opties.rapportage) return losse(resultaat.secties);
+  if (resultaat.formaat === 1 || opties.rapportage) return losse(resultaat.secties);
 
-  const vast = ANALYSE_TABBLADEN.map((t) => {
+  const lijst: readonly { sleutel: string; naam: string; groep: string }[] =
+    resultaat.formaat === 3 ? ANALYSE_TABBLADEN : ANALYSE_TABBLADEN_V2;
+  const sleutels = new Set(lijst.map((t) => t.sleutel));
+  const leadStap = resultaat.formaat === 3 ? "Conversies" : "Lead-events";
+  const vast = lijst.map((t) => {
     const secties = resultaat.secties.filter((s) => s.tab === t.sleutel);
     const nvt = !syntecVanToepassing(opties.bedrijven);
     const reden =
       t.sleutel === "syntec" && nvt
-        ? `Niet van toepassing. Leads uit Syntec gelden alleen voor een analyse die uitsluitend over ${BEDRIJF_MET_SYNTEC} gaat; de leads staan bij Lead-events.`
+        ? `Niet van toepassing. Leads uit Syntec gelden alleen voor een analyse die uitsluitend over ${BEDRIJF_MET_SYNTEC} gaat; de leads staan bij ${leadStap}.`
         : t.sleutel === "orders" && nvt
           ? `Niet van toepassing. Orders uit Syntec gelden alleen voor een analyse die uitsluitend over ${BEDRIJF_MET_SYNTEC} gaat.`
           : "Deze analyse heeft hier geen onderdeel voor.";
     return tabUitSecties(t.sleutel, t.naam, t.groep, secties, reden);
   });
-  const zonderPlek = resultaat.secties.filter((s) => !s.tab || !TAB_SLEUTELS.has(s.tab));
+  const zonderPlek = resultaat.secties.filter((s) => !s.tab || !sleutels.has(s.tab));
   return [...vast, ...losse(zonderPlek)];
 }
 

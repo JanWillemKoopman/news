@@ -38,14 +38,14 @@ Besluit van de eigenaar, 25 november 2026. Het leadcijfer van een Campagne analy
    Tel ze in de view **marketing_analyse_leads_website**: die past de eerste twee voorwaarden al toe en geeft de soort (zie het blok Data leads). Tel nooit rechtstreeks in marketing_analyse_leads.
 3. Syntec kan alleen bij een analyse die **uitsluitend over Van den Udenhout** gaat. Noemt het doel Syntec bij een ander bedrijf, tel dan in GA4 en meld dat bij de datakwaliteit.
 4. **De soort volgt het doel**: proefritten → alleen proefritleads; offertes → alleen offertes; private lease → alleen private lease; "leads" of geen soort → alle autoleads. Noem in de analyse welke soort en welke bron je hebt geteld (leadBron, leadsDoelSoort).
-5. De andere bron mag als **context** in zijn eigen tabblad staan (Lead-events of Leads in Syntec), duidelijk apart. Hij telt nooit mee in het leadcijfer en nooit in het oordeel over het doel.
+5. De andere bron mag als **context** in zijn eigen stap staan (Conversies of Leads in Syntec), duidelijk apart. Hij telt nooit mee in het leadcijfer en nooit in het oordeel over het doel.
 
 ## Orders bij een Campagne analyse (harde regel)
 Verzoek van de eigenaar, 25 november 2026. De bron **Syntec orders** (marketing_analyse_orders) telt de verkochte auto's. Eén rij is één auto, geteld op de orderdatum.
 1. Alleen bij een analyse die **uitsluitend over Van den Udenhout** gaat. Bij een ander bedrijf laat je de orders weg.
 2. Tel in de view **marketing_analyse_orders_klant**: de verkoop aan klanten (Ordersoort Nieuw of Gebruikt). **Handel** telt daar niet in mee; noem het aantal Handel-orders hoogstens apart, uit marketing_analyse_orders.
 3. Filter op het merk en de modellen uit de briefing en op de periode (orderdatum_op). Noem welke modelwaarden je meetelt.
-4. **Splits de orders altijd uit per klantgroep** (kolom klantgroep_naam; een lege klantgroep heet "Geen klantgroep", zodat de uitsplitsing optelt tot het totaal), en daarnaast in Nieuw en Gebruikt. Die uitsplitsing staat in elke analyse waarin orders voorkomen: in het tabblad Orders in Syntec, en noem de grootste klantgroepen ook in de bevindingen.
+4. **Splits de orders altijd uit per klantgroep** (kolom klantgroep_naam; een lege klantgroep heet "Geen klantgroep", zodat de uitsplitsing optelt tot het totaal), en daarnaast in Nieuw en Gebruikt. Die uitsplitsing staat in elke analyse waarin orders voorkomen: in de stap Orders in Syntec, en noem de grootste klantgroepen ook in de bevindingen.
 5. Orders zijn **niet** het leadcijfer en tellen nooit mee in leadsDoel. Gaat het doel over verkochte auto's of orders ("30 verkochte auto's"), dan beoordeel je het doel op de orders en zeg je dat in de toelichting bij het doel.
 6. Er is **geen koppeling tussen een lead en een order**. Een order voor merk en model in de periode is dus niet per se door de campagne gekomen: schrijf "orders voor <model> in de periode", niet "orders uit de campagne". Een verhouding orders/leads is hoogstens een indicatie, en een order volgt vaak weken na de lead.
 
@@ -100,18 +100,18 @@ Aanvullingen van de eigenaar voor de zoekronde naar live actiecampagnes (skill c
     google_ads: `- Campagnetypes: Search, Performance Max, Demand Gen en Display. Het type staat vaak vóór in de naam ("Demand Gen | …").
 - Google levert geen eigen leadveld: het leadcijfer zit in de conversies (conversie-acties die in Google Ads zijn ingesteld). Gebruik conversies alleen als aanvulling; GA4 is leidend voor wat er op de website gebeurt.
 - In GA4 komt Google Ads-verkeer binnen als "google / cpc"; Performance Max en Demand Gen staan in GA4's kanaalgroep soms als "Cross-network".
-- Tabel Per platform en campagne (tabblad Investering): Conversies = het veld conversions; Leads = "n.v.t." (Google levert geen leadveld).`,
+- Tabel Per platform en campagne (stap Advertenties): Conversies = het veld conversions; Leads = "n.v.t." (Google levert geen leadveld).`,
 
     meta_ads: `- Eén account per bedrijf (zie Algemeen); Meta Ads omvat Facebook, Instagram, Messenger en Audience Network.
 - Advertentienamen: "PR" = prospecting (nieuwe doelgroep), "RT" = retargeting. Vergelijk die twee apart.
 - UTM-opbouw: utm_source=facebook, utm_medium=paid, utm_campaign = campagnenaam, utm_content = advertentienaam, utm_term = advertentieset.
 - Meta-leads (actions_lead) zijn de eigen telling van Meta (leadformulieren, Messenger en pixel samen). GA4 en Syntec zijn leidend; laat verschillen zien.
 - Bereik is niet op te tellen over dagen of platforms: vraag het periodebereik op zonder dagindeling.
-- Tabel Per platform en campagne (tabblad Investering): Leads = actions_lead. Conversies = de websiteconversies van de pixel (offsite_conversion) die niet al onder lead vallen; zijn die er niet of niet te onderscheiden, dan "n.v.t." en meld je het bij de datakwaliteit. (Voorlopige keuze; de eigenaar kan hem aanpassen.)`,
+- Tabel Per platform en campagne (stap Advertenties): Leads = actions_lead. Conversies = de websiteconversies van de pixel (offsite_conversion) die niet al onder lead vallen; zijn die er niet of niet te onderscheiden, dan "n.v.t." en meld je het bij de datakwaliteit. (Voorlopige keuze; de eigenaar kan hem aanpassen.)`,
 
     linkedin_ads: `- LinkedIn Ads wordt weinig gebruikt (kleine budgetten).
 - De utm_campaign in GA4 is vaak een korte slug (bijv. "vriendenprijs") terwijl de campagne bij LinkedIn langer heet: koppel op inhoud en periode, niet alleen op exacte naam.
-- Tabel Per platform en campagne (tabblad Investering): Leads = de leads uit leadformulieren; Conversies = externe websiteconversies als die zijn ingesteld, anders "n.v.t.".`,
+- Tabel Per platform en campagne (stap Advertenties): Leads = de leads uit leadformulieren; Conversies = externe websiteconversies als die zijn ingesteld, anders "n.v.t.".`,
 
     facebook: `- Organische posts met lifetime-cijfers, gedateerd op publicatiedatum. Alleen posts die binnen de campagneperiode zijn gepubliceerd tellen mee.
 - Een post hoort bij de campagne als de tekst het model of de actie noemt.

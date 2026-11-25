@@ -324,7 +324,7 @@ export default function SamenvattingPagina({
             })}
           </ol>
         )}
-        {stappenMetActies.length > 0 && r.formaat === 2 && (
+        {stappenMetActies.length > 0 && r.formaat !== 1 && (
           <div className="flex flex-wrap items-center gap-2 border-t border-line-soft px-7 py-4">
             <span className="text-meta text-ink-muted">Acties per stap:</span>
             {stappenMetActies.map(({ tab, aantal }) => (

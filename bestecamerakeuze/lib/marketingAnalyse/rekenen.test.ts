@@ -33,7 +33,7 @@ import {
   vandaagNL,
   versieLabel,
 } from "@/lib/marketingAnalyse/rekenen";
-import { ANALYSE_TABBLADEN, SEMANTIEK_BLOKKEN } from "@/lib/marketingAnalyse/types";
+import { ANALYSE_TABBLADEN, ANALYSE_TABBLADEN_V2, SEMANTIEK_BLOKKEN } from "@/lib/marketingAnalyse/types";
 
 
 const CAMPAGNE = { id: "c", formulier: "campagne" as const, bedrijven: [] as string[] };
@@ -338,7 +338,7 @@ test("tabbladen: vaste volgorde bij formaat 2, leeg met reden, losse sectie acht
   const tabs = tabbladenVoor(resultaat, { rapportage: false, bedrijven: ["Van den Udenhout"] });
   assert.deepEqual(
     tabs.map((t) => t.sleutel),
-    [...ANALYSE_TABBLADEN.map((t) => t.sleutel), "sectie-1"],
+    [...ANALYSE_TABBLADEN_V2.map((t) => t.sleutel), "sectie-1"],
   );
   const per = Object.fromEntries(tabs.map((t) => [t.sleutel, t]));
   assert.equal(per.investering.hoofdcijfer?.waarde, 1989);
@@ -538,4 +538,28 @@ test("normaliseerResultaat: een onbruikbare benchmark valt weg, de rest blijft",
   assert.equal(k[0].benchmark, undefined);
   assert.equal(k[0].waarde, 1100);
   assert.equal(k[1].benchmark?.aantal, 20);
+});
+
+test("tabbladen formaat 3: de funnel van opzet A, oude sleutels worden losse stappen", () => {
+  const resultaat = normaliseerResultaat({
+    formaat: 3,
+    secties: [
+      { stap: 1, titel: "Advertenties", tab: "advertenties", kerncijfers: [{ label: "Besteed", waarde: 2017, eenheid: "euro" }] },
+      { stap: 4, titel: "Campagnepagina", tab: "campagnepagina", oordeel: "aandacht" },
+      { stap: 6, titel: "Vervolg", tab: "vervolg" },
+      { stap: 9, titel: "Oud tabblad", tab: "verkeer" },
+    ],
+  });
+  assert.equal(resultaat.formaat, 3);
+  const tabs = tabbladenVoor(resultaat, { rapportage: false, bedrijven: ["PGZ"] });
+  assert.deepEqual(tabs.map((t) => t.sleutel), [...ANALYSE_TABBLADEN.map((t) => t.sleutel), "sectie-1"]);
+  const per = Object.fromEntries(tabs.map((t) => [t.sleutel, t]));
+  assert.equal(per.advertenties.hoofdcijfer?.waarde, 2017);
+  assert.equal(per.campagnepagina.groep, "Website");
+  assert.equal(per.conversies.leeg, true);
+  assert.match(per.syntec.reden ?? "", /bij Conversies/);
+  assert.equal(per["sectie-1"].naam, "Oud tabblad");
+  // Een overkoepelende actie mag naar de nieuwe stappen verwijzen.
+  const metActie = normaliseerResultaat({ formaat: 3, aanbevelingen: [{ titel: "a", prioriteit: "hoog", tabs: ["vervolg", "onzin"] }] });
+  assert.deepEqual(metActie.aanbevelingen?.[0].tabs, ["vervolg"]);
 });
