@@ -39,7 +39,7 @@ const ANALYSE_LEADS_BRON = "Data leads";
 const ANALYSE_LEADS_RUN = "Marketing analyse leads";
 
 /**
- * De leads-kopie voor Marketing analyse (`marketing_analyse_leads`): zes kolommen 1-op-1, de
+ * De leads-kopie voor Marketing analyse (`marketing_analyse_leads`): zeven kolommen 1-op-1, de
  * laatste 365 dagen, zonder "FW:" (`lib/sync/analyseLeads.ts`). Uit dezelfde sheetrijen als
  * `leads_raw`, maar een eigen transactie en een eigen regel in `sync_runs`: gaat dit mis, dan
  * blijft de vorige kopie staan en loopt de rest van de sync gewoon door.
@@ -57,8 +57,8 @@ async function syncAnalyseLeads(client: Client, rijen: GeparsteRij[]): Promise<S
     for (const blok of inBlokken(records)) {
       await client.query(
         `insert into dataloket.marketing_analyse_leads
-           (ordersoort, onderwerp, kanaalgroep, merk, model, aangelegd, aangelegd_op)
-         select ordersoort, onderwerp, kanaalgroep, merk, model, aangelegd, aangelegd_op
+           (kanaal, ordersoort, onderwerp, kanaalgroep, merk, model, aangelegd, aangelegd_op)
+         select kanaal, ordersoort, onderwerp, kanaalgroep, merk, model, aangelegd, aangelegd_op
            from json_populate_recordset(null::dataloket.marketing_analyse_leads, $1::json)`,
         [JSON.stringify(blok)],
       );

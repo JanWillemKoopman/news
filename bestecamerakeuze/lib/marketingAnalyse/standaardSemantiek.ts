@@ -6,7 +6,9 @@ import type { SemantiekInhoud } from "./types";
  * Geldt zolang er in `marketing_analyse_semantiek` niets is opgeslagen; de eigenaar vult aan
  * en corrigeert in het dashboard (knop Semantic layer), en elke opslag is een nieuwe versie.
  * De inhoud komt uit CLAUDE.md en het onderzoek naar de Audi A2 (november 2026). Waar
- * "(controleren)" staat, is de koppeling afgeleid en nog niet bevestigd.
+ * "(controleren)" staat, is de koppeling afgeleid en nog niet bevestigd. De leadregel (één bron:
+ * GA4 standaard, Syntec alleen als het doel dat zegt, met Kanaalgroep Internet en udenhout.nl)
+ * staat in Algemeen, Google Analytics 4 en Data leads; besluit van 25 november 2026.
  */
 export const STANDAARD_SEMANTIEK: SemantiekInhoud = {
   bedrijven: [
@@ -20,8 +22,21 @@ export const STANDAARD_SEMANTIEK: SemantiekInhoud = {
   ],
   blokken: {
     algemeen: `## Bronnen per bedrijf
-- **Van den Udenhout**: advertentieaccounts, organische social media en GA4 via Windsor, én de leads uit Syntec (tabel marketing_analyse_leads, de kopie van "Data leads"). Voor leads kijk je naar zowel Syntec als de lead-events en andere interessante events in GA4.
+- **Van den Udenhout**: advertentieaccounts, organische social media en GA4 via Windsor, én de leads uit Syntec (tabel marketing_analyse_leads, de kopie van "Data leads"). Het leadcijfer van een Campagne analyse komt uit precies één van de twee: zie "Leads bij een Campagne analyse" hieronder.
 - **Alle andere bedrijven** (Porsche Centrum Brabant, Porsche Centrum Maastricht, PGZ, Bentley Maastricht, VELOO, Instra): de Syntec-leads zijn **niet van toepassing**. Voor leads kijk je **alleen naar GA4**. Zeg dat in de analyse in plaats van een nul te tonen.
+
+## Leads bij een Campagne analyse (harde regel)
+Besluit van de eigenaar, 25 november 2026. Het leadcijfer van een Campagne analyse (het getal dat tegen het doel staat, in de kerncijfers leadsDoel) komt altijd uit **precies één bron: Google Analytics óf Syntec**. Nooit opgeteld, nooit gemengd.
+1. **Standaard Google Analytics.** Staat in het veld "Doel van de campagne" niet expliciet dat het doel uit Syntec komt, dan tel je de leads in GA4: de lead-events van de soort uit het doel, in sessies die op de campagnepagina('s) begonnen. Voorbeeld: "20 proefritten" betekent 20 proefritleads op de website (generate_lead_proefrit). Welke events bij welke soort horen staat in het blok Google Analytics 4.
+2. **Syntec alleen als het doel dat expliciet zegt** (bijv. "20 proefritten uit Syntec", "doel gemeten in Syntec"). Dan tel je uitsluitend leads die aan **alle** voorwaarden voldoen:
+   - Kanaalgroep = "Internet";
+   - Kanaal **of** Onderwerp bevat "udenhout.nl" (hoofdletterongevoelig);
+   - het merk en de modellen uit de briefing, binnen de periode;
+   - de soort uit het doel.
+   Tel ze in de view **marketing_analyse_leads_website**: die past de eerste twee voorwaarden al toe en geeft de soort (zie het blok Data leads). Tel nooit rechtstreeks in marketing_analyse_leads.
+3. Syntec kan alleen bij een analyse die **uitsluitend over Van den Udenhout** gaat. Noemt het doel Syntec bij een ander bedrijf, tel dan in GA4 en meld dat bij de datakwaliteit.
+4. **De soort volgt het doel**: proefritten → alleen proefritleads; offertes → alleen offertes; private lease → alleen private lease; "leads" of geen soort → alle autoleads. Noem in de analyse welke soort en welke bron je hebt geteld (leadBron, leadsDoelSoort).
+5. De andere bron mag als **context** in zijn eigen tabblad staan (Lead-events of Leads in Syntec), duidelijk apart. Hij telt nooit mee in het leadcijfer en nooit in het oordeel over het doel.
 
 ## Accounts per bedrijf (Windsor)
 **Van den Udenhout**
@@ -114,22 +129,45 @@ Aanvullingen van de eigenaar voor de zoekronde naar live actiecampagnes (skill c
 - bedanktpagina_werkplaatsplanner telt als lead (werkplaatsafspraak) maar is veel groter dan de rest; apart noemen.
 - Op proefrit-, offerte-, private lease- en financieringsformulieren zitten de parameters customevent_car_brand en customevent_car_model: daarmee is te zien voor welk merk en model de lead was.
 
+## Leads tegen het doel (Campagne analyse)
+Standaard komt het leadcijfer uit GA4 (zie Algemeen, "Leads bij een Campagne analyse"). Tel alleen de events van de soort uit het doel, in sessies die op de campagnepagina('s) begonnen:
+- **proefritten**: generate_lead_proefrit;
+- **offertes**: generate_lead_offerte (generate_lead_zakelijk_offerte alleen als het doel over zakelijk gaat);
+- **private lease**: generate_lead_privatelease + generate_lead_private_lease;
+- **zakelijke lease**: generate_lead_zakelijk_lease + generate_lead_zakelijk_offerte + generate_lead_leasecontact;
+- **"leads" of geen soort (alle autoleads)**: alle lead-events uit de lijst hierboven, behalve generate_lead_vacature, generate_lead_HMODH ("Houd me op de hoogte") en bedanktpagina_werkplaatsplanner; die noem je apart.
+- Vóór april 2026 heetten de events anders (generate_lead_proefrit_aanvraag, generate_lead_offerte_aanvraag): tel die mee als de periode daarvoor ligt.
+Passen de parameters customevent_car_brand en customevent_car_model niet bij het merk en model uit de briefing, dan tellen ze niet mee; noem hoeveel events geen model hadden.
+
 ## Andere interessante events (aanvullen)
 - (in te vullen door de eigenaar: bijv. klik op telefoonnummer, WhatsApp, routebeschrijving, formulier gestart)`,
 
     data_leads: `## Wat de tabel is
 - marketing_analyse_leads: de nachtelijke kopie van het sheet-tabblad "Data leads" (Syntec), **alleen van toepassing op Van den Udenhout**.
-- Zes kolommen, 1-op-1 zoals in de sheet: Ordersoort, Onderwerp, Kanaalgroep, Merk, Model, Aangelegd. Alleen de laatste 365 dagen; rijen met "FW:" in Onderwerp zijn er al uit.
+- Zeven kolommen, 1-op-1 zoals in de sheet: Kanaal, Ordersoort, Onderwerp, Kanaalgroep, Merk, Model, Aangelegd. Alleen de laatste 365 dagen; rijen met "FW:" in Onderwerp zijn er al uit.
 - Eén rij is één lead, geteld op Aangelegd. De sheet loopt een à twee dagen achter.
 
+## Welke Syntec-leads tellen (Campagne analyse)
+- Alleen als het doel in de briefing expliciet zegt dat het uit Syntec komt; anders komt het leadcijfer uit GA4 (zie Algemeen, "Leads bij een Campagne analyse").
+- Dan telt een lead alleen als **Kanaalgroep = "Internet"** én **Kanaal of Onderwerp "udenhout.nl" bevat** (hoofdletterongevoelig). Dat zijn de websiteleads van udenhout.nl. Leads via merksites (Volkswagen.nl, Audi.nl …), portals (Autoscout24, ViaBOVAG …), WhatsApp of de showroom tellen niet.
+- De view **marketing_analyse_leads_website** past die voorwaarde toe en heeft een kolom **soort**. Tel altijd daarin, filter op merk, model, periode (aangelegd_op) en soort.
+- Ter vergelijking (laatste 365 dagen, november 2026): 38.296 leads in de kopie, waarvan 7.217 websiteleads van udenhout.nl, waarvan 2.236 proefritten. In de praktijk staat "Udenhout.nl" in Kanaal ("Udenhout.nl", "Udenhout.nl proefritaanv.", "Udenhout.nl offerteaanv." …); in Onderwerp kwam het in dat jaar niet voor.
+
 ## De kolommen
+- **Kanaal**: waar de lead binnenkwam ("Udenhout.nl", "Udenhout.nl proefritaanv.", "Volkswagen.nl", "CST" …). Tot april 2026 had elk formulier van udenhout.nl een eigen kanaal; sindsdien komt alles binnen onder "Udenhout.nl" en zegt Onderwerp wat het is.
 - **Kanaalgroep**: "Internet" = online lead; Showroom, Acquisitie, Mail en Telefoon = offline.
 - **Merk / Model**: het model staat op veel manieren geschreven ("A2", "A2 e-tron", "AUDI A2 E-TRON"). Zoek breed op het model, controleer het merk en noem welke modelwaarden je meetelt.
-- **Ordersoort**: (in te vullen door de eigenaar: welke waarden er zijn en wat ze betekenen).
-- **Onderwerp**: de omschrijving van de aanvraag; hieruit volgt welk soort lead het is.
+- **Ordersoort**: Nieuw of Gebruikt.
+- **Onderwerp**: de omschrijving van de aanvraag ("Proefrit aanvraag", "Offerte private lease" …).
 
-## Soort lead (in te vullen door de eigenaar)
-- Hoe je uit Onderwerp en Ordersoort afleidt of een lead een proefrit, offerte, private lease, inruil, werkplaats enz. is.`,
+## Soort lead (kolom soort in de view)
+Uit Onderwerp en Kanaal samen, in deze volgorde (de eerste die past):
+1. bevat "proefrit" → **proefrit**;
+2. bevat "private lease" of "privatelease" → **private lease**;
+3. bevat "offerte" → **offerte**;
+4. bevat "inruil" → **inruil**;
+5. anders → **overig** (contact, bel-me-terug, chat en dergelijke).
+Gecontroleerd in november 2026: dit klopt voor 99,9% met de kolom Lead type in Syntec. Een doel in "leads" zonder soort telt alle soorten.`,
 
     kanaalkosten: `- Tabel dataloket.lead_kanaalkosten: maandkosten per GA4-sessiebron/medium die niet in de advertentieaccounts staan (bijv. gaspedaal.nl / referral). Maand = eerste dag van de maand.
 - Verdeling over sessies: kosten per sessie = maandbedrag ÷ alle sessies van die bron/medium in die maand (op de GA4-property van het bedrijf). Campagnekosten = Σ kosten per sessie × sessies van die bron/medium op de campagnepagina('s) binnen de periode.

@@ -6,8 +6,9 @@ import type { GeparsteRij } from "@/lib/sync/bronnen";
  * Besluit van de eigenaar (november 2026, zie campagne-analyse-tool.md §3.1): de analyse
  * gebruikt voor leads alleen een smalle kopie van het sheet-tabblad "Data leads":
  *
- *  - **zes kolommen, 1-op-1** zoals in de sheet: Ordersoort, Onderwerp, Kanaalgroep, Merk,
- *    Model, Aangelegd (plus Aangelegd als tijdstip, om op periode te filteren);
+ *  - **zeven kolommen, 1-op-1** zoals in de sheet: Kanaal, Ordersoort, Onderwerp, Kanaalgroep,
+ *    Merk, Model, Aangelegd (plus Aangelegd als tijdstip, om op periode te filteren). Kanaal kwam
+ *    er op 25 november 2026 bij: zonder Kanaal is de leadregel hieronder niet toe te passen;
  *  - **de laatste 365 dagen** (Nederlandse kalender, op Aangelegd);
  *  - **zonder rijen met "FW:" in Onderwerp** (doorgestuurde mails; hoofdletterongevoelig);
  *  - zonder lege opvulregels (de sync keurt rijen zonder Kanaal al af).
@@ -20,6 +21,7 @@ export const ANALYSE_LEADS_DAGEN = 365;
 
 /** De sheetkolommen, in de volgorde van de tabel. */
 export const ANALYSE_LEADS_KOLOMMEN = {
+  Kanaal: "kanaal",
   Ordersoort: "ordersoort",
   Onderwerp: "onderwerp",
   Kanaalgroep: "kanaalgroep",
@@ -29,6 +31,7 @@ export const ANALYSE_LEADS_KOLOMMEN = {
 } as const;
 
 export interface AnalyseLeadRecord {
+  kanaal: string | null;
   ordersoort: string | null;
   onderwerp: string | null;
   kanaalgroep: string | null;
@@ -99,6 +102,7 @@ export function analyseLeadRecords(rijen: readonly GeparsteRij[], vandaag: strin
     const aangelegd = leesAangelegd(rij.waarden.Aangelegd);
     if (!aangelegd || aangelegd.datum < vanaf || aangelegd.datum > vandaag) continue;
     uit.push({
+      kanaal: waarde(rij, "Kanaal"),
       ordersoort: waarde(rij, "Ordersoort"),
       onderwerp,
       kanaalgroep: waarde(rij, "Kanaalgroep"),
@@ -109,4 +113,35 @@ export function analyseLeadRecords(rijen: readonly GeparsteRij[], vandaag: strin
     });
   }
   return uit;
+}
+
+// ---------------------------------------------------------------------------
+// Welke Syntec-lead telt bij een Campagne analyse
+// ---------------------------------------------------------------------------
+
+/**
+ * Besluit van de eigenaar (25 november 2026, campagne-analyse-tool.md §15): bij een Campagne
+ * analyse telt een Syntec-lead alleen als Kanaalgroep "Internet" is én Kanaal of Onderwerp
+ * "udenhout.nl" bevat (hoofdletterongevoelig). Dezelfde regel staat in SQL in de view
+ * `dataloket.marketing_analyse_leads_website` (migratie 0047); houd ze gelijk.
+ */
+export function isWebsiteLead(l: Pick<AnalyseLeadRecord, "kanaalgroep" | "kanaal" | "onderwerp">): boolean {
+  if (l.kanaalgroep !== "Internet") return false;
+  const bevat = (w: string | null) => Boolean(w && w.toLowerCase().includes("udenhout.nl"));
+  return bevat(l.kanaal) || bevat(l.onderwerp);
+}
+
+export type SoortWebsiteLead = "proefrit" | "private lease" | "offerte" | "inruil" | "overig";
+
+/**
+ * De soort lead uit Onderwerp en Kanaal, in deze volgorde. Klopte in november 2026 voor 99,9%
+ * met Lead type in Syntec (proefrit 2.235 van 2.236). Gelijk aan de kolom `soort` in de view.
+ */
+export function soortWebsiteLead(l: Pick<AnalyseLeadRecord, "kanaal" | "onderwerp">): SoortWebsiteLead {
+  const t = `${l.onderwerp ?? ""} ${l.kanaal ?? ""}`.toLowerCase();
+  if (t.includes("proefrit")) return "proefrit";
+  if (t.includes("private lease") || t.includes("privatelease")) return "private lease";
+  if (t.includes("offerte")) return "offerte";
+  if (t.includes("inruil")) return "inruil";
+  return "overig";
 }

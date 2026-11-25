@@ -1675,11 +1675,20 @@ lees dat eerst voordat je hier iets verandert.
   regel staat in de skill, in de standaard-hoofdprompt en in de verantwoording van elke analyse.
 - **Leads-kopie** (`marketing_analyse_leads`, gevuld door `/api/sync` uit dezelfde keer lezen
   als `leads_raw`, eigen transactie en eigen regel `Marketing analyse leads` in `sync_runs`):
-  precies zes kolommen 1-op-1 uit "Data leads" (Ordersoort, Onderwerp, Kanaalgroep, Merk,
-  Model, Aangelegd) plus `aangelegd_op` om op te filteren; de laatste 365 dagen; zonder rijen
-  met "FW:" in Onderwerp. Filterlogica in `lib/sync/analyseLeads.ts` (getest). Alleen van
-  toepassing op Van den Udenhout (`BEDRIJF_MET_SYNTEC`); de andere bedrijven kijken voor leads
-  alleen naar GA4 en tonen in het overzicht "n.v.t.".
+  zeven kolommen 1-op-1 uit "Data leads" (Kanaal, Ordersoort, Onderwerp, Kanaalgroep, Merk,
+  Model, Aangelegd; Kanaal sinds migratie 0047) plus `aangelegd_op` om op te filteren; de laatste
+  365 dagen; zonder rijen met "FW:" in Onderwerp. Filterlogica in `lib/sync/analyseLeads.ts`
+  (getest). Alleen van toepassing op Van den Udenhout (`BEDRIJF_MET_SYNTEC`); de andere bedrijven
+  kijken voor leads alleen naar GA4.
+- **Leads: één bron, GA4 of Syntec** (besluit van de eigenaar, 25 november 2026, §15 van het plan).
+  Bij een Campagne analyse komt het leadcijfer (`kerncijfers.leadsDoel`, met `leadBron` en
+  `leadsDoelSoort`) **standaard uit Google Analytics**: de lead-events van de soort uit het doel
+  ("20 proefritten" = 20 proefritleads op de website). **Alleen als het doel expliciet Syntec noemt**
+  (en de analyse uitsluitend over Van den Udenhout gaat) uit Syntec, en dan alleen leads met
+  Kanaalgroep "Internet" én "udenhout.nl" in Kanaal of Onderwerp: de view
+  `marketing_analyse_leads_website` (met kolom `soort`), gelijk aan `isWebsiteLead` /
+  `soortWebsiteLead` in TypeScript. Nooit opgeteld of gemengd. Staat in de semantic layer
+  (versie 3), de standaard-hoofdprompt, de skill en de uitleg bij het doelveld.
 - **Analyse opzetten** (fase 2, migratie 0044, besluiten in §13 van het plan). Elke regel in
   het overzicht heeft een opzet (`marketing_analyse_opzetten`): **Campagne analyse** (standaard,
   vast id `STANDAARD_OPZET_ID`, formulier `campagne`) of bijv. VDU/PGZ maand- en
@@ -1697,13 +1706,13 @@ lees dat eerst voordat je hier iets verandert.
   `bedrijven` (chips in de briefing en bij de opzet, `BedrijvenKiezer.tsx`); een opzet zonder
   bedrijven laat de keuze aan de briefing. De oude kolom `bedrijf` blijft als leesbare kopie
   ("PGZ, VELOO"), bijgehouden door een trigger; lees en schrijf `bedrijven`. Syntec-leads
-  alleen als de analyse **uitsluitend** over Van den Udenhout gaat (`leadBron`).
+  alleen als de analyse **uitsluitend** over Van den Udenhout gaat én het doel Syntec noemt (`leadBron`).
 - **Overzicht campagne-analyses** (verzoek van de eigenaar, november 2026): kolommen Ronde
   (klein schuifje vooraan), Campagne (met de laatste analyse eronder), Uitgaven (balkje
   tegen het budget, rood boven 100%), CTR (gezamenlijk over Google, Meta en LinkedIn Ads:
   `klikken` ÷ `vertoningenAds`, gewogen, nooit over de vertoningen inclusief organisch),
-  Bezoekers (`sessies`: sessies die op de campagnepagina begonnen, uit elk kanaal), Leads (Syntec bij alleen Van den Udenhout met modellen,
-  anders lead-events in Google Analytics, met de bron eronder) en Doel leads (balkje, groen
+  Bezoekers (`sessies`: sessies die op de campagnepagina begonnen, uit elk kanaal), Leads (`leadsDoel` uit één bron:
+  Google Analytics, of Syntec als het doel dat zegt; bron en soort eronder) en Doel leads (balkje, groen
   vanaf 100%). Het leaddoel komt uit `kerncijfers.doelLeads` (de analyse leest het uit het
   vrije doel), anders het eerste getal in het doel (`overzichtCijfers` in `rekenen.ts`,
   getest). Rapportages hebben een eigen tabel eronder: Ronde, Rapportage, Laatste analyse.

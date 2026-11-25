@@ -13,6 +13,7 @@ import {
   paginaSleutel,
   sorteerVoorstellen,
   leesDoelGetal,
+  doelVraagtSyntec,
   leadBron,
   overzichtCijfers,
   leesOpzetInvoer,
@@ -215,28 +216,57 @@ test("doel als getal uit vrije tekst", () => {
   assert.equal(leesDoelGetal(null), null);
 });
 
-test("leadbron: Syntec alleen bij Van den Udenhout met modellen", () => {
-  assert.equal(leadBron({ bedrijven: ["Van den Udenhout"], modellen: ["A2"] }), "syntec");
-  assert.equal(leadBron({ bedrijven: ["Van den Udenhout"], modellen: [] }), "ga4");
-  assert.equal(leadBron({ bedrijven: ["PGZ"], modellen: ["Taycan"] }), "ga4");
-  assert.equal(leadBron({ bedrijven: ["Van den Udenhout", "PGZ"], modellen: ["A2"] }), "ga4");
+test("leadbron: standaard Google Analytics, Syntec alleen als het doel dat expliciet zegt", () => {
+  const vdu = ["Van den Udenhout"];
+  assert.equal(leadBron({ bedrijven: vdu, doel: "20 proefritten" }), "ga4");
+  assert.equal(leadBron({ bedrijven: vdu, doel: null }), "ga4");
+  assert.equal(leadBron({ bedrijven: vdu, doel: "20 proefritten uit Syntec" }), "syntec");
+  assert.equal(leadBron({ bedrijven: vdu, doel: "30 offertes, gemeten in SYNTEC" }), "syntec");
+  // Syntec bestaat alleen voor Van den Udenhout: dan toch GA4.
+  assert.equal(leadBron({ bedrijven: ["PGZ"], doel: "10 proefritten uit Syntec" }), "ga4");
+  assert.equal(leadBron({ bedrijven: ["Van den Udenhout", "PGZ"], doel: "Syntec: 10 leads" }), "ga4");
+  assert.equal(doelVraagtSyntec("20 proefritten"), false);
+  assert.equal(doelVraagtSyntec("20 proefritten (Syntec)"), true);
 });
 
-test("overzichtcijfers: uitgaven tegen budget, leads tegen doel", () => {
-  const a2 = { bedrijven: ["Van den Udenhout"], modellen: ["A2"], budget: 3150, doel: "20 proefritten" };
-  const o = overzichtCijfers(a2, { kosten: 3189.79, leadEvents: 30, leadsSyntec: 12 });
-  assert.equal(o.bron, "syntec");
-  assert.equal(o.leads, 12);
+test("overzichtcijfers: uitgaven tegen budget, leads uit één bron tegen het doel", () => {
+  const a2 = { bedrijven: ["Van den Udenhout"], budget: 3150, doel: "20 proefritten" };
+  const o = overzichtCijfers(a2, {
+    kosten: 3189.79, leadEvents: 30, leadsSyntec: 12, leadBron: "ga4", leadsDoel: 9, leadsDoelSoort: "proefritten",
+  });
+  assert.equal(o.bron, "ga4");
+  // Het leadcijfer is leadsDoel (alleen proefritten), niet alle lead-events en niet Syntec.
+  assert.equal(o.leads, 9);
+  assert.equal(o.leadSoort, "proefritten");
+  assert.equal(o.oudeTelling, false);
   assert.equal(o.doelLeads, 20);
   assert.equal(Math.round(o.besteedPct!), 101);
-  assert.equal(o.gehaaldPct, 60);
+  assert.equal(o.gehaaldPct, 45);
   // De analyse kan het doel anders lezen dan de eerste regex: die wint.
   assert.equal(overzichtCijfers(a2, { doelLeads: 25 }).doelLeads, 25);
-  const zonder = overzichtCijfers({ ...a2, budget: null, modellen: [] }, { kosten: 100, leadEvents: 30 });
-  assert.equal(zonder.besteedPct, null);
-  assert.equal(zonder.bron, "ga4");
-  assert.equal(zonder.leads, 30);
+  assert.equal(overzichtCijfers({ ...a2, budget: null }, { kosten: 100 }).besteedPct, null);
   assert.equal(overzichtCijfers(a2, null).gehaaldPct, null);
+});
+
+test("overzichtcijfers: Syntec alleen als het doel het zegt, en nooit uit de verkeerde bron", () => {
+  const syntec = { bedrijven: ["Van den Udenhout"], budget: null, doel: "20 proefritten uit Syntec" };
+  const o = overzichtCijfers(syntec, { leadEvents: 30, leadBron: "syntec", leadsDoel: 14 });
+  assert.equal(o.bron, "syntec");
+  assert.equal(o.leads, 14);
+  assert.equal(o.gehaaldPct, 70);
+  // Telde de analyse uit GA4 terwijl het doel nu Syntec zegt: niets tonen tot de volgende analyse.
+  assert.equal(overzichtCijfers(syntec, { leadBron: "ga4", leadsDoel: 30 }).leads, null);
+  // Een oude analyse zonder leadsDoel: bij Syntec niets (die telling volgde de regel niet) …
+  assert.equal(overzichtCijfers(syntec, { leadsSyntec: 12, leadEvents: 30 }).leads, null);
+  // … bij GA4 de lead-events als oude telling.
+  const oud = overzichtCijfers({ ...syntec, doel: "20 proefritten" }, { leadsSyntec: 12, leadEvents: 30 });
+  assert.equal(oud.leads, 30);
+  assert.equal(oud.oudeTelling, true);
+  // Syntec gevraagd bij een ander bedrijf: GA4, met een melding.
+  const pgz = overzichtCijfers({ bedrijven: ["PGZ"], budget: null, doel: "5 proefritten uit Syntec" }, { leadBron: "ga4", leadsDoel: 4 });
+  assert.equal(pgz.bron, "ga4");
+  assert.equal(pgz.syntecNietMogelijk, true);
+  assert.equal(pgz.leads, 4);
 });
 
 test("meerdere bedrijven in de briefing en als label", () => {

@@ -14,6 +14,7 @@ import {
   BEDRIJF_MET_SYNTEC,
   type FunnelStap,
   type Formulier,
+  type LeadBron,
   type MaKerncijfers,
   type MaCampagneInvoer,
   type MaResultaat,
@@ -544,16 +545,25 @@ export function leesDoelGetal(doel: string | null | undefined): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-export type LeadBron = "syntec" | "ga4";
+export type { LeadBron };
 
 /**
- * Waar de leads van een campagne-analyse vandaan komen. Syntec alleen als de analyse
- * uitsluitend over Van den Udenhout gaat én er modellen zijn opgegeven (de leads-kopie is te
- * filteren op merk en model, en Syntec bestaat alleen voor Van den Udenhout); anders de
- * lead-events in GA4 (sessies die op de campagnepagina begonnen).
+ * Zegt het doel uit de briefing expliciet dat het in Syntec gemeten wordt? Alleen dan komen de
+ * leads uit Syntec ("20 proefritten uit Syntec"); anders altijd uit Google Analytics.
  */
-export function leadBron(c: { bedrijven: readonly string[]; modellen: readonly string[] }): LeadBron {
-  return c.bedrijven.length === 1 && c.bedrijven[0] === BEDRIJF_MET_SYNTEC && c.modellen.length > 0 ? "syntec" : "ga4";
+export function doelVraagtSyntec(doel: string | null | undefined): boolean {
+  return Boolean(doel && /syntec/i.test(doel));
+}
+
+/**
+ * Waar de leads van een campagne-analyse vandaan komen (besluit van de eigenaar, 25 november
+ * 2026). Standaard Google Analytics: de lead-events van de soort uit het doel in sessies die op
+ * de campagnepagina begonnen. Syntec alleen als het doel dat expliciet zegt én de analyse
+ * uitsluitend over Van den Udenhout gaat (Syntec bestaat alleen daar); dan tellen alleen leads
+ * met Kanaalgroep "Internet" en "udenhout.nl" in Kanaal of Onderwerp.
+ */
+export function leadBron(c: { bedrijven: readonly string[]; doel: string | null }): LeadBron {
+  return doelVraagtSyntec(c.doel) && syntecVanToepassing(c.bedrijven) ? "syntec" : "ga4";
 }
 
 export interface OverzichtCijfers {
@@ -567,6 +577,12 @@ export interface OverzichtCijfers {
   bezoekers: number | null;
   leads: number | null;
   bron: LeadBron;
+  /** Welke soort lead er geteld is ("proefritten"), zoals de analyse het doel las; null als onbekend. */
+  leadSoort: string | null;
+  /** Het doel noemt Syntec, maar de analyse gaat niet uitsluitend over Van den Udenhout: dan GA4. */
+  syntecNietMogelijk: boolean;
+  /** De leads komen uit een analyse van vóór de leadregel van 25 november 2026 (alle lead-events). */
+  oudeTelling: boolean;
   doelLeads: number | null;
   /** Deel van het leaddoel dat is gehaald, in procenten; null zonder doel of leads. */
   gehaaldPct: number | null;
@@ -574,12 +590,24 @@ export interface OverzichtCijfers {
 
 /** De cijfers voor één regel in het overzicht van campagne-analyses. */
 export function overzichtCijfers(
-  c: { bedrijven: readonly string[]; modellen: readonly string[]; budget: number | null; doel: string | null },
+  c: { bedrijven: readonly string[]; budget: number | null; doel: string | null },
   k: MaKerncijfers | null | undefined,
 ): OverzichtCijfers {
   const kosten = k?.kosten ?? null;
   const bron = leadBron(c);
-  const leads = (bron === "syntec" ? k?.leadsSyntec : k?.leadEvents) ?? null;
+  // De leads komen altijd uit precies één bron. Een analyse van na 25 november 2026 levert ze in
+  // `leadsDoel`; telt die uit een andere bron dan de briefing nu zegt (het doel is daarna
+  // aangepast), dan tonen we niets tot de volgende analyse. Een oudere analyse heeft alleen
+  // `leadEvents` (alle lead-events in GA4) en `leadsSyntec` (alle kanalen, niet volgens de regel):
+  // bij GA4 tonen we de lead-events als oude telling, bij Syntec niets.
+  let leads: number | null = null;
+  let oudeTelling = false;
+  if (k?.leadsDoel != null) {
+    leads = !k.leadBron || k.leadBron === bron ? k.leadsDoel : null;
+  } else if (bron === "ga4" && k?.leadEvents != null) {
+    leads = k.leadEvents;
+    oudeTelling = true;
+  }
   const doelLeads = k?.doelLeads ?? leesDoelGetal(c.doel);
   return {
     kosten,
@@ -591,6 +619,9 @@ export function overzichtCijfers(
     bezoekers: k?.sessies ?? null,
     leads,
     bron,
+    leadSoort: oudeTelling ? null : (k?.leadsDoelSoort ?? null),
+    syntecNietMogelijk: doelVraagtSyntec(c.doel) && bron === "ga4",
+    oudeTelling,
     doelLeads,
     gehaaldPct: leads !== null && doelLeads ? (leads / doelLeads) * 100 : null,
   };
