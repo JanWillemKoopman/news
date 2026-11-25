@@ -1669,7 +1669,8 @@ lees dat eerst voordat je hier iets verandert.
 
 - **Harde regel voor de data** (besluit van de eigenaar, november 2026): een analyse gebruikt
   alleen Windsor **live** (Google, Meta en LinkedIn Ads, de organische kanalen en GA4), de
-  leads-kopie `marketing_analyse_leads` (alleen voor Van den Udenhout) en `lead_kanaalkosten`
+  leads-kopie `marketing_analyse_leads` en de orders-kopie `marketing_analyse_orders` (beide alleen
+  voor Van den Udenhout) en `lead_kanaalkosten`
   (die laatste **niet** bij een campagne-analyse: daar zijn de kosten alleen de mediakosten uit
   Google Ads, Meta Ads en LinkedIn Ads; besluit van de eigenaar, 24 november 2026).
   **Niet** de andere tabellen in Supabase, ook niet `windsor_*`, `leads_raw` of `v_leads`. Die
@@ -1681,6 +1682,17 @@ lees dat eerst voordat je hier iets verandert.
   365 dagen; zonder rijen met "FW:" in Onderwerp. Filterlogica in `lib/sync/analyseLeads.ts`
   (getest). Alleen van toepassing op Van den Udenhout (`BEDRIJF_MET_SYNTEC`); de andere bedrijven
   kijken voor leads alleen naar GA4.
+- **Orders-kopie, bron "Syntec orders"** (25 november 2026, migratie 0048, §16 van het plan):
+  `marketing_analyse_orders`, vijf kolommen 1-op-1 uit het tabblad "Data orders" (Ordersoort,
+  Klantgroep, Merk, Model, Orderdatum) plus `orderdatum_op`, de laatste 365 dagen, één rij per
+  verkochte auto. Gevuld door `/api/sync` (eigen regel `Marketing analyse orders` in `sync_runs`);
+  "Data orders" staat niet in `BRONNEN`, dus de sync leest het tabblad zelf (`ANALYSE_ORDERS_BRON`).
+  De leads- en orders-kopie delen `vervangKopie` in `app/api/sync/route.ts`. Tellen gaat in de view
+  `marketing_analyse_orders_klant` (alleen Nieuw en Gebruikt; Handel apart, `klantgroep_naam`), gelijk
+  aan `isKlantOrder` / `klantgroepNaam` in `lib/sync/analyseOrders.ts` (getest). **De uitsplitsing per
+  klantgroep staat altijd in de analyse**: semantic layer (Algemeen en blok Syntec orders,
+  `data_orders`), hoofdprompt en skill. Eigen tabblad **Orders in Syntec** (`orders`), grijs als de
+  analyse niet uitsluitend over Van den Udenhout gaat. Orders zijn nooit het leadcijfer.
 - **Leads: één bron, GA4 of Syntec** (besluit van de eigenaar, 25 november 2026, §15 van het plan).
   Bij een Campagne analyse komt het leadcijfer (`kerncijfers.leadsDoel`, met `leadBron` en
   `leadsDoelSoort`) **standaard uit Google Analytics**: de lead-events van de soort uit het doel
@@ -1772,7 +1784,7 @@ lees dat eerst voordat je hier iets verandert.
   van het plan). Bovenaan altijd de samenvatting in drie kolommen (`SamenvattingBlok.tsx`):
   samenvatting met doeloordeel, de aanbevolen acties (eerst voor de campagne als geheel, dan
   alle acties uit de tabbladen op prioriteit) en de briefing als ingeklapte verticale strook.
-  Daaronder tien tabbladen in funnelvolgorde (`ANALYSE_TABBLADEN` in `types.ts`, indeling in
+  Daaronder elf tabbladen in funnelvolgorde, sinds Orders in Syntec (`ANALYSE_TABBLADEN` in `types.ts`, indeling in
   `tabbladenVoor` in `rekenen.ts`, getest), in groepen, met onder elke naam het hoofdgetal en
   een stipje met het oordeel; los achteraan Verantwoording. Elk tabblad: links 3/4 de cijfers
   (`SectieBlok.tsx`), rechts 1/4 de bevindingen en acties, die blijven staan bij scrollen

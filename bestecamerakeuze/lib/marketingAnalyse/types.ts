@@ -16,7 +16,7 @@
  * Verander je hier iets, pas dan de skill in dezelfde wijziging aan.
  */
 
-/** Het enige bedrijf waarvoor de leads uit Syntec ("Data leads") van toepassing zijn. */
+/** Het enige bedrijf waarvoor de leads en orders uit Syntec ("Data leads", "Data orders") van toepassing zijn. */
 export const BEDRIJF_MET_SYNTEC = "Van den Udenhout";
 
 export type Label = "tussentijds" | "eind";
@@ -218,6 +218,7 @@ export const ANALYSE_TABBLADEN = [
   { sleutel: "gedrag", naam: "Gedrag op de pagina", groep: "Website" },
   { sleutel: "lead-events", naam: "Lead-events", groep: "Resultaat" },
   { sleutel: "syntec", naam: "Leads in Syntec", groep: "Resultaat" },
+  { sleutel: "orders", naam: "Orders in Syntec", groep: "Resultaat" },
 ] as const satisfies readonly { sleutel: string; naam: string; groep: TabGroep }[];
 
 export type TabSleutel = (typeof ANALYSE_TABBLADEN)[number]["sleutel"];
@@ -417,6 +418,7 @@ export const SEMANTIEK_BLOKKEN = [
   { sleutel: "linkedin_organisch", naam: "LinkedIn (organisch)" },
   { sleutel: "ga4", naam: "Google Analytics 4" },
   { sleutel: "data_leads", naam: "Data leads (Syntec)" },
+  { sleutel: "data_orders", naam: "Syntec orders" },
   { sleutel: "kanaalkosten", naam: "Extra kanaalkosten" },
 ] as const;
 

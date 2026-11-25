@@ -525,7 +525,7 @@ export interface AnalyseTab {
   reden: string | null;
 }
 
-/** Syntec-leads gelden alleen als de analyse uitsluitend over Van den Udenhout gaat. */
+/** Syntec-leads en -orders gelden alleen als de analyse uitsluitend over Van den Udenhout gaat. */
 export function syntecVanToepassing(bedrijven: readonly string[] | null | undefined): boolean {
   const lijst = (bedrijven ?? []).filter(Boolean);
   return lijst.length > 0 && lijst.every((b) => b === BEDRIJF_MET_SYNTEC);
@@ -561,10 +561,13 @@ export function tabbladenVoor(
 
   const vast = ANALYSE_TABBLADEN.map((t) => {
     const secties = resultaat.secties.filter((s) => s.tab === t.sleutel);
+    const nvt = !syntecVanToepassing(opties.bedrijven);
     const reden =
-      t.sleutel === "syntec" && !syntecVanToepassing(opties.bedrijven)
+      t.sleutel === "syntec" && nvt
         ? `Niet van toepassing. Leads uit Syntec gelden alleen voor een analyse die uitsluitend over ${BEDRIJF_MET_SYNTEC} gaat; de leads staan bij Lead-events.`
-        : "Deze analyse heeft hier geen onderdeel voor.";
+        : t.sleutel === "orders" && nvt
+          ? `Niet van toepassing. Orders uit Syntec gelden alleen voor een analyse die uitsluitend over ${BEDRIJF_MET_SYNTEC} gaat.`
+          : "Deze analyse heeft hier geen onderdeel voor.";
     return tabUitSecties(t.sleutel, t.naam, t.groep, secties, reden);
   });
   const zonderPlek = resultaat.secties.filter((s) => !s.tab || !TAB_SLEUTELS.has(s.tab));

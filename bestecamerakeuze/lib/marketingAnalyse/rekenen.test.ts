@@ -343,11 +343,14 @@ test("tabbladen: vaste volgorde bij formaat 2, leeg met reden, losse sectie acht
   assert.equal(per.email.leeg, true);
   assert.match(per.email.reden ?? "", /geen onderdeel/);
   assert.match(per.syntec.reden ?? "", /geen onderdeel/);
+  assert.match(per.orders.reden ?? "", /geen onderdeel/);
+  assert.equal(per.orders.groep, "Resultaat");
   assert.equal(per["sectie-1"].naam, "Iets anders");
   assert.equal(per["sectie-1"].groep, null);
 
   const pgz = tabbladenVoor(resultaat, { rapportage: false, bedrijven: ["PGZ"] });
   assert.match(pgz.find((t) => t.sleutel === "syntec")?.reden ?? "", /Niet van toepassing/);
+  assert.match(pgz.find((t) => t.sleutel === "orders")?.reden ?? "", /Niet van toepassing. Orders uit Syntec/);
 });
 
 test("tabbladen: formaat 1 en rapportage krijgen een tabblad per sectie", () => {

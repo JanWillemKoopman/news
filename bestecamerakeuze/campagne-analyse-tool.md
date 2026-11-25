@@ -70,9 +70,10 @@ Drie kennislagen sturen de analyse:
 | Facebook, Instagram, LinkedIn (organisch) | **Windsor** (live) | Posts met tekst, bereik, interacties, klikken |
 | Google Analytics 4 (alle websites) | **Windsor** (live) | Sessies, landingspagina's, kanalen, bron/medium, events, betrokkenheid |
 | Leads (**alleen Van den Udenhout**) | **Nachtelijke kopie van de spreadsheet "Data leads"** in Supabase (`marketing_analyse_leads`, §3.1) | Ordersoort, Onderwerp, Kanaalgroep, Merk, Model, Aangelegd — laatste 365 dagen, zonder "FW:" |
+| Orders (**alleen Van den Udenhout**) | **Nachtelijke kopie van de spreadsheet "Data orders"** in Supabase (`marketing_analyse_orders`, bron "Syntec orders", §16) | Ordersoort, Klantgroep, Merk, Model, Orderdatum — laatste 365 dagen, één rij is één verkochte auto |
 | Extra kanaalkosten | **Supabase `dataloket.lead_kanaalkosten`** | Maandkosten per GA4-bron/medium die niet in de advertentieaccounts staan |
 
-**Uitdrukkelijk niet:** de andere tabellen in Supabase. Dat geldt ook voor de kopieën `windsor_*` en `leads_raw`/`v_leads`. De analyse leest Windsor dus **rechtstreeks**, en leads alleen uit `marketing_analyse_leads`.
+**Uitdrukkelijk niet:** de andere tabellen in Supabase. Dat geldt ook voor de kopieën `windsor_*` en `leads_raw`/`v_leads`. De analyse leest Windsor dus **rechtstreeks**, leads alleen uit `marketing_analyse_leads` en orders alleen uit `marketing_analyse_orders`.
 
 **Wel in Supabase, maar dat is geen analysedata:**
 
@@ -137,6 +138,7 @@ Analyse (versie N) ◀───────────── 6. wegschrijven al
 | 7 | **E-mailverkeer apart**: gedrag op de pagina en lead-events | Windsor GA4 (hoe e-mail te herkennen: semantic layer) |
 | 8 | **Lead-events en andere interessante events in de sessie** (proefrit, offerte, servicebeurt …) — voor **elk** bedrijf | Windsor GA4, zie §5.2 (welke events tellen: semantic layer) |
 | 9 | **Leads in Syntec** — **alleen bij Van den Udenhout**: totaal, via Internet (kanaalgroep), per soort lead (volgens de semantic layer). Bij de andere bedrijven vervalt deze stap en meldt de analyse dat leads alleen uit GA4 komen. | `marketing_analyse_leads` |
+| 9a | **Orders in Syntec** — **alleen bij Van den Udenhout**: de verkochte auto's voor merk en model in de periode, **altijd uitgesplitst per klantgroep**, en in Nieuw en Gebruikt (§16). | `marketing_analyse_orders` |
 | 10 | **Doel**: hoe staat de campagne ervoor, gezien doel, budget en periode | Briefing + alles hierboven |
 
 ### 5.2 Lead-events later in de sessie (geverifieerd)
@@ -429,3 +431,37 @@ staat, komt altijd uit precies één bron. Nooit opgeteld, nooit gemengd.
   in GA4 alle lead-events behalve vacature, "Houd me op de hoogte" (HMODH) en de
   werkplaatsplanner; die staan apart.
 
+## 16. Orders uit Syntec, bron "Syntec orders" (verzoek van de eigenaar, 25 november 2026)
+
+De analyse mag naast de leads ook de verkochte auto's raadplegen, uit het sheet-tabblad
+"Data orders". Precies dezelfde opzet als de leads-kopie (§3.1).
+
+| | |
+|---|---|
+| **Tabel** | `dataloket.marketing_analyse_orders` (migratie 0048); in de semantic layer het blok **Syntec orders** |
+| **Kolommen** | Precies deze vijf, 1-op-1 zoals in de sheet: Ordersoort, Klantgroep, Merk, Model, Orderdatum, plus `orderdatum_op` als datum |
+| **Rijen** | Orderdatum in de **laatste 365 dagen**; rijen zonder leesbare datum eruit. Eén rij is één verkochte auto. Handel blijft erin. |
+| **Verversen** | Elke nacht in `/api/sync`, eigen transactie en eigen regel `Marketing analyse orders` in `sync_runs`. "Data orders" staat niet in `BRONNEN`, dus de sync leest dit tabblad zelf (`ANALYSE_ORDERS_BRON` in `lib/sync/analyseOrders.ts`). |
+| **Telling** | De view `marketing_analyse_orders_klant`: alleen Ordersoort Nieuw en Gebruikt (verkoop aan klanten), met `klantgroep_naam` ("Geen klantgroep" als hij leeg is). Gelijk aan `isKlantOrder` / `klantgroepNaam` in TypeScript, getest. |
+| **Rechten** | Lezen voor ingelogde collega's en Claude Code; schrijven alleen door de nachtelijke taak |
+
+- **Klantgroep altijd uitsplitsen.** Waar orders in een analyse staan, staat de uitsplitsing per
+  klantgroep erbij (aantal, aandeel, totaalregel), plus Nieuw tegen Gebruikt. Dat is een harde
+  regel in de semantic layer (Algemeen "Orders bij een Campagne analyse"), de hoofdprompt en de skill.
+- **Tabblad Orders in Syntec** (`orders`, groep Resultaat, na Leads in Syntec). Grijs met "niet van
+  toepassing" als de analyse niet uitsluitend over Van den Udenhout gaat.
+- **Handel apart** (keuze van Claude, ter controle door de eigenaar): Ordersoort heeft drie
+  waarden, niet twee. Handel (1.712 van de 12.926 orders in 2026) heeft bijna nooit een
+  klantgroep en is geen verkoop aan een klant. Hij staat in de kopie, maar niet in de view; de
+  analyse noemt hem hoogstens apart.
+- **Nooit het leadcijfer, geen koppeling met leads.** Gaat het doel over verkochte auto's, dan
+  beoordeelt de analyse het doel op de orders. Een order voor merk en model in de periode is
+  niet per se door de campagne gekomen.
+- **Alleen Van den Udenhout** (aanname van Claude, net als bij de leads): de andere bedrijven
+  hebben geen orders in deze bron.
+- **Gemeten (november 2026)**: de sheet begint op 1 januari 2026; op 25 november liep hij tot
+  14 november. 12.926 orders: Nieuw 8.134, Gebruikt 3.080, Handel 1.712; 25 klantgroepen, de
+  grootste Koop Particulier (BM), Dealer Lease en Koop Zakelijk (BM). Zeven klantgroepen beginnen
+  met "Cupra - " en horen alleen bij CUPRA.
+- **Waar het staat**: semantic layer versie 4 (Algemeen, nieuw blok Syntec orders), de
+  standaard-hoofdprompt ("Orders", tabblad 10), de skill en dit plan.
