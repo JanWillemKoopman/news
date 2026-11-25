@@ -1786,6 +1786,13 @@ lees dat eerst voordat je hier iets verandert.
   analyse. Analyse prompts en Semantic layer staan achter het schildje (vooral voor beheerders, maar
   iedereen kan ze openen); open of dicht wordt per browser onthouden. De open analyse staat in de URL
   (`?analyse=<campagne-id>`).
+- **Filterbalk op soort analyse** (25 november 2026, op verzoek; `OpzetFilterBalk.tsx`). Tussen de
+  voorgestelde analyses en het blok Lopende analyses een rij knoppen: **Alle** en één per opzet met
+  het aantal analyses (`opzetFilterKnoppen` en `filterOpOpzet` in `rekenen.ts`, getest). De knoppen
+  komen uit de opzetten, dus een nieuwe opzet uit Analyse prompts krijgt vanzelf een knop, ook met 0
+  analyses; een uitgezette opzet alleen zolang er analyses van zijn. Eén keuze tegelijk, nog eens
+  klikken = terug naar Alle. Het filter geldt voor Lopend én Afgelopen, staat in de URL
+  (`?soort=<opzet-id>`), en Nieuwe analyse begint dan met die opzet.
 - **Voorgestelde campagne analyses** (25 november 2026, migratie 0046, plan en besluiten in
   `campagne-voorstellen-plan.md`). Claude Code zoekt met de skill `campagne-voorstellen` op
   verzoek in Windsor welke actiecampagnes van alle bedrijven nu live zijn (uitgaven in de laatste 7

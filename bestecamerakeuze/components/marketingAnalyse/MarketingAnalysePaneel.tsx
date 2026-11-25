@@ -11,13 +11,16 @@ import SemantiekZijbalk from "@/components/marketingAnalyse/SemantiekZijbalk";
 import VolgersZijbalk from "@/components/marketingAnalyse/VolgersZijbalk";
 import MerkMailZijbalk from "@/components/marketingAnalyse/MerkMailZijbalk";
 import VoorstellenBalk from "@/components/marketingAnalyse/VoorstellenBalk";
+import OpzetFilterBalk from "@/components/marketingAnalyse/OpzetFilterBalk";
 import { getBrandLogo } from "@/components/brandLogos";
 import { IconBook, IconBrain, IconChevronDown, IconMail, IconPencil, IconPlus, IconShield } from "@/components/icons";
 import {
   bedrijvenLabel,
   deelOpInLopendEnAfgelopen,
+  filterOpOpzet,
   formatWaarde,
   looptijdLabel,
+  opzetFilterKnoppen,
   overzichtCijfers,
   vandaagNL,
   versieLabel,
@@ -29,13 +32,15 @@ import type { MaCampagne, MaOpzet, MaOverzichtRegel, MaVoorstel, MaZoekronde } f
 type Voorstellen = { open: MaVoorstel[]; genegeerd: MaVoorstel[]; laatsteZoekronde: MaZoekronde | null };
 
 const URL_PARAM = "analyse";
+/** Het filter op soort analyse (opzet-id) staat ook in de URL: overleeft een refresh, is te delen. */
+const FILTER_PARAM = "soort";
 
 const BEHEER_SLEUTEL = "marketing-analyse-beheer";
 
-function zetUrl(id: string | null) {
+function zetUrl(id: string | null, param: string = URL_PARAM) {
   const params = new URLSearchParams(window.location.search);
-  if (id) params.set(URL_PARAM, id);
-  else params.delete(URL_PARAM);
+  if (id) params.set(param, id);
+  else params.delete(param);
   const zoek = params.toString();
   window.history.replaceState(null, "", `${window.location.pathname}${zoek ? `?${zoek}` : ""}`);
 }
@@ -489,7 +494,8 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
   const [isEigenaar, setIsEigenaar] = useState(false);
   const [fout, setFout] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
-  const [zijbalk, setZijbalk] = useState<{ campagne: MaCampagne | null; voorstel?: MaVoorstel } | null>(null);
+  const [zijbalk, setZijbalk] = useState<{ campagne: MaCampagne | null; voorstel?: MaVoorstel; startOpzetId?: string } | null>(null);
+  const [filter, setFilter] = useState<string | null>(null);
   const [voorstellen, setVoorstellen] = useState<Voorstellen | null>(null);
   const [voorstelBezig, setVoorstelBezig] = useState<Set<string>>(new Set());
   const [paneel, setPaneel] = useState<
@@ -555,14 +561,22 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
   useEffect(() => {
     if (!ingelogd) return;
     laad();
-    const gevraagd = new URLSearchParams(window.location.search).get(URL_PARAM);
+    const params = new URLSearchParams(window.location.search);
+    const gevraagd = params.get(URL_PARAM);
     if (gevraagd) setOpenId(gevraagd);
+    const soort = params.get(FILTER_PARAM);
+    if (soort) setFilter(soort);
   }, [ingelogd, laad]);
 
   function open(id: string | null) {
     setOpenId(id);
     zetUrl(id);
     window.scrollTo({ top: 0 });
+  }
+
+  function kiesFilter(opzetId: string | null) {
+    setFilter(opzetId);
+    zetUrl(opzetId, FILTER_PARAM);
   }
 
   function bijgewerkt(c: MaCampagne) {
@@ -635,8 +649,13 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
   const geopend = campagnes?.find((c) => c.id === openId) ?? null;
   const opzetPerId = new Map(opzetten.map((o) => [o.id, o]));
   const promptOpzet = paneel?.soort === "prompt" && paneel.opzetId ? (opzetPerId.get(paneel.opzetId) ?? null) : null;
-  const { lopend, afgelopen } = deelOpInLopendEnAfgelopen(campagnes ?? [], vandaagNL());
-  const inRonde = (campagnes ?? []).filter((c) => c.analyseRonde).length;
+  const filterKnoppen = opzetFilterKnoppen(opzetten, campagnes ?? []);
+  // Een filter uit de URL op een opzet die er niet (meer) is, telt als Alle.
+  const actiefFilter = filter !== null && filterKnoppen.some((k) => k.id === filter) ? filter : null;
+  const filterOpzet = actiefFilter ? (opzetPerId.get(actiefFilter) ?? null) : null;
+  const gefilterd = filterOpOpzet(campagnes ?? [], actiefFilter);
+  const { lopend, afgelopen } = deelOpInLopendEnAfgelopen(gefilterd, vandaagNL());
+  const inRonde = gefilterd.filter((c) => c.analyseRonde).length;
 
   const knoppen = (
     <div className="flex items-center gap-2">
@@ -682,7 +701,8 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
       {!geopend && (
         <button
           type="button"
-          onClick={() => setZijbalk({ campagne: null })}
+          // Staat het filter op een soort, dan begint de nieuwe analyse met die opzet.
+          onClick={() => setZijbalk({ campagne: null, startOpzetId: filterOpzet?.actief ? filterOpzet.id : undefined })}
           className="flex items-center gap-2 rounded-button bg-primary px-4 py-2 text-sm font-medium text-on-primary transition-colors duration-[var(--duur-snel)] hover:bg-primary-dark"
         >
           <IconPlus className="h-4 w-4" />
@@ -732,10 +752,15 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
               onTerugzetten={(v) => zetVoorstel(v, "terugzetten")}
             />
           )}
+          {campagnes && filterKnoppen.length > 0 && (
+            <OpzetFilterBalk knoppen={filterKnoppen} totaal={campagnes.length} gekozen={actiefFilter} onKies={kiesFilter} />
+          )}
           <section className="kaart-accent overflow-hidden rounded-panel border border-line bg-card shadow-card">
             <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line-soft px-6 py-4">
               <div>
-                <h2 className="label-theme text-label text-ink-muted">Lopende analyses</h2>
+                <h2 className="label-theme text-label text-ink-muted">
+                  Lopende analyses{filterOpzet && <span className="text-ink"> · {filterOpzet.naam}</span>}
+                </h2>
                 <p className="mt-0.5 text-meta text-ink-faint">
                   Cijfers uit de laatste analyse. Klik op een regel voor de volledige analyse.
                   {inRonde > 0 && ` ${inRonde} ${inRonde === 1 ? "staat" : "staan"} in de analyseronde.`}
@@ -746,6 +771,20 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
             {fout && <p className="px-6 py-3 text-sm text-negative">{fout}</p>}
             {!campagnes ? (
               !fout && <p className="px-6 py-5 text-sm text-ink-muted">Laden…</p>
+            ) : lopend.length === 0 && filterOpzet ? (
+              <div className="px-6 py-10 text-center">
+                <p className="font-semibold text-ink">Geen lopende analyses van het soort {filterOpzet.naam}</p>
+                <p className="mx-auto mt-1 max-w-lg text-sm text-ink-muted">
+                  {afgelopen.length > 0
+                    ? `Er ${afgelopen.length === 1 ? "staat er één" : `staan er ${afgelopen.length}`} onder Afgelopen. `
+                    : ""}
+                  {filterOpzet.actief ? "Maak er een aan met Nieuwe analyse, of " : ""}
+                  <button type="button" onClick={() => kiesFilter(null)} className="text-ink underline underline-offset-2 hover:text-primary">
+                    {filterOpzet.actief ? "toon alle analyses" : "Toon alle analyses"}
+                  </button>
+                  .
+                </p>
+              </div>
             ) : lopend.length === 0 ? (
               <div className="px-6 py-10 text-center">
                 <p className="font-semibold text-ink">Geen lopende analyses</p>
@@ -784,9 +823,10 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
 
       {zijbalk && (
         <CampagneZijbalk
-          key={zijbalk.campagne?.id ?? zijbalk.voorstel?.id ?? "nieuw"}
+          key={zijbalk.campagne?.id ?? zijbalk.voorstel?.id ?? `nieuw-${zijbalk.startOpzetId ?? ""}`}
           campagne={zijbalk.campagne}
           voorstel={zijbalk.voorstel ?? null}
+          startOpzetId={zijbalk.startOpzetId}
           opzetten={opzetten}
           bedrijven={bedrijven}
           isEigenaar={isEigenaar}

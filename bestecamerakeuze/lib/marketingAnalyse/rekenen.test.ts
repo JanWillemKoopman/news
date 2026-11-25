@@ -19,6 +19,8 @@ import {
   leesOpzetInvoer,
   rapportageNaam,
   sorteerOpzetten,
+  opzetFilterKnoppen,
+  filterOpOpzet,
   leesModellen,
   merkSleutel,
   merkSleutels,
@@ -440,4 +442,32 @@ test("voorstellen op Live sinds, nieuw naar oud, zonder datum achteraan", () => 
     { naam: "D", startdatum: "2026-10-07" },
   ];
   assert.deepEqual(sorteerVoorstellen(lijst).map((v) => v.naam), ["A", "B", "D", "C"]);
+});
+
+test("opzetFilterKnoppen: elke actieve opzet, ook zonder analyses; uitgezet alleen met analyses", () => {
+  const opzetten = [
+    { id: "vdu-maand", naam: "VDU maandrapportage", volgorde: 20, actief: true },
+    { id: "campagne", naam: "Campagne analyse", volgorde: 0, actief: true },
+    { id: "oud", naam: "Oude opzet", volgorde: 5, actief: false },
+    { id: "weg", naam: "Uitgezet zonder analyses", volgorde: 6, actief: false },
+    { id: "nieuw", naam: "E-mail VDU", volgorde: 30, actief: true },
+  ];
+  const analyses = [{ opzetId: "campagne" }, { opzetId: "campagne" }, { opzetId: "oud" }, { opzetId: "vdu-maand" }, { opzetId: "onbekend" }];
+  assert.deepEqual(opzetFilterKnoppen(opzetten, analyses), [
+    { id: "campagne", naam: "Campagne analyse", aantal: 2 },
+    { id: "vdu-maand", naam: "VDU maandrapportage", aantal: 1 },
+    { id: "nieuw", naam: "E-mail VDU", aantal: 0 },
+    { id: "oud", naam: "Oude opzet", aantal: 1 },
+  ]);
+});
+
+test("filterOpOpzet: null is alles, anders alleen die opzet", () => {
+  const analyses = [
+    { id: 1, opzetId: "a" },
+    { id: 2, opzetId: "b" },
+    { id: 3, opzetId: "a" },
+  ];
+  assert.deepEqual(filterOpOpzet(analyses, null).map((x) => x.id), [1, 2, 3]);
+  assert.deepEqual(filterOpOpzet(analyses, "a").map((x) => x.id), [1, 3]);
+  assert.deepEqual(filterOpOpzet(analyses, "c"), []);
 });

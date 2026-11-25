@@ -16,6 +16,8 @@ type Props = {
   voorstel?: MaVoorstel | null;
   /** De analyse opzetten voor het uitklapmenu bovenaan. */
   opzetten: MaOpzet[];
+  /** Een nieuwe analyse begint met deze opzet (het filter in het overzicht). Alleen zonder `campagne` en `voorstel`. */
+  startOpzetId?: string;
   /** De keuzelijst Bedrijf, uit het blok Algemeen van de semantic layer. */
   bedrijven: string[];
   isEigenaar: boolean;
@@ -40,7 +42,7 @@ type Velden = {
   dataCorrectie: string;
 };
 
-function beginwaarden(c: MaCampagne | null, voorstel: MaVoorstel | null): Velden {
+function beginwaarden(c: MaCampagne | null, voorstel: MaVoorstel | null, startOpzet: MaOpzet | null): Velden {
   if (!c && voorstel) {
     return {
       opzetId: STANDAARD_OPZET_ID,
@@ -58,9 +60,10 @@ function beginwaarden(c: MaCampagne | null, voorstel: MaVoorstel | null): Velden
       dataCorrectie: "",
     };
   }
+  const opzetId = c?.opzetId ?? startOpzet?.id ?? STANDAARD_OPZET_ID;
   return {
-    opzetId: c?.opzetId ?? STANDAARD_OPZET_ID,
-    naam: c?.naam ?? "",
+    opzetId,
+    naam: c?.naam ?? (startOpzet?.formulier === "rapportage" ? rapportageNaam(startOpzet.naam, "") : ""),
     bedrijven: c?.bedrijven ?? [],
     merk: c?.merk ?? "",
     modellen: c?.modellen.join(", ") ?? "",
@@ -106,6 +109,7 @@ export default function CampagneZijbalk({
   campagne,
   voorstel = null,
   opzetten,
+  startOpzetId,
   bedrijven,
   isEigenaar,
   onClose,
@@ -113,7 +117,9 @@ export default function CampagneZijbalk({
   onVerwijderd,
 }: Props) {
   const uitVoorstel = !campagne && voorstel !== null;
-  const [v, setV] = useState<Velden>(() => beginwaarden(campagne, voorstel));
+  const [v, setV] = useState<Velden>(() =>
+    beginwaarden(campagne, voorstel, campagne || voorstel ? null : (opzetten.find((o) => o.id === startOpzetId) ?? null)),
+  );
   // De naam van een rapportage loopt mee met opzet en periode, tot iemand hem zelf aanpast.
   const [naamAangepast, setNaamAangepast] = useState(Boolean(campagne));
   const opzet = opzetten.find((o) => o.id === v.opzetId) ?? null;

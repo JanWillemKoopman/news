@@ -310,6 +310,36 @@ export function sorteerOpzetten<T extends { volgorde: number; naam: string; acti
   );
 }
 
+/** Een knop in de filterbalk boven het overzicht: één per opzet, met het aantal analyses. */
+export interface OpzetFilterKnop {
+  id: string;
+  naam: string;
+  aantal: number;
+}
+
+/**
+ * De knoppen van de filterbalk "soort analyse": elke actieve opzet (ook zonder analyses, zodat
+ * een nieuwe opzet meteen een knop krijgt) en een uitgezette opzet alleen zolang er nog analyses
+ * van zijn. Volgorde als in het menu Analyse prompts. Een analyse met een onbekende opzet telt
+ * alleen mee in "Alle".
+ */
+export function opzetFilterKnoppen<O extends { id: string; naam: string; volgorde: number; actief: boolean }>(
+  opzetten: readonly O[],
+  analyses: readonly { opzetId: string }[],
+): OpzetFilterKnop[] {
+  const aantallen = new Map<string, number>();
+  for (const a of analyses) aantallen.set(a.opzetId, (aantallen.get(a.opzetId) ?? 0) + 1);
+  return sorteerOpzetten(opzetten)
+    .map((o) => ({ id: o.id, naam: o.naam, aantal: aantallen.get(o.id) ?? 0, actief: o.actief }))
+    .filter((k) => k.actief || k.aantal > 0)
+    .map(({ id, naam, aantal }) => ({ id, naam, aantal }));
+}
+
+/** Alleen de analyses van één opzet; `null` = alle. */
+export function filterOpOpzet<T extends { opzetId: string }>(analyses: readonly T[], opzetId: string | null): T[] {
+  return opzetId === null ? [...analyses] : analyses.filter((a) => a.opzetId === opzetId);
+}
+
 export type OpzetInvoerUitkomst =
   | { ok: true; invoer: { naam: string; formulier: Formulier; bedrijven: string[]; actief: boolean } }
   | { ok: false; fout: string };
