@@ -193,12 +193,35 @@ export interface MaKerncijfers {
 
 export type Eenheid = "aantal" | "euro" | "procent" | "seconden" | "tekst";
 
+/**
+ * Hoe een kerncijfer zich verhoudt tot soortgelijke campagnes of posts uit onze eigen historie
+ * (besluit van de eigenaar, 25 november 2026; plan §20). De analyse rekent het cijfer per
+ * vergelijkbaar item uit en geeft de verdeling mee; het dashboard bepaalt zelf het oordeel
+ * (`benchmarkOordeel`): onder het eerste kwart is slechter, boven het derde kwart beter.
+ */
+export interface KerncijferBenchmark {
+  /** Waarmee vergeleken is, in gewone taal: "18 organische posts van dezelfde accounts, afgelopen 12 maanden". */
+  groep: string;
+  /** Hoeveel campagnes of posts in de vergelijking zitten; onder de 5 wordt hij niet getoond. */
+  aantal: number;
+  mediaan: number;
+  /** Eerste en derde kwartiel: de middelste helft van de vergelijkingsgroep. */
+  p25: number;
+  p75: number;
+  /** Laagste en hoogste waarde in de groep, voor de schaal van de balk. */
+  min?: number;
+  max?: number;
+  /** False bij kosten (kosten per klik, per sessie, per lead): dan is lager beter. Standaard true. */
+  hogerIsBeter?: boolean;
+}
+
 export interface Kerncijfer {
   label: string;
   waarde: number | string | null;
   eenheid: Eenheid;
   toelichting?: string;
   vergelijking?: { label: string; waarde: number | null };
+  benchmark?: KerncijferBenchmark;
 }
 
 export interface TabelKolom {

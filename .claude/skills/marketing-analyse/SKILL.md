@@ -208,6 +208,37 @@ select id, versie, inhoud from dataloket.marketing_analyse_semantiek order by ve
   semantic layer zegt; altijd apart van de mediakosten.
 - Reken verhoudingen uit totalen. Bereik niet optellen over dagen of platforms.
 
+### Benchmarks: hoe goed is goed? (plan §20)
+Bij een **campagne-analyse** zet je naast de belangrijkste kerncijfers hoe ze zich verhouden tot
+soortgelijke campagnes of posts uit **onze eigen historie** (besluit van de eigenaar, 25 november
+2026; geen branchecijfers). Dezelfde harde dataregel geldt: Windsor live en, bij Van den Udenhout,
+de leads-kopie.
+- **Vergelijkingsgroep**: dezelfde accounts en properties als de campagne, de **12 maanden vóór
+  de startdatum**, zonder de campagne zelf. Per item (een campagne, een post, een campagnepagina)
+  reken je het cijfer uit zijn eigen totalen uit; van die waarden geef je de verdeling mee.
+- **Welke cijfers, met welke groep** (alleen waar het zinvol is; niet elk kerncijfer):
+  - Advertenties: CTR, kosten per klik en kosten per sessie, **per platform** tegen andere
+    actiecampagnes op hetzelfde platform en account (campagnes met minstens € 100 uitgaven;
+    Google per campagnetype, dus Demand Gen tegen Demand Gen). Bereik: frequentie en kosten per
+    1.000 vertoningen bij Meta.
+  - Organische posts: vertoningen per post, interacties per vertoning en klikken per post, per
+    kanaal, tegen alle posts van dezelfde accounts (lifetime-cijfers, posts van minstens 14 dagen oud).
+  - Verkeer, gedrag en e-mail: betrokken sessies (%), betrokkenheidstijd per sessie en video- of
+    scroll-events per 100 sessies, tegen andere campagnepagina's op dezelfde property
+    (bijvoorbeeld `/acties/…`, minstens 200 sessies). Bij e-mail alleen het e-mailverkeer naar die pagina's.
+  - Lead-events: lead-events van dezelfde soort per 100 sessies, tegen andere campagnepagina's.
+  - Niet bij investering (tempo tegen budget is geen vergelijking), niet bij orders en niet bij
+    Syntec-leads, tenzij de prompt van de opzet erom vraagt.
+- **Minstens 5 items** in de groep, anders geen benchmark (het dashboard toont hem dan ook niet);
+  zeg in `datakwaliteit` waar een benchmark ontbrak en waarom.
+- **Veld** `benchmark` op het kerncijfer: `groep` (in gewone taal, met aantal, soort en periode:
+  "142 organische posts van dezelfde accounts, 12 maanden voor de start"), `aantal`, `mediaan`,
+  `p25`, `p75`, `min`, `max`, en `hogerIsBeter: false` bij kosten. Zelfde eenheid als het
+  kerncijfer (procent als 3.2). Het dashboard bepaalt zelf of het beter, gemiddeld of slechter is
+  (boven het derde of onder het eerste kwart); jij noemt de vergelijking in de bevindingen
+  ("1.108 vertoningen per post, rond de mediaan van 940") en laat haar meewegen in `oordeel`.
+- Zet in `bronnen` welke data je voor de vergelijking hebt opgehaald.
+
 ## Stap 4 — Het resultaat (`MaResultaat`, `formaat: 2`)
 De pagina toont bovenaan de samenvatting met de acties en daaronder **vaste tabbladen** in
 funnelvolgorde (`ANALYSE_TABBLADEN` in `types.ts`). Elke sectie hoort bij één tabblad via
@@ -235,7 +266,11 @@ tabblad achteraan; doe dat alleen als de prompt van de opzet er echt om vraagt. 
   "secties": [ {
     "stap": 2, "tab": "investering", "titel": "Investering", "ondertitel": "…",
     "kerncijfers": [ { "label": "Besteed", "waarde": 1960.8, "eenheid": "euro",
-                       "toelichting": "62% van het budget", "vergelijking": { "label": "Budget", "waarde": 3150 } } ],
+                       "toelichting": "62% van het budget", "vergelijking": { "label": "Budget", "waarde": 3150 } },
+                     { "label": "Kosten per sessie Meta", "waarde": 0.33, "eenheid": "euro",
+                       "benchmark": { "groep": "11 Meta-actiecampagnes van hetzelfde account, 12 maanden voor de start",
+                                      "aantal": 11, "mediaan": 0.41, "p25": 0.30, "p75": 0.62, "min": 0.18, "max": 1.10,
+                                      "hogerIsBeter": false } } ],
     "tekst": "Hoogstens drie zinnen: hoe je de cijfers leest. Geen oordelen.",
     "tabellen": [ { "titel": "Per platform en campagne",
                     "kolommen": [ { "label": "Campagne", "eenheid": "tekst" }, { "label": "Platform", "eenheid": "tekst" },
@@ -302,7 +337,9 @@ elke actie en aanbeveling heeft een `prioriteit`; staat er een sectie `orders`, 
 een tabel per klantgroep met een totaalregel; bij een campagne staan `leadBron`, `leadsDoel`
 en `leadsDoelSoort` in de kerncijfers en is `leadBron` alleen `"syntec"` als het doel Syntec noemt
 en de analyse uitsluitend over Van den Udenhout gaat; geen tegel, regel of kolom met extra
-kanaalkosten bij een campagne-analyse. Sla op met
+kanaalkosten bij een campagne-analyse; elke `benchmark` heeft `groep`, `aantal` (minstens 5),
+`mediaan`, `p25` en `p75` met p25 ≤ mediaan ≤ p75 (een onbruikbare benchmark laat het dashboard
+weg). Sla op met
 dollar-quoting:
 ```sql
 select * from dataloket.marketing_analyse_bewaar(

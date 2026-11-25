@@ -489,3 +489,53 @@ test("budgetTempo: binnen 10 procentpunt op schema", async () => {
   assert.equal(budgetTempo(40, 65), "te-langzaam");
   assert.equal(budgetTempo(null, 65), null);
 });
+
+test("leesBenchmark: alleen bruikbare verdelingen", async () => {
+  const { leesBenchmark } = await import("./rekenen");
+  const goed = { groep: "18 posts van dezelfde accounts", aantal: 18, mediaan: 900, p25: 600, p75: 1400, min: 200, max: 3300 };
+  assert.deepEqual(leesBenchmark(goed), { ...goed, hogerIsBeter: true });
+  assert.equal(leesBenchmark({ ...goed, aantal: 4 }), null, "te weinig items");
+  assert.equal(leesBenchmark({ ...goed, p25: 1000 }), null, "kwartielen lopen niet op");
+  assert.equal(leesBenchmark({ ...goed, groep: "" }), null, "zonder groep");
+  assert.equal(leesBenchmark("x"), null);
+  const zonderMin = leesBenchmark({ ...goed, min: 700, hogerIsBeter: false });
+  assert.equal(zonderMin?.min, undefined, "min boven het eerste kwart vervalt");
+  assert.equal(zonderMin?.hogerIsBeter, false);
+});
+
+test("benchmarkOordeel: kwartielen, en omgekeerd bij kosten", async () => {
+  const { benchmarkOordeel } = await import("./rekenen");
+  const b = { groep: "g", aantal: 10, mediaan: 2, p25: 1.5, p75: 3 };
+  assert.equal(benchmarkOordeel(3.5, b), "beter");
+  assert.equal(benchmarkOordeel(2.2, b), "gemiddeld");
+  assert.equal(benchmarkOordeel(1, b), "slechter");
+  assert.equal(benchmarkOordeel(3.5, { ...b, hogerIsBeter: false }), "slechter");
+  assert.equal(benchmarkOordeel(1, { ...b, hogerIsBeter: false }), "beter");
+  assert.equal(benchmarkOordeel("n.v.t.", b), null);
+});
+
+test("benchmarkSchaal: rechts is altijd beter", async () => {
+  const { benchmarkSchaal } = await import("./rekenen");
+  const b = { groep: "g", aantal: 10, mediaan: 50, p25: 25, p75: 75, min: 0, max: 100 };
+  assert.deepEqual(benchmarkSchaal(90, b), { bandVan: 25, bandTot: 75, mediaan: 50, waarde: 90 });
+  const kosten = benchmarkSchaal(90, { ...b, hogerIsBeter: false });
+  assert.equal(kosten.waarde, 10);
+  assert.equal(kosten.bandVan, 25);
+  // Een cijfer buiten de groep rekt de schaal op in plaats van van de balk te vallen.
+  assert.equal(benchmarkSchaal(200, b).waarde, 100);
+});
+
+test("normaliseerResultaat: een onbruikbare benchmark valt weg, de rest blijft", async () => {
+  const { normaliseerResultaat } = await import("./rekenen");
+  const r = normaliseerResultaat({
+    formaat: 2,
+    secties: [{ stap: 1, titel: "Organisch", kerncijfers: [
+      { label: "Vertoningen per post", waarde: 1100, eenheid: "aantal", benchmark: { groep: "posts", aantal: 3, mediaan: 1, p25: 0, p75: 2 } },
+      { label: "Engagement", waarde: 2.1, eenheid: "procent", benchmark: { groep: "posts", aantal: 20, mediaan: 1.4, p25: 0.9, p75: 2 } },
+    ] }],
+  });
+  const k = r.secties[0].kerncijfers ?? [];
+  assert.equal(k[0].benchmark, undefined);
+  assert.equal(k[0].waarde, 1100);
+  assert.equal(k[1].benchmark?.aantal, 20);
+});

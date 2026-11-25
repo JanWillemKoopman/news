@@ -1831,6 +1831,16 @@ lees dat eerst voordat je hier iets verandert.
     verwijderen" staan onderaan de rechterkolom.
   - Versies in formaat 1 en rapportages krijgen een stap per sectie, zonder groepen; daar vallen
     Wat we zien en Wat nu te doen per stap weg (die velden bestaan daar niet).
+  - **Benchmark onder een kerncijfer** (25 november 2026, op verzoek; plan §20). Een kerncijfer kan
+    een `benchmark` dragen (`KerncijferBenchmark` in `types.ts`): de verdeling van hetzelfde cijfer
+    bij soortgelijke campagnes, posts of campagnepagina's uit **onze eigen historie** (12 maanden
+    vóór de start, zelfde accounts; geen branchecijfers, keuze van de eigenaar). Claude rekent hem
+    uit (skill, "Benchmarks"); het dashboard bepaalt het oordeel zelf (`benchmarkOordeel`: boven het
+    derde kwart beter, onder het eerste slechter, omgekeerd bij `hogerIsBeter: false`) en tekent
+    onder het cijfer een label met een dunne balk (`BenchmarkRegel` in `SectieBlok.tsx`,
+    `benchmarkSchaal`): grijs vlak = middelste helft, streepje = mediaan, stip = het cijfer, rechts
+    is altijd beter. `leesBenchmark` (in `normaliseerResultaat`) laat een benchmark met minder dan 5
+    items of niet-oplopende kwartielen weg. Getest in `rekenen.test.ts`.
 - **Het overzicht**: lopende campagnes bovenaan op startdatum, afgelopen in een inklapbaar blok
   Afgelopen (rapportages hebben geen einddatum en staan altijd bij lopend); per regel de
   planning (uitklapmenu) en bij campagnes de kerncijfers uit de laatste analyse.
