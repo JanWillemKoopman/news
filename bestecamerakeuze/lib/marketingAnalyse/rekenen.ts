@@ -86,6 +86,78 @@ export function paginaSleutel(url: string): string | null {
   return s || null;
 }
 
+// ---------------------------------------------------------------------------
+// E-mailadressen per merk
+// ---------------------------------------------------------------------------
+
+/**
+ * De merken die standaard in E-mail settings staan. Merken die al adressen hebben of in een
+ * briefing voorkomen, komen erbij (`merkenVoorMail`).
+ */
+export const STANDAARD_MERKEN = [
+  "Volkswagen",
+  "Volkswagen Bedrijfswagens",
+  "Audi",
+  "Škoda",
+  "SEAT",
+  "CUPRA",
+  "Porsche",
+  "Bentley",
+] as const;
+
+const ACCENT_VAN = "áàäâãåéèëêíìïîóòöôõúùüûýÿšžčřńñçłđ";
+const ACCENT_NAAR = "aaaaaaeeeeiiiiooooouuuuyyszcrnncld";
+
+/**
+ * De vergelijkingssleutel van één merk: kleine letters, zonder accenten, alleen letters en
+ * cijfers met één spatie ertussen ("Škoda" → "skoda"). Dezelfde regel als
+ * `dataloket.marketing_analyse_merk_sleutel` (migratie 0047).
+ */
+export function merkSleutel(merk: string | null | undefined): string | null {
+  const klein = [...(merk ?? "").toLowerCase()]
+    .map((t) => {
+      const i = ACCENT_VAN.indexOf(t);
+      return i >= 0 ? ACCENT_NAAR[i] : t;
+    })
+    .join("");
+  const s = klein.replace(/[^a-z0-9]+/g, " ").trim();
+  return s || null;
+}
+
+/**
+ * Alle merksleutels in een merkveld uit de briefing: gesplitst op komma, puntkomma, slash, plus,
+ * & en " en " ("Volkswagen, Audi" → volkswagen en audi). Zelfde regel als
+ * `dataloket.marketing_analyse_merk_sleutels`.
+ */
+export function merkSleutels(merk: string | null | undefined): string[] {
+  const delen = (merk ?? "").split(/\s*(?:,|;|\/|\+|&|\s+en\s+)\s*/i);
+  return [...new Set(delen.map(merkSleutel).filter((s): s is string => s !== null))];
+}
+
+/**
+ * De merken voor E-mail settings: de standaardmerken, dan merken met adressen en merken uit de
+ * briefings die daar nog niet tussen staan (op sleutel), alfabetisch. Een merkveld met meer
+ * merken telt als die losse merken.
+ */
+export function merkenVoorMail(opgeslagen: readonly string[], uitBriefings: readonly (string | null)[]): string[] {
+  const gezien = new Set<string>();
+  const uit: string[] = [];
+  const voegToe = (naam: string) => {
+    const sleutel = merkSleutel(naam);
+    if (!sleutel || gezien.has(sleutel)) return;
+    gezien.add(sleutel);
+    uit.push(naam.trim());
+  };
+  STANDAARD_MERKEN.forEach(voegToe);
+  const extra: string[] = [...opgeslagen];
+  for (const veld of uitBriefings) {
+    for (const deel of (veld ?? "").split(/\s*(?:,|;|\/|\+|&|\s+en\s+)\s*/i)) extra.push(deel);
+  }
+  const rest = extra.filter((n) => n.trim()).sort((a, b) => a.localeCompare(b, "nl"));
+  rest.forEach(voegToe);
+  return uit;
+}
+
 /**
  * Campagnepagina's uit een lijst of tekst (één per regel of met komma's). Zonder protocol komt
  * er https:// voor; query en hash gaan eraf (trackingparameters horen niet bij de pagina).

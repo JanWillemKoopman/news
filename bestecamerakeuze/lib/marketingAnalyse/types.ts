@@ -334,6 +334,19 @@ export interface MaVolger {
   /** Het adres van de ingelogde gebruiker zelf. */
   ikZelf: boolean;
   magVerwijderen: boolean;
+  /** Het merk via E-mail settings waardoor dit adres erbij kwam; leeg als iemand het zelf toevoegde. */
+  viaMerk: string | null;
+}
+
+/** Een adres dat standaard volger wordt van elke nieuwe analyse voor een merk (E-mail settings). */
+export interface MaMerkMail {
+  id: string;
+  /** Het merk zoals het in de lijst staat ("Škoda"). */
+  merk: string;
+  email: string;
+  toegevoegdOp: string;
+  ikZelf: boolean;
+  magVerwijderen: boolean;
 }
 
 export interface MaVersie {

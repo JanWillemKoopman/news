@@ -9,9 +9,10 @@ import CampagneZijbalk from "@/components/marketingAnalyse/CampagneZijbalk";
 import AnalysePromptZijbalk from "@/components/marketingAnalyse/AnalysePromptZijbalk";
 import SemantiekZijbalk from "@/components/marketingAnalyse/SemantiekZijbalk";
 import VolgersZijbalk from "@/components/marketingAnalyse/VolgersZijbalk";
+import MerkMailZijbalk from "@/components/marketingAnalyse/MerkMailZijbalk";
 import VoorstellenBalk from "@/components/marketingAnalyse/VoorstellenBalk";
 import { getBrandLogo } from "@/components/brandLogos";
-import { IconBook, IconBrain, IconChevronDown, IconMail, IconPencil, IconPlus } from "@/components/icons";
+import { IconBook, IconBrain, IconChevronDown, IconMail, IconPencil, IconPlus, IconShield } from "@/components/icons";
 import {
   bedrijvenLabel,
   deelOpInLopendEnAfgelopen,
@@ -28,6 +29,8 @@ import type { MaCampagne, MaOpzet, MaOverzichtRegel, MaVoorstel, MaZoekronde } f
 type Voorstellen = { open: MaVoorstel[]; genegeerd: MaVoorstel[]; laatsteZoekronde: MaZoekronde | null };
 
 const URL_PARAM = "analyse";
+
+const BEHEER_SLEUTEL = "marketing-analyse-beheer";
 
 function zetUrl(id: string | null) {
   const params = new URLSearchParams(window.location.search);
@@ -472,7 +475,11 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
   const [zijbalk, setZijbalk] = useState<{ campagne: MaCampagne | null; voorstel?: MaVoorstel } | null>(null);
   const [voorstellen, setVoorstellen] = useState<Voorstellen | null>(null);
   const [voorstelBezig, setVoorstelBezig] = useState<Set<string>>(new Set());
-  const [paneel, setPaneel] = useState<{ soort: "prompt"; opzetId: string | null } | { soort: "semantiek" } | null>(null);
+  const [paneel, setPaneel] = useState<
+    { soort: "prompt"; opzetId: string | null } | { soort: "semantiek" } | { soort: "merk-mail" } | null
+  >(null);
+  // Analyse prompts en Semantic layer staan achter het schildje: ze zijn vooral voor beheerders.
+  const [beheerOpen, setBeheerOpen] = useState(false);
   const [afgelopenOpen, setAfgelopenOpen] = useState(false);
   const [rondeBezig, setRondeBezig] = useState<Set<string>>(new Set());
   const [volgersVan, setVolgersVan] = useState<MaOverzichtRegel | null>(null);
@@ -509,6 +516,24 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(BEHEER_SLEUTEL) === "open") setBeheerOpen(true);
+    } catch {
+      // Geen opslag (privévenster): dan gewoon dicht.
+    }
+  }, []);
+
+  function wisselBeheer() {
+    const open = !beheerOpen;
+    setBeheerOpen(open);
+    try {
+      window.localStorage.setItem(BEHEER_SLEUTEL, open ? "open" : "dicht");
+    } catch {
+      // Niet erg: alleen een gemak.
+    }
+  }
 
   useEffect(() => {
     if (!ingelogd) return;
@@ -598,19 +623,44 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
 
   const knoppen = (
     <div className="flex items-center gap-2">
-      <AnalysePromptsMenu
-        opzetten={opzetten}
-        isEigenaar={isEigenaar}
-        onKies={(o) => setPaneel({ soort: "prompt", opzetId: o.id })}
-        onNieuw={() => setPaneel({ soort: "prompt", opzetId: null })}
-      />
+      {beheerOpen && (
+        <div id="ma-beheer" className="flex items-center gap-2">
+          <AnalysePromptsMenu
+            opzetten={opzetten}
+            isEigenaar={isEigenaar}
+            onKies={(o) => setPaneel({ soort: "prompt", opzetId: o.id })}
+            onNieuw={() => setPaneel({ soort: "prompt", opzetId: null })}
+          />
+          <button
+            type="button"
+            onClick={() => setPaneel({ soort: "semantiek" })}
+            className="flex items-center gap-2 rounded-button border border-line bg-card px-4 py-2 text-sm font-medium text-ink transition-colors duration-[var(--duur-snel)] hover:bg-surface"
+          >
+            <IconBook className="h-4 w-4 text-ink-muted" />
+            Semantic layer
+          </button>
+        </div>
+      )}
       <button
         type="button"
-        onClick={() => setPaneel({ soort: "semantiek" })}
+        onClick={wisselBeheer}
+        aria-expanded={beheerOpen}
+        aria-controls="ma-beheer"
+        aria-label={beheerOpen ? "Beheer verbergen" : "Beheer: Analyse prompts en Semantic layer"}
+        title={beheerOpen ? "Beheer verbergen" : "Beheer: Analyse prompts en Semantic layer"}
+        className={`flex items-center justify-center self-stretch rounded-button border px-2.5 transition-colors duration-[var(--duur-snel)] ${
+          beheerOpen ? "border-line bg-surface text-ink" : "border-line bg-card text-ink-muted hover:bg-surface hover:text-ink"
+        }`}
+      >
+        <IconShield className="h-4 w-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => setPaneel({ soort: "merk-mail" })}
         className="flex items-center gap-2 rounded-button border border-line bg-card px-4 py-2 text-sm font-medium text-ink transition-colors duration-[var(--duur-snel)] hover:bg-surface"
       >
-        <IconBook className="h-4 w-4 text-ink-muted" />
-        Semantic layer
+        <IconMail className="h-4 w-4 text-ink-muted" />
+        E-mail settings
       </button>
       {!geopend && (
         <button
@@ -763,6 +813,7 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
           onClose={() => setVolgersVan(null)}
         />
       )}
+      {paneel?.soort === "merk-mail" && <MerkMailZijbalk onClose={() => setPaneel(null)} onGewijzigd={laad} />}
       {paneel?.soort === "semantiek" && (
         <SemantiekZijbalk onClose={() => setPaneel(null)} onOpgeslagen={(inhoud) => setBedrijven(inhoud.bedrijven)} />
       )}
