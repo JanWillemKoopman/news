@@ -1775,7 +1775,9 @@ lees dat eerst voordat je hier iets verandert.
   `marketing_analyse_zoekrondes`. Schrijven alleen via `marketing_analyse_voorstellen_bewaar`
   (slaat een pagina over die al een campagne heeft, laat genegeerd en toegevoegd staan, zet wat
   niet meer live is op verlopen). In het overzicht staat de balk bovenaan
-  (`VoorstellenBalk.tsx`, eigen route `voorstellen`, zodat een fout de pagina niet raakt): Toevoegen
+  (`VoorstellenBalk.tsx`, eigen route `voorstellen`, zodat een fout de pagina niet raakt), **standaard
+  ingeklapt**; een klik op een regel toont **Gevonden datapunten** (advertentiecampagnes,
+  campagnepagina, social media posts, met aantallen, en de kanttekeningen eronder). Toevoegen
   opent **altijd eerst de ingevulde briefing** (`CampagneZijbalk` met `voorstel`); opslaan doet
   `marketing_analyse_voorstel_toevoegen` in één transactie (Campagne analyse, **Analyse ronde aan**,
   `herkenning` = het bewijs). Negeren en terugzetten mag iedereen. De briefing kreeg het veld
