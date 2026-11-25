@@ -4,6 +4,7 @@ import { BRONNEN, haalSheetOp, type Bron, type GeparsteRij } from "@/lib/sync/br
 import { bouwBlokInsert, inBlokken, rijenAlsRecords, teBewarenAfwijkingen } from "@/lib/sync/blokken";
 import { controleerVerbindingssnaar } from "@/lib/verbindingssnaar";
 import { analyseLeadRecords } from "@/lib/sync/analyseLeads";
+import { ANALYSE_ORDERS_BRON, analyseOrderRecords } from "@/lib/sync/analyseOrders";
 import { vandaagNL } from "@/lib/marketingAnalyse/rekenen";
 import { verstuurOpenstaande } from "@/lib/marketingAnalyse/notificatie";
 
@@ -37,29 +38,37 @@ interface SyncResultaat {
 /** De bron waaruit de leads-kopie voor Marketing analyse wordt gemaakt. */
 const ANALYSE_LEADS_BRON = "Data leads";
 const ANALYSE_LEADS_RUN = "Marketing analyse leads";
+const ANALYSE_ORDERS_RUN = "Marketing analyse orders";
+
+type KopieResultaat = SyncResultaat | { bron: string; fout: string };
 
 /**
- * De leads-kopie voor Marketing analyse (`marketing_analyse_leads`): zeven kolommen 1-op-1, de
- * laatste 365 dagen, zonder "FW:" (`lib/sync/analyseLeads.ts`). Uit dezelfde sheetrijen als
- * `leads_raw`, maar een eigen transactie en een eigen regel in `sync_runs`: gaat dit mis, dan
- * blijft de vorige kopie staan en loopt de rest van de sync gewoon door.
+ * Een kopie voor Marketing analyse vervangen: eigen regel in `sync_runs`, eigen transactie
+ * (eerst `truncate`, dan alles erin, in blokken). Gaat dit mis, dan blijft de vorige kopie
+ * staan en loopt de rest van de sync gewoon door. `maakRecords` mag de sheet zelf lezen; een
+ * fout daarin komt dan ook in `sync_runs`.
  */
-async function syncAnalyseLeads(client: Client, rijen: GeparsteRij[]): Promise<SyncResultaat | { bron: string; fout: string }> {
+async function vervangKopie(
+  client: Client,
+  run: string,
+  tabel: string,
+  kolommen: readonly string[],
+  maakRecords: () => Promise<{ gelezen: number; records: object[] }>,
+): Promise<KopieResultaat> {
   const startRes = await client.query<{ id: string }>(
     `insert into dataloket.sync_runs (bron) values ($1) returning id`,
-    [ANALYSE_LEADS_RUN],
+    [run],
   );
   const runId = startRes.rows[0].id;
   try {
-    const records = analyseLeadRecords(rijen, vandaagNL());
+    const { gelezen, records } = await maakRecords();
+    const lijst = kolommen.join(", ");
     await client.query("begin");
-    await client.query(`truncate table dataloket.marketing_analyse_leads`);
+    await client.query(`truncate table dataloket.${tabel}`);
     for (const blok of inBlokken(records)) {
       await client.query(
-        `insert into dataloket.marketing_analyse_leads
-           (kanaal, ordersoort, onderwerp, kanaalgroep, merk, model, aangelegd, aangelegd_op)
-         select kanaal, ordersoort, onderwerp, kanaalgroep, merk, model, aangelegd, aangelegd_op
-           from json_populate_recordset(null::dataloket.marketing_analyse_leads, $1::json)`,
+        `insert into dataloket.${tabel} (${lijst})
+         select ${lijst} from json_populate_recordset(null::dataloket.${tabel}, $1::json)`,
         [JSON.stringify(blok)],
       );
     }
@@ -69,9 +78,9 @@ async function syncAnalyseLeads(client: Client, rijen: GeparsteRij[]): Promise<S
           set geeindigd_op = now(), rijen_gelezen = $2, rijen_geplaatst = $3,
               rijen_afgekeurd = $4, gelukt = true
         where id = $1`,
-      [runId, rijen.length, records.length, rijen.length - records.length],
+      [runId, gelezen, records.length, gelezen - records.length],
     );
-    return { bron: ANALYSE_LEADS_RUN, gelezen: rijen.length, geplaatst: records.length, afgekeurd: rijen.length - records.length };
+    return { bron: run, gelezen, geplaatst: records.length, afgekeurd: gelezen - records.length };
   } catch (err) {
     await client.query("rollback").catch(() => {});
     const bericht = err instanceof Error ? err.message : String(err);
@@ -79,8 +88,42 @@ async function syncAnalyseLeads(client: Client, rijen: GeparsteRij[]): Promise<S
       `update dataloket.sync_runs set geeindigd_op = now(), gelukt = false, fout = $2 where id = $1`,
       [runId, bericht],
     );
-    return { bron: ANALYSE_LEADS_RUN, fout: bericht };
+    return { bron: run, fout: bericht };
   }
+}
+
+/**
+ * De leads-kopie voor Marketing analyse (`marketing_analyse_leads`): zeven kolommen 1-op-1, de
+ * laatste 365 dagen, zonder "FW:" (`lib/sync/analyseLeads.ts`). Uit dezelfde sheetrijen als
+ * `leads_raw`, maar een eigen transactie en een eigen regel in `sync_runs`.
+ */
+function syncAnalyseLeads(client: Client, rijen: GeparsteRij[]): Promise<KopieResultaat> {
+  return vervangKopie(
+    client,
+    ANALYSE_LEADS_RUN,
+    "marketing_analyse_leads",
+    ["kanaal", "ordersoort", "onderwerp", "kanaalgroep", "merk", "model", "aangelegd", "aangelegd_op"],
+    async () => ({ gelezen: rijen.length, records: analyseLeadRecords(rijen, vandaagNL()) }),
+  );
+}
+
+/**
+ * De orders-kopie voor Marketing analyse (`marketing_analyse_orders`, bron "Syntec orders"):
+ * vijf kolommen 1-op-1 uit het tabblad "Data orders", de laatste 365 dagen
+ * (`lib/sync/analyseOrders.ts`). Dat tabblad staat niet in `BRONNEN`, dus deze stap leest het
+ * zelf; mislukt het lezen, dan staat de fout in `sync_runs` en blijft de vorige kopie staan.
+ */
+function syncAnalyseOrders(client: Client): Promise<KopieResultaat> {
+  return vervangKopie(
+    client,
+    ANALYSE_ORDERS_RUN,
+    "marketing_analyse_orders",
+    ["ordersoort", "klantgroep", "merk", "model", "orderdatum", "orderdatum_op"],
+    async () => {
+      const rijen = await haalSheetOp(ANALYSE_ORDERS_BRON);
+      return { gelezen: rijen.length, records: analyseOrderRecords(rijen, vandaagNL()) };
+    },
+  );
 }
 
 async function syncBron(client: Client, bron: Bron, bewaarRijen?: (rijen: GeparsteRij[]) => void): Promise<SyncResultaat> {
@@ -206,7 +249,7 @@ export async function POST(request: Request) {
 
   try {
     await client.connect();
-    const resultaten: (SyncResultaat | { bron: string; fout: string })[] = [];
+    const resultaten: KopieResultaat[] = [];
     let leadRijen: GeparsteRij[] | null = null;
     for (const bron of BRONNEN) {
       resultaten.push(
@@ -214,6 +257,7 @@ export async function POST(request: Request) {
       );
     }
     if (leadRijen) resultaten.push(await syncAnalyseLeads(client, leadRijen));
+    resultaten.push(await syncAnalyseOrders(client));
     // Vangnet voor de mails bij een nieuwe Marketing analyse: wat de trigger niet verstuurd
     // kreeg, gaat nu alsnog. Een fout hier mag de sync niet laten mislukken.
     const notificaties = await verstuurOpenstaande(client).catch((err) => ({

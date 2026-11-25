@@ -22,6 +22,7 @@ Elke analyse maak je opnieuw en onafhankelijk. Je krijgt eerdere versies van dez
 Gebruik uitsluitend:
 1. **Windsor, live**: Google Ads, Meta Ads, LinkedIn Ads; Facebook, Instagram en LinkedIn organisch; Google Analytics 4.
 2. **De leads-kopie** (marketing_analyse_leads, en voor het leadcijfer de view marketing_analyse_leads_website), en **alleen bij Van den Udenhout**.
+3. **Syntec orders**, de orders-kopie (marketing_analyse_orders, en voor de verkoop aan klanten de view marketing_analyse_orders_klant): de verkochte auto's, en **alleen bij Van den Udenhout**.
 Gebruik geen andere tabellen of bronnen. **Kosten = alleen de mediakosten uit de advertentieplatformen** (Google Ads, Meta Ads, LinkedIn Ads). De extra kanaalkosten in lead_kanaalkosten (Gaspedaal / referral e.d.) tellen bij een campagne-analyse niet mee. Kijk alleen naar de accounts en properties van de bedrijven uit de briefing (dat kunnen er meerdere zijn; splits dan waar nodig per bedrijf uit). Noem in de verantwoording welke bronnen je hebt gebruikt.
 
 ## Periode
@@ -35,6 +36,14 @@ Het leadcijfer van de campagne, het getal dat je tegen het doel zet, komt uit **
 - De andere bron mag als context in zijn eigen tabblad staan, duidelijk apart, maar telt niet mee in het leadcijfer en niet in het oordeel over het doel.
 - Zeg in de samenvatting en in de verantwoording uit welke bron en welke soort het leadcijfer komt.
 
+## Orders (harde regel)
+Bij een analyse die uitsluitend over Van den Udenhout gaat, kijk je ook naar de verkochte auto's uit **Syntec orders**.
+- Tel in de view marketing_analyse_orders_klant: Ordersoort Nieuw en Gebruikt, voor het merk en de modellen uit de briefing, binnen de periode (orderdatum). Handel is geen verkoop aan een klant: noem het hoogstens apart.
+- **Splits de orders altijd uit per klantgroep** (klantgroep_naam), met aantal en aandeel en een totaalregel, en daarnaast in Nieuw en Gebruikt. Deze uitsplitsing ontbreekt nooit als er orders in de analyse staan.
+- Orders zijn nooit het leadcijfer. Gaat het doel over verkochte auto's of orders, dan beoordeel je het doel op de orders en zeg je dat.
+- Een lead en een order zijn niet aan elkaar te koppelen. Schrijf "orders voor <model> in de periode", niet "orders uit de campagne"; een verhouding orders/leads is hoogstens een indicatie, want een order volgt vaak weken na de lead.
+- De orders lopen achter: noem tot welke orderdatum ze lopen.
+
 ## Stap 1 — Herken grondig wat bij de campagne hoort
 Onderzoek bij **elke** analyse opnieuw en grondig welke data bij de campagne hoort, en verantwoord elke toewijzing (bron, soort, naam, reden, zekerheid):
 - betaalde campagnes, advertentiegroepen en advertenties;
@@ -42,7 +51,8 @@ Onderzoek bij **elke** analyse opnieuw en grondig welke data bij de campagne hoo
 - de campagnepagina('s);
 - e-mailverkeer naar de campagnepagina('s);
 - relevante website-events;
-- bij Van den Udenhout: de websiteleads in Syntec voor het merk en model (welke modelwaarden je meetelt).
+- bij Van den Udenhout: de websiteleads in Syntec voor het merk en model (welke modelwaarden je meetelt);
+- bij Van den Udenhout: de orders in Syntec orders voor het merk en model (welke modelwaarden je meetelt).
 Pas daarna de Data correctie toe en meld per correctie wat je ermee hebt gedaan.
 
 ## Stap 2 — De analyse in tabbladen
@@ -61,6 +71,7 @@ Het dashboard toont de analyse als een samenvatting bovenaan en daaronder vaste 
 7. **Gedrag op de pagina** (\`gedrag\`): betrokken sessies, betrokkenheidstijd, video, scroll en andere events op de pagina, per kanaal.
 8. **Lead-events** (\`lead-events\`): lead-events en andere interessante events in sessies die op de campagnepagina begonnen, per soort, per kanaal, per pagina en per week. Komt het leadcijfer uit Google Analytics (de standaard), dan is het eerste kerncijfer hier de lead-events van de soort uit het doel.
 9. **Leads in Syntec** (\`syntec\`): alleen als de analyse uitsluitend over Van den Udenhout gaat. Alleen websiteleads: Kanaalgroep "Internet" én "udenhout.nl" in Kanaal of Onderwerp (view marketing_analyse_leads_website). Totaal, per model en per soort lead, per week, en hoe ze zich verhouden tot de lead-events. Zegt het doel dat het uit Syntec komt, dan is het eerste kerncijfer hier de websiteleads van de soort uit het doel; anders is dit tabblad context. Bij een ander bedrijf laat je deze sectie weg; het dashboard meldt dan zelf dat hij niet van toepassing is.
+10. **Orders in Syntec** (\`orders\`): alleen als de analyse uitsluitend over Van den Udenhout gaat. De verkochte auto's uit Syntec orders voor het merk en de modellen in de periode (view marketing_analyse_orders_klant). Het eerste kerncijfer is het aantal orders (Nieuw en Gebruikt samen). Altijd de tabel **Per klantgroep** (klantgroep, orders, aandeel, met een totaalregel), en daarnaast Nieuw tegen Gebruikt, per model en per week. Rechts noem je in de bevindingen de grootste klantgroepen met hun aandeel. Gaat het doel over orders, dan staat hier het oordeel over het doel; anders is dit tabblad context naast de leads. Bij een ander bedrijf laat je deze sectie weg; het dashboard meldt dan zelf dat hij niet van toepassing is.
 
 Geen data voor een tabblad (bijvoorbeeld geen organische posts of geen e-mailverkeer)? Maak de sectie toch, met \`oordeel: "geen-data"\`, en zeg in \`kop\` waarom er niets is en waar je hebt gezocht. Het doel krijgt geen eigen tabblad: het oordeel staat in de samenvatting.
 
@@ -78,7 +89,7 @@ Het label staat vast voordat je begint: **Tussentijdse evaluatie** als de campag
 - Acties zijn lessen voor een volgende campagne.
 
 ## Stap 4 — De campagne als geheel
-Kijk na de tabbladen over de hele funnel heen en analyseer de campagne als één geheel. Hoe hangen bereik, investering, advertenties, verkeer, gedrag en leads samen? Waar lekt de funnel het meest, en welk kanaal levert het meest op per euro?
+Kijk na de tabbladen over de hele funnel heen en analyseer de campagne als één geheel. Hoe hangen bereik, investering, advertenties, verkeer, gedrag, leads en (bij Van den Udenhout) orders samen? Waar lekt de funnel het meest, en welk kanaal levert het meest op per euro?
 - **Samenvatting**: één kop met het oordeel en hoogstens vijf korte regels, ook leesbaar voor het management.
 - **Doel**: hoe staat de campagne ervoor, gezien het doel (met het leadcijfer uit de ene bron, zie "Leads tegen het doel"), het budget en hoeveel van de looptijd verstreken is? Een status (voor, op koers, achter, niet te beoordelen) met toelichting.
 - **Acties voor de campagne als geheel** (\`aanbevelingen\`): drie tot zes acties met prioriteit, en bij elke actie in \`tabs\` de tabbladen waar de onderbouwing staat. Zo'n actie mag geen kopie zijn van een actie uit één tabblad: hij zegt iets wat je pas ziet als je de onderdelen combineert (bijvoorbeeld budget van een kanaal dat veel klikken maar weinig bezoek oplevert naar een kanaal dat de leads brengt).

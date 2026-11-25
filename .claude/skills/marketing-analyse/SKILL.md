@@ -41,7 +41,12 @@ analyses; jij maakt ze. Het plan en alle besluiten van de eigenaar staan in
    Kanaalgroep "Internet" én "udenhout.nl" in Kanaal of Onderwerp, met een kolom `soort`).
    **Alleen voor Van den Udenhout**; voor elk ander bedrijf niet gebruiken. `leadsSyntec` alleen
    invullen als de analyse uitsluitend over Van den Udenhout gaat, anders null.
-3. **`dataloket.lead_kanaalkosten`**: extra maandkosten per GA4-bron/medium. **Niet bij een
+3. **`dataloket.marketing_analyse_orders`** (bron **Syntec orders**): de orders-kopie van
+   "Data orders" (vijf kolommen: Ordersoort, Klantgroep, Merk, Model, Orderdatum, plus
+   `orderdatum_op`; één rij is één verkochte auto), en de view
+   **`dataloket.marketing_analyse_orders_klant`** daarop (alleen Nieuw en Gebruikt, met
+   `klantgroep_naam`). **Alleen voor Van den Udenhout**, net als de leads.
+4. **`dataloket.lead_kanaalkosten`**: extra maandkosten per GA4-bron/medium. **Niet bij een
    campagne-analyse** (besluit van de eigenaar): daar zijn de kosten alleen de mediakosten uit
    Google Ads, Meta Ads en LinkedIn Ads. Alleen een rapportage mag deze tabel gebruiken, als de
    prompt erom vraagt, en noemt ze dan apart.
@@ -69,6 +74,28 @@ Besluit van de eigenaar, 25 november 2026; ook in de semantic layer (Algemeen, G
   in `leadsDoel` en niet in het doeloordeel. Het dashboard rekent de bron zelf ook na
   (`leadBron` in `rekenen.ts`: het woord Syntec in het doel én alleen Van den Udenhout) en toont
   niets als `kerncijfers.leadBron` daarvan afwijkt.
+
+## Harde regel: orders altijd per klantgroep (Syntec orders)
+Verzoek van de eigenaar, 25 november 2026; ook in de semantic layer (Algemeen, Syntec orders) en
+in de hoofdprompt.
+- Alleen als de analyse **uitsluitend over Van den Udenhout** gaat; anders geen orders en geen
+  sectie `orders`.
+- Tel in de view, voor merk, modellen en periode, en **splits altijd uit per klantgroep**:
+  ```sql
+  select klantgroep_naam, ordersoort, count(*) as orders
+  from dataloket.marketing_analyse_orders_klant
+  where orderdatum_op between '<start>' and '<eind>'
+    and merk ilike '%<merk>%' and model ilike '%<model>%'
+  group by klantgroep_naam, ordersoort order by orders desc;
+  -- Handel apart (geen verkoop aan klanten):
+  -- select count(*) from dataloket.marketing_analyse_orders where ordersoort = 'Handel' and …
+  select max(orderdatum_op) from dataloket.marketing_analyse_orders;  -- tot wanneer de orders lopen
+  ```
+- De uitsplitsing per klantgroep (aantal, aandeel, totaalregel) en Nieuw tegen Gebruikt staan
+  **altijd** in de sectie `orders`; noem de grootste klantgroepen ook in de bevindingen.
+- Orders zijn nooit het leadcijfer (`leadsDoel`). Gaat het doel over verkochte auto's, dan
+  beoordeel je het doel op de orders. Er is geen koppeling lead → order: schrijf "orders voor
+  <model> in de periode", niet "orders uit de campagne".
 
 ## Stap 0 — Welke campagne(s) of rapportage(s)
 ```sql
@@ -148,6 +175,11 @@ select id, versie, inhoud from dataloket.marketing_analyse_semantiek order by ve
   kopie loopt.
 - **Leads in Syntec bij een rapportage**: alle leads van de periode uit `marketing_analyse_leads`,
   uitgesplitst naar merk en kanaalgroep, tenzij de prompt van de opzet iets anders vraagt.
+- **Orders bij een campagne** (alleen Van den Udenhout): uit `marketing_analyse_orders_klant`,
+  per klantgroep en ordersoort, zoals in de harde regel hierboven. Controleer
+  `max(orderdatum_op)`: de sheet loopt soms meer dan een week achter.
+- **Orders bij een rapportage** (Van den Udenhout): alle orders van de periode, per klantgroep,
+  merk en ordersoort, tenzij de prompt van de opzet iets anders vraagt; Handel apart.
 - **Kosten bij een campagne-analyse**: alleen de mediakosten uit de advertentieplatformen.
   `kerncijfers.kosten` en de sectie Investering tellen geen `lead_kanaalkosten` mee.
 - **Extra kanaalkosten (alleen rapportages)**: `select bron_medium, maand, bedrag from
@@ -163,8 +195,8 @@ hoofdgetal in de tabbalk**. Rechts (1/4) staan `kop`, `oordeel`, `bevindingen` e
 Wat er per tabblad in hoort, staat in de prompt.
 
 Tabbladsleutels, in deze volgorde: `bereik`, `investering`, `advertenties`, `organisch`,
-`email`, `verkeer`, `gedrag`, `lead-events`, `syntec` (alleen als de analyse uitsluitend over
-Van den Udenhout gaat; anders weglaten). Een tabblad zonder data krijgt toch een sectie met
+`email`, `verkeer`, `gedrag`, `lead-events`, `syntec` en `orders` (die laatste twee alleen als de
+analyse uitsluitend over Van den Udenhout gaat; anders weglaten). Een tabblad zonder data krijgt toch een sectie met
 `oordeel: "geen-data"` en de reden in `kop`. Een sectie zonder geldige `tab` wordt een los
 tabblad achteraan; doe dat alleen als de prompt van de opzet er echt om vraagt. Een
 **rapportage** toont elke sectie als eigen tabblad in de volgorde van `stap`; `tab` mag daar weg.
@@ -202,7 +234,7 @@ tabblad achteraan; doe dat alleen als de prompt van de opzet er echt om vraagt. 
   "aanbevelingen": [ { "titel": "…", "toelichting": "…", "prioriteit": "hoog|middel|laag",
                        "tabs": ["advertenties", "email"] } ],
   "herkenning": [ { "bron": "Meta Ads", "soort": "campagne", "naam": "…", "reden": "…", "zekerheid": "zeker|waarschijnlijk|twijfel" } ],
-  "bronnen": [ "Windsor · Meta Ads · Van den Udenhout (69324444)", "Supabase · marketing_analyse_leads t/m 22 nov" ],
+  "bronnen": [ "Windsor · Meta Ads · Van den Udenhout (69324444)", "Supabase · marketing_analyse_leads t/m 22 nov", "Supabase · Syntec orders (marketing_analyse_orders) t/m 14 nov" ],
   "correcties": [ { "correctie": "regel uit de Data correctie", "verwerking": "wat je ermee deed" } ],
   "semantiekVoorstellen": [ { "blok": "Google Analytics 4", "voorstel": "…", "reden": "…" } ],
   "datakwaliteit": [ "…" ]
@@ -245,7 +277,8 @@ vanzelf meekomt), laat `doel` weg en geef `funnel: []` mee.
 Schrijf de JSON eerst naar een bestand in je scratchpad en controleer hem (`node -e` met
 `JSON.parse`): `formaat` is 2; elke sectie heeft `stap`, `titel` en (bij een campagne) een
 geldige `tab`; elk tabblad hoogstens één keer; hoogstens vijf `regels` en vijf `bevindingen`;
-elke actie en aanbeveling heeft een `prioriteit`; bij een campagne staan `leadBron`, `leadsDoel`
+elke actie en aanbeveling heeft een `prioriteit`; staat er een sectie `orders`, dan heeft die
+een tabel per klantgroep met een totaalregel; bij een campagne staan `leadBron`, `leadsDoel`
 en `leadsDoelSoort` in de kerncijfers en is `leadBron` alleen `"syntec"` als het doel Syntec noemt
 en de analyse uitsluitend over Van den Udenhout gaat; geen tegel, regel of kolom met extra
 kanaalkosten bij een campagne-analyse. Sla op met
