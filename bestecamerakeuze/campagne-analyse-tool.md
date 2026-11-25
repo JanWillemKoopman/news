@@ -585,3 +585,29 @@ op de website doen; daarna leads en orders in Syntec.
   standaardtekst van de semantic layer zijn bijgewerkt. De opgeslagen semantic layer (versie 4)
   noemt nog de oude namen Lead-events en Investering; de skill vertaalt die.
 
+
+## 22. Altijd het totaal van leads en orders (verzoek van de eigenaar, 25 november 2026)
+
+Vraag: "Ik wil dat er bij de leads uit Syntec altijd een opsomming is van alle leads, hoeveel vanuit
+internet en welke lead types dan uit internet zoals proefrit en offerte etc. Daarnaast wil ik bij de
+orders ook altijd een totaal en een uitsplits ordertype zoals rent, zakelijk lease oid etc zodat ik een
+goed beeld heb wat deze auto's in totaal hebben gedaan wat betreft leads en orders."
+
+- **Twee views** (migratie 0052): `marketing_analyse_leads_soort` (alle leads met `soort`, `internet`,
+  `website`, `kanaalgroep_naam`) en `marketing_analyse_orders_type` (alle orders, ook Handel en verhuur,
+  met `ordertype` en `klantorder`). Het ordertype staat ook in TypeScript (`ordertypeVan` in
+  `lib/sync/analyseOrders.ts`, getest); houd ze gelijk.
+- **Ordertypes**: koop particulier, koop zakelijk, private lease, zakelijke lease, verhuur (Rent), demo,
+  handel, overig. Handel op ordersoort, de rest op klantgroep. Keuze van Claude, aan te passen: "Dealer
+  Lease" telt als zakelijke lease; Restmarge deal, Centrale Bestelling en Cupra - Euromobi - Koop als
+  overig.
+- **Stap Leads in Syntec**: altijd eerst de tabel Alle leads (Internet en offline per kanaalgroep) en
+  Internet per soort lead, met de websiteleads ernaast. **Stap Orders in Syntec**: altijd eerst het totaal
+  van alle orders per ordertype, dan de klantgroepen van de verkoop aan klanten. Verhuur (Rent) altijd
+  apart noemen.
+- Context, geen doelcijfer: het leadcijfer tegen het doel blijft uit één bron komen (§15).
+- **Semantic layer versie 5**: dit overzicht, de stapnamen van formaat 3 (Conversies, Orders in Syntec als
+  stap), de modelnaam "A2 e-tron (A1)" in de orders, en de benchmarkgroep van campagnepagina's (alle
+  /acties/-pagina's op udenhout.nl met minstens 200 sessies, zonder after sales en service).
+- Staat in de standaard-hoofdprompt, de semantic layer (`standaardSemantiek.ts` en versie 5 in de
+  database) en de skill.

@@ -7,6 +7,7 @@ import {
   isKlantOrder,
   klantgroepNaam,
   leesOrderdatum,
+  ordertypeVan,
 } from "@/lib/sync/analyseOrders";
 
 function rij(waarden: Record<string, string>, rijnummer = 2) {
@@ -61,4 +62,19 @@ test("verkoop aan klanten: Nieuw en Gebruikt, niet Handel", () => {
 test("een lege klantgroep heet Geen klantgroep", () => {
   assert.equal(klantgroepNaam({ klantgroep: null }), GEEN_KLANTGROEP);
   assert.equal(klantgroepNaam({ klantgroep: "Dealer Lease" }), "Dealer Lease");
+});
+
+test("Ordertype: Handel op ordersoort, de rest op klantgroep", () => {
+  assert.equal(ordertypeVan({ ordersoort: "Handel", klantgroep: null }), "Handel");
+  assert.equal(ordertypeVan({ ordersoort: "Handel", klantgroep: "Dealer Lease" }), "Handel");
+  assert.equal(ordertypeVan({ ordersoort: "Nieuw", klantgroep: "Handel" }), "Handel");
+  assert.equal(ordertypeVan({ ordersoort: "Nieuw", klantgroep: "Rent" }), "Verhuur (Rent)");
+  assert.equal(ordertypeVan({ ordersoort: "Nieuw", klantgroep: "Rentals ext" }), "Verhuur (Rent)");
+  assert.equal(ordertypeVan({ ordersoort: "Nieuw", klantgroep: "Private Groeilease" }), "Private lease");
+  assert.equal(ordertypeVan({ ordersoort: "Nieuw", klantgroep: "Dealer Lease" }), "Zakelijke lease");
+  assert.equal(ordertypeVan({ ordersoort: "Gebruikt", klantgroep: "Koop Particulier (BM)" }), "Koop particulier");
+  assert.equal(ordertypeVan({ ordersoort: "Nieuw", klantgroep: "BEDRIJF_TB" }), "Koop zakelijk");
+  assert.equal(ordertypeVan({ ordersoort: "Nieuw", klantgroep: "Demo" }), "Demo");
+  assert.equal(ordertypeVan({ ordersoort: "Nieuw", klantgroep: "Restmarge deal" }), "Overig");
+  assert.equal(ordertypeVan({ ordersoort: "Nieuw", klantgroep: null }), "Overig");
 });

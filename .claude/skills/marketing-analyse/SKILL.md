@@ -39,13 +39,17 @@ analyses; jij maakt ze. Het plan en alle besluiten van de eigenaar staan in
 2. **`dataloket.marketing_analyse_leads`**: de leads-kopie van "Data leads" (zeven kolommen,
    met Kanaal), en de view **`dataloket.marketing_analyse_leads_website`** daarop (alleen
    Kanaalgroep "Internet" én "udenhout.nl" in Kanaal of Onderwerp, met een kolom `soort`).
+   Voor het overzicht van alle leads de view **`dataloket.marketing_analyse_leads_soort`** (alle
+   leads met `soort`, `internet`, `website`, `kanaalgroep_naam`).
    **Alleen voor Van den Udenhout**; voor elk ander bedrijf niet gebruiken. `leadsSyntec` alleen
    invullen als de analyse uitsluitend over Van den Udenhout gaat, anders null.
 3. **`dataloket.marketing_analyse_orders`** (bron **Syntec orders**): de orders-kopie van
    "Data orders" (vijf kolommen: Ordersoort, Klantgroep, Merk, Model, Orderdatum, plus
    `orderdatum_op`; één rij is één verkochte auto), en de view
    **`dataloket.marketing_analyse_orders_klant`** daarop (alleen Nieuw en Gebruikt, met
-   `klantgroep_naam`). **Alleen voor Van den Udenhout**, net als de leads.
+   `klantgroep_naam`), en voor het totaal van alle orders de view
+   **`dataloket.marketing_analyse_orders_type`** (alle orders met `ordertype` en `klantorder`).
+   **Alleen voor Van den Udenhout**, net als de leads.
 4. **`dataloket.lead_kanaalkosten`**: extra maandkosten per GA4-bron/medium. **Niet bij een
    campagne-analyse** (besluit van de eigenaar): daar zijn de kosten alleen de mediakosten uit
    Google Ads, Meta Ads en LinkedIn Ads. Alleen een rapportage mag deze tabel gebruiken, als de
@@ -96,6 +100,34 @@ in de hoofdprompt.
 - Orders zijn nooit het leadcijfer (`leadsDoel`). Gaat het doel over verkochte auto's, dan
   beoordeel je het doel op de orders. Er is geen koppeling lead → order: schrijf "orders voor
   <model> in de periode", niet "orders uit de campagne".
+
+## Harde regel: altijd het overzicht van alle leads en orders (Van den Udenhout)
+Verzoek van de eigenaar, 25 november 2026; ook in de semantic layer (versie 5: Algemeen, Data
+leads, Syntec orders) en in de hoofdprompt. Bij elke analyse die uitsluitend over Van den
+Udenhout gaat staan in de sectie `syntec` en `orders` wat het merk en de modellen **in totaal**
+deden. Dit is context: het telt nooit mee in `leadsDoel`.
+```sql
+-- Leads: alles, Internet tegen offline, Internet per soort, en de websiteleads
+select kanaalgroep_naam, internet, soort, count(*) as leads, count(*) filter (where website) as website
+from dataloket.marketing_analyse_leads_soort
+where aangelegd_op >= '<start>' and aangelegd_op < '<eind + 1 dag>'
+  and merk ilike '%<merk>%' and model ilike '%<model>%'
+group by 1, 2, 3 order by leads desc;
+-- Orders: alles (ook Handel en verhuur), per ordertype
+select ordertype, klantorder, count(*) as orders
+from dataloket.marketing_analyse_orders_type
+where orderdatum_op between '<start>' and '<eind>'
+  and merk ilike '%<merk>%' and model ilike '%<model>%'
+group by 1, 2 order by orders desc;
+```
+- Sectie `syntec`: tabel **Alle leads** (Internet, offline per kanaalgroep, totaalregel) en tabel
+  **Internet per soort lead** (proefrit, offerte, private lease, inruil, overig; aantal, aandeel,
+  websiteleads; totaalregel). Kerncijfers: alle leads, waarvan Internet, websiteleads.
+- Sectie `orders`: tabel **Per ordertype** (totaalregel = alle orders) vóór de tabel per
+  klantgroep. Kerncijfers: alle orders en de verkoop aan klanten. Verhuur (Rent) altijd apart
+  noemen. Het ordertype staat ook in `ordertypeVan` (`lib/sync/analyseOrders.ts`, getest).
+- Model kan in orders anders heten dan in leads (Audi A2 e-tron = "A2 e-tron (A1)" in de
+  orders): zoek breed en noem de modelwaarden.
 
 ## Stap 0 — Welke campagne(s) of rapportage(s)
 ```sql

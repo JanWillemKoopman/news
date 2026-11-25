@@ -1693,6 +1693,11 @@ lees dat eerst voordat je hier iets verandert.
   klantgroep staat altijd in de analyse**: semantic layer (Algemeen en blok Syntec orders,
   `data_orders`), hoofdprompt en skill. Eigen tabblad **Orders in Syntec** (`orders`), grijs als de
   analyse niet uitsluitend over Van den Udenhout gaat. Orders zijn nooit het leadcijfer.
+- **Altijd het totaal van leads en orders** (25 november 2026, migratie 0052, §22 van het plan). De
+  stap Leads in Syntec begint met alle leads (Internet en offline, Internet per soort, de websiteleads;
+  view `marketing_analyse_leads_soort`), de stap Orders in Syntec met alle orders per ordertype (ook
+  Handel en verhuur; view `marketing_analyse_orders_type`, gelijk aan `ordertypeVan`, getest). Context,
+  nooit het leadcijfer. Staat in semantic layer versie 5, de hoofdprompt en de skill.
 - **Leads: één bron, GA4 of Syntec** (besluit van de eigenaar, 25 november 2026, §15 van het plan).
   Bij een Campagne analyse komt het leadcijfer (`kerncijfers.leadsDoel`, met `leadBron` en
   `leadsDoelSoort`) **standaard uit Google Analytics**: de lead-events van de soort uit het doel
