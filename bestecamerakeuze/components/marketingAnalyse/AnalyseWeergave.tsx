@@ -189,8 +189,8 @@ export default function AnalyseWeergave({ campagne, opzet, isEigenaar, onTerug, 
               </p>
             ) : (
               <p className="mx-auto mt-1 max-w-xl text-sm text-ink-muted">
-                Zeg in Claude Code: “maak een marketing analyse van {campagne.naam}”, of zet de Analyse ronde aan en zeg “voer de
-                analyseronde uit”. Claude haalt de briefing, de prompt van {opzet?.naam ?? "de opzet"} en de semantic layer op en zet het
+                Zeg in Claude Code: “maak een marketing analyse van {campagne.naam}”, of zet de planning in het overzicht op Wekelijks,
+                Maandelijks of Per kwartaal en zeg op vrijdag “voer de analyseronde uit”. Claude haalt de briefing, de prompt van {opzet?.naam ?? "de opzet"} en de semantic layer op en zet het
                 resultaat hier neer.
               </p>
             )}

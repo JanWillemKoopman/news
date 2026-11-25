@@ -40,6 +40,25 @@ export const FORMULIER_NAAM: Record<Formulier, string> = {
   rapportage: "Rapportage (naam, periode en omschrijving)",
 };
 
+/**
+ * Hoe vaak de analyseronde een analyse maakt (migratie 0049, plan §17). Uit = nooit, ook geen
+ * eindevaluatie; een losse analyse kan nog wel. De rekenregel staat in `planning.ts`.
+ */
+export type Planning = "uit" | "week" | "maand" | "kwartaal";
+
+export const PLANNINGEN: readonly Planning[] = ["uit", "week", "maand", "kwartaal"];
+
+export const PLANNING_NAAM: Record<Planning, string> = {
+  uit: "Uit",
+  week: "Wekelijks",
+  maand: "Maandelijks",
+  kwartaal: "Per kwartaal",
+};
+
+export function isPlanning(x: unknown): x is Planning {
+  return typeof x === "string" && (PLANNINGEN as readonly string[]).includes(x);
+}
+
 /** Een analyse opzet (analysetype), elk met een eigen prompt. */
 export interface MaOpzet {
   id: string;
@@ -50,6 +69,8 @@ export interface MaOpzet {
   volgorde: number;
   actief: boolean;
   standaard: boolean;
+  /** De planning die een nieuwe analyse met deze opzet krijgt. */
+  standaardPlanning: Planning;
   /** Er staat een prompt voor deze opzet (Campagne analyse heeft altijd de standaardtekst). */
   heeftPrompt: boolean;
   aantalCampagnes: number;
@@ -75,6 +96,9 @@ export interface MaCampagne {
   campagnePaginas: string[];
   dataCorrectie: string | null;
   dataCorrectieBijgewerktOp: string | null;
+  /** Hoe vaak de analyseronde deze analyse maakt. */
+  planning: Planning;
+  /** Loopt mee met de planning (planning ≠ uit); lees `planning`. */
   analyseRonde: boolean;
   /** Uit welk voorstel de campagne kwam (migratie 0046); null als hij met de hand is aangemaakt. */
   voorstelId: string | null;

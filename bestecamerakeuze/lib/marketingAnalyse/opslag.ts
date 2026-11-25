@@ -3,6 +3,7 @@ import { leesSemantiek, normaliseerResultaat, sorteerOpzetten } from "./rekenen"
 import { STANDAARD_HOOFDPROMPT } from "./standaardPrompt";
 import { STANDAARD_SEMANTIEK } from "./standaardSemantiek";
 import {
+  isPlanning,
   STANDAARD_OPZET_ID,
   type Formulier,
   type Label,
@@ -12,6 +13,7 @@ import {
   type MaKerncijfers,
   type MaOpzet,
   type MaOverzichtRegel,
+  type Planning,
   type MaVersie,
   type MaVoorstel,
   type MaZoekronde,
@@ -34,7 +36,7 @@ const SEMANTIEK = "marketing_analyse_semantiek";
 const OPZETTEN = "marketing_analyse_opzetten";
 
 const CAMPAGNE_KOLOMMEN =
-  "id, opzet_id, naam, bedrijven, merk, modellen, startdatum, einddatum, periode_tekst, doel, budget, omschrijving, campagnepaginas, data_correctie, data_correctie_bijgewerkt_op, analyse_ronde, voorstel_id, aangemaakt_op, bijgewerkt_op";
+  "id, opzet_id, naam, bedrijven, merk, modellen, startdatum, einddatum, periode_tekst, doel, budget, omschrijving, campagnepaginas, data_correctie, data_correctie_bijgewerkt_op, planning, analyse_ronde, voorstel_id, aangemaakt_op, bijgewerkt_op";
 
 function getalOfNull(x: unknown): number | null {
   if (x === null || x === undefined || x === "") return null;
@@ -64,6 +66,7 @@ function naarCampagne(r: Record<string, unknown>): MaCampagne {
     campagnePaginas: Array.isArray(r.campagnepaginas) ? (r.campagnepaginas as string[]) : [],
     dataCorrectie: tekst(r.data_correctie),
     dataCorrectieBijgewerktOp: tekst(r.data_correctie_bijgewerkt_op),
+    planning: isPlanning(r.planning) ? r.planning : r.analyse_ronde ? "week" : "uit",
     analyseRonde: Boolean(r.analyse_ronde),
     voorstelId: tekst(r.voorstel_id),
     aangemaaktOp: r.aangemaakt_op as string,
@@ -179,8 +182,9 @@ export async function zetDataCorrectie(supabase: SupabaseClient, id: string, dat
   return werkBij(supabase, id, { data_correctie: dataCorrectie, data_correctie_bijgewerkt_op: new Date().toISOString() });
 }
 
-export async function zetAnalyseRonde(supabase: SupabaseClient, id: string, aan: boolean) {
-  return werkBij(supabase, id, { analyse_ronde: aan });
+/** De planning in het overzicht; analyse_ronde loopt in de database vanzelf mee (migratie 0049). */
+export async function zetPlanning(supabase: SupabaseClient, id: string, planning: Planning) {
+  return werkBij(supabase, id, { planning });
 }
 
 export async function haalCampagne(supabase: SupabaseClient, id: string) {
@@ -354,7 +358,7 @@ export function bewaarPrompt(supabase: SupabaseClient, opzetId: string, inhoud: 
 // Analyse opzetten
 // ---------------------------------------------------------------------------
 
-const OPZET_KOLOMMEN = "id, naam, formulier, bedrijven, volgorde, actief, standaard";
+const OPZET_KOLOMMEN = "id, naam, formulier, bedrijven, volgorde, actief, standaard, standaard_planning";
 
 function naarOpzet(r: Record<string, unknown>, metPrompt: Set<string>, aantallen: Map<string, number>): MaOpzet {
   const id = r.id as string;
@@ -366,6 +370,7 @@ function naarOpzet(r: Record<string, unknown>, metPrompt: Set<string>, aantallen
     volgorde: Number(r.volgorde ?? 100),
     actief: Boolean(r.actief),
     standaard: Boolean(r.standaard),
+    standaardPlanning: isPlanning(r.standaard_planning) ? r.standaard_planning : "uit",
     heeftPrompt: Boolean(r.standaard) || metPrompt.has(id),
     aantalCampagnes: aantallen.get(id) ?? 0,
   };
@@ -397,6 +402,11 @@ export interface OpzetVelden {
   formulier: Formulier;
   bedrijven: string[];
   actief: boolean;
+  standaardPlanning: Planning;
+}
+
+function opzetKolommen(v: OpzetVelden) {
+  return { naam: v.naam, formulier: v.formulier, bedrijven: v.bedrijven, actief: v.actief, standaard_planning: v.standaardPlanning };
 }
 
 function opzetFout(error: { code?: string; message: string }): Error {
@@ -409,7 +419,7 @@ export async function maakOpzet(supabase: SupabaseClient, velden: OpzetVelden, g
   const { data, error } = await supabase
     .schema(SCHEMA)
     .from(OPZETTEN)
-    .insert({ ...velden, volgorde, aangemaakt_door: gebruikerId })
+    .insert({ ...opzetKolommen(velden), volgorde, aangemaakt_door: gebruikerId })
     .select("id")
     .single();
   if (error) throw opzetFout(error);
@@ -417,7 +427,7 @@ export async function maakOpzet(supabase: SupabaseClient, velden: OpzetVelden, g
 }
 
 export async function werkOpzetBij(supabase: SupabaseClient, id: string, velden: OpzetVelden): Promise<boolean> {
-  const { data, error } = await supabase.schema(SCHEMA).from(OPZETTEN).update(velden).eq("id", id).select("id");
+  const { data, error } = await supabase.schema(SCHEMA).from(OPZETTEN).update(opzetKolommen(velden)).eq("id", id).select("id");
   if (error) throw opzetFout(error);
   return (data ?? []).length > 0;
 }
@@ -553,7 +563,7 @@ export async function zetVoorstelStatus(
 
 /**
  * Een voorstel toevoegen met de nagelopen briefing: één transactie in de database maakt de
- * campagne aan (opzet Campagne analyse, Analyse ronde aan) en sluit het voorstel af.
+ * campagne aan (opzet Campagne analyse, planning Wekelijks via de trigger uit 0049) en sluit het voorstel af.
  */
 export async function voegVoorstelToe(supabase: SupabaseClient, id: string, invoer: MaCampagneInvoer): Promise<MaCampagne> {
   const { data, error } = await supabase.schema(SCHEMA).rpc("marketing_analyse_voorstel_toevoegen", {

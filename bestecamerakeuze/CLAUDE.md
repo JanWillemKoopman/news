@@ -1711,7 +1711,7 @@ lees dat eerst voordat je hier iets verandert.
   in datums) en omschrijving, en **geen label**. Elke opzet heeft een eigen prompt (per opzet
   genummerd); een lege prompt laat de skill **weigeren**, nooit terugvallen. In het overzicht
   krijgen alleen campagnes doel, funnelcijfers en kosten op schema; een rapportage toont alleen
-  naam, Analyse ronde en Laatste analyse. Rechtsboven **Analyse prompts** (uitklapmenu per
+  planning, naam en Laatste analyse. Rechtsboven **Analyse prompts** (uitklapmenu per
   opzet; de eigenaar wijzigt daar ook naam, formulier, bedrijf en actief, en maakt met
   "Nieuwe opzet" zelf opzetten aan; verwijderen alleen zonder analyses, anders uitzetten).
   Route `opzetten`, `leesCampagneInvoer(body, opzet)` in `rekenen.ts` (getest).
@@ -1720,15 +1720,28 @@ lees dat eerst voordat je hier iets verandert.
   bedrijven laat de keuze aan de briefing. De oude kolom `bedrijf` blijft als leesbare kopie
   ("PGZ, VELOO"), bijgehouden door een trigger; lees en schrijf `bedrijven`. Syntec-leads
   alleen als de analyse **uitsluitend** over Van den Udenhout gaat én het doel Syntec noemt (`leadBron`).
-- **Overzicht campagne-analyses** (verzoek van de eigenaar, november 2026): kolommen Ronde
-  (klein schuifje vooraan), Campagne (met de laatste analyse eronder), Uitgaven (balkje
+- **Overzicht campagne-analyses** (verzoek van de eigenaar, november 2026): kolommen Planning
+  (uitklapmenu vooraan, zie hieronder), Campagne (met de laatste analyse eronder), Uitgaven (balkje
   tegen het budget, rood boven 100%), CTR (gezamenlijk over Google, Meta en LinkedIn Ads:
   `klikken` ÷ `vertoningenAds`, gewogen, nooit over de vertoningen inclusief organisch),
   Bezoekers (`sessies`: sessies die op de campagnepagina begonnen, uit elk kanaal), Leads (`leadsDoel` uit één bron:
   Google Analytics, of Syntec als het doel dat zegt; bron en soort eronder) en Doel leads (balkje, groen
   vanaf 100%). Het leaddoel komt uit `kerncijfers.doelLeads` (de analyse leest het uit het
   vrije doel), anders het eerste getal in het doel (`overzichtCijfers` in `rekenen.ts`,
-  getest). Rapportages hebben een eigen tabel eronder: Ronde, Rapportage, Laatste analyse.
+  getest). Rapportages hebben een eigen tabel eronder: Planning, Rapportage, Laatste analyse.
+- **Planning van de analyseronde** (25 november 2026, migratie 0049, besluiten in §17 van het plan).
+  Het schuifje Ronde is een uitklapmenu **Planning** geworden (`PlanningKeuze.tsx`, in een portal
+  omdat de tabel horizontaal scrolt): Uit, Wekelijks, Maandelijks (eerste vrijdag van de maand) en
+  Per kwartaal (eerste vrijdag van jan, apr, jul, okt). Achter elke keuze staat de volgende datum,
+  onder het knopje die van de gekozen stand (blauw = staat klaar, oranje = eindevaluatie). Uit = geen
+  updates, ook geen eindevaluatie. Boven het overzicht de balk **Volgende analyseronde**
+  (`RondeBalk.tsx`): de eerstvolgende vrijdag met de namen. Een ronde hoort bij een week (ma t/m
+  zo), een gemiste week wordt ingehaald, een geplande rapportage gaat over de vorige volle maand of
+  het vorige volle kwartaal. De rekenregel staat twee keer, gelijk gehouden: `planning.ts` (getest)
+  voor het dashboard en `dataloket.marketing_analyse_ronde(datum)` voor de skill. De kolom
+  `analyse_ronde` loopt via een trigger mee met `planning`, zodat de bestaande SQL-functies niet
+  veranderden; lees en schrijf `planning`. Elke opzet heeft een standaardplanning (instelbaar bij de
+  opzet onder Analyse prompts).
 - **Vier kennislagen.** De *briefing* (opzet, naam, **Bedrijven** = welke van onze bedrijven, **Merk** =
   automerk, modellen, looptijd, doel als vrije tekst, totaalbudget, omschrijving; bij een
   rapportage naam, bedrijf, periode en omschrijving); de
@@ -1769,7 +1782,7 @@ lees dat eerst voordat je hier iets verandert.
   `laatste_versie` op de campagne (een verwijderde versie wordt nooit hergebruikt), bepaalt het
   label (**Eindevaluatie** als de einddatum vóór vandaag ligt, anders **Tussentijdse
   evaluatie**; bij een rapportage geen label), legt briefing (met opzet en periode) en Data
-  correctie van dat moment vast en zet de **Analyse ronde**
+  correctie van dat moment vast en zet de **planning** (via `analyse_ronde`)
   uit na een eindevaluatie. Elke versie onthoudt met welke hoofdprompt en semantic layer hij is
   gemaakt. Alleen de eigenaar kan een versie verwijderen.
 - **Het formaat** (`lib/marketingAnalyse/types.ts`, `MaResultaat`) is generiek: samenvatting
@@ -1793,7 +1806,7 @@ lees dat eerst voordat je hier iets verandert.
   geen precedent van. Versies in formaat 1 en rapportages krijgen een tabblad per sectie.
 - **Het overzicht**: lopende campagnes bovenaan op startdatum, afgelopen in een inklapbaar blok
   Afgelopen (rapportages hebben geen einddatum en staan altijd bij lopend); per regel de
-  schakelaar Analyse ronde en bij campagnes de kerncijfers uit de laatste analyse.
+  planning (uitklapmenu) en bij campagnes de kerncijfers uit de laatste analyse.
   Rechtsboven (25 november 2026, op verzoek) een schildje **Beheer**, dan **E-mail settings** en Nieuwe
   analyse. Analyse prompts en Semantic layer staan achter het schildje (vooral voor beheerders, maar
   iedereen kan ze openen); open of dicht wordt per browser onthouden. De open analyse staat in de URL
@@ -1815,7 +1828,7 @@ lees dat eerst voordat je hier iets verandert.
   ingeklapt**, gesorteerd op Live sinds van nieuw naar oud (`sorteerVoorstellen`); een klik op een regel toont **Gevonden datapunten** (advertentiecampagnes,
   campagnepagina, social media posts, met aantallen, en de kanttekeningen eronder). Toevoegen
   opent **altijd eerst de ingevulde briefing** (`CampagneZijbalk` met `voorstel`); opslaan doet
-  `marketing_analyse_voorstel_toevoegen` in één transactie (Campagne analyse, **Analyse ronde aan**,
+  `marketing_analyse_voorstel_toevoegen` in één transactie (Campagne analyse, **planning Wekelijks**,
   `herkenning` = het bewijs). Negeren en terugzetten mag iedereen. De briefing kreeg het veld
   **Campagnepagina('s)** (`campagnepaginas`); de skill `marketing-analyse` gebruikt pagina's en
   herkenning als startpunt.
