@@ -545,3 +545,21 @@ totaalbeeld). De eigenaar koos **opzet A** en liet hem definitief doorvoeren.
   Vervolg op de website). Dat vraagt een nieuw formaat en een aanpassing van prompt en skill; de
   bestaande tabbladen dekken dezelfde funnel.
 
+## 20. Benchmarks: hoe goed is goed (verzoek van de eigenaar, 25 november 2026)
+
+De eigenaar wil per blok zien of een resultaat goed, gemiddeld of slecht is, bijvoorbeeld of
+organische posts beter of slechter bereik en engagement halen dan soortgelijke posts.
+
+- **Vergelijkingsgroep: eigen historie** (keuze van de eigenaar): dezelfde accounts en
+  properties, de 12 maanden vóór de start, zonder de campagne zelf. Geen branchecijfers: die zijn
+  niet na te rekenen en wijken per bron sterk af.
+- **Weergave: label plus bandbreedte** (keuze van de eigenaar): onder het kerncijfer Beter,
+  Gemiddeld of Slechter, de mediaan, het aantal vergeleken items en een dunne balk met de
+  middelste helft, de mediaan en het cijfer. Rechts is altijd beter, ook bij kosten.
+- **Het oordeel rekent het dashboard**, niet Claude: boven het derde kwart beter, onder het
+  eerste slechter. Zo is het label altijd na te rekenen uit de verdeling.
+- **Minstens 5 items**, anders geen benchmark. Welke cijfers en groepen per tabblad staat in de
+  skill; de standaard-hoofdprompt vraagt de benchmark mee te wegen in het oordeel.
+- Oude versies hebben geen benchmark en blijven er hetzelfde uitzien. De volgende analyse van een
+  campagne vult ze.
+

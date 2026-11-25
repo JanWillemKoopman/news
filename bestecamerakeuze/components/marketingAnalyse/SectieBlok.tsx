@@ -2,8 +2,47 @@
 
 import Markdown from "@/components/chat/Markdown";
 import AnalyseGrafiek from "@/components/marketingAnalyse/AnalyseGrafiek";
-import { formatWaarde } from "@/lib/marketingAnalyse/rekenen";
+import { benchmarkOordeel, benchmarkSchaal, formatWaarde, type BenchmarkOordeel } from "@/lib/marketingAnalyse/rekenen";
 import type { Kerncijfer, Sectie, Tabel } from "@/lib/marketingAnalyse/types";
+
+const BENCHMARK: Record<BenchmarkOordeel, { naam: string; tekst: string; stip: string }> = {
+  beter: { naam: "Beter", tekst: "text-positive", stip: "bg-positive" },
+  gemiddeld: { naam: "Gemiddeld", tekst: "text-ink-muted", stip: "bg-ink-muted" },
+  slechter: { naam: "Slechter", tekst: "text-negative", stip: "bg-negative" },
+};
+
+/**
+ * Hoe een kerncijfer zich verhoudt tot soortgelijke campagnes of posts (plan §20): een label en
+ * een dunne balk. Het grijze vlak is de middelste helft van de vergelijkingsgroep, het streepje
+ * de mediaan, de stip het cijfer zelf; rechts is altijd beter, ook bij kosten.
+ */
+function BenchmarkRegel({ cijfer }: { cijfer: Kerncijfer }) {
+  const b = cijfer.benchmark;
+  if (!b || typeof cijfer.waarde !== "number") return null;
+  const oordeel = benchmarkOordeel(cijfer.waarde, b);
+  if (!oordeel) return null;
+  const schaal = benchmarkSchaal(cijfer.waarde, b);
+  const stijl = BENCHMARK[oordeel];
+  const uitleg = `Vergeleken met ${b.groep}. Mediaan ${formatWaarde(b.mediaan, cijfer.eenheid)}, middelste helft ${formatWaarde(b.p25, cijfer.eenheid)} tot ${formatWaarde(b.p75, cijfer.eenheid)}${b.hogerIsBeter === false ? " (lager is beter)" : ""}.`;
+  return (
+    <div className="mt-2.5 border-t border-line-soft pt-2" title={uitleg}>
+      <div className="flex items-baseline justify-between gap-2">
+        <span className={`shrink-0 text-meta font-semibold ${stijl.tekst}`}>{stijl.naam}</span>
+        <span className="truncate text-meta tabular-nums text-ink-faint">mediaan {formatWaarde(b.mediaan, cijfer.eenheid)}</span>
+      </div>
+      <div className="relative mt-1.5 h-1.5 rounded-pill bg-surface" aria-hidden="true">
+        <div className="absolute inset-y-0 rounded-pill bg-ink/15" style={{ left: `${schaal.bandVan}%`, width: `${schaal.bandTot - schaal.bandVan}%` }} />
+        <div className="absolute -bottom-0.5 -top-0.5 w-px bg-ink/45" style={{ left: `${schaal.mediaan}%` }} />
+        <div
+          className={`absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-card ${stijl.stip}`}
+          style={{ left: `${schaal.waarde}%` }}
+        />
+      </div>
+      <p className="mt-1 truncate text-meta text-ink-faint">vs. {b.aantal} vergelijkbare</p>
+      <p className="sr-only">{uitleg}</p>
+    </div>
+  );
+}
 
 /** Eén rij kerncijfers: het cijfer groot, de toelichting en vergelijking eronder. */
 export function KerncijferRij({ cijfers }: { cijfers: Kerncijfer[] }) {
@@ -20,6 +59,7 @@ export function KerncijferRij({ cijfers }: { cijfers: Kerncijfer[] }) {
             </p>
           )}
           {c.toelichting && <p className="mt-1 text-meta text-ink-muted">{c.toelichting}</p>}
+          <BenchmarkRegel cijfer={c} />
         </div>
       ))}
     </div>

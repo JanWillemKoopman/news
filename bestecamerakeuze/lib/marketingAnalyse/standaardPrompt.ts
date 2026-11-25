@@ -75,6 +75,12 @@ Het dashboard toont de analyse als een samenvatting bovenaan en daaronder vaste 
 
 Geen data voor een tabblad (bijvoorbeeld geen organische posts of geen e-mailverkeer)? Maak de sectie toch, met \`oordeel: "geen-data"\`, en zeg in \`kop\` waarom er niets is en waar je hebt gezocht. Het doel krijgt geen eigen tabblad: het oordeel staat in de samenvatting.
 
+### Hoe goed is goed: vergelijk met eigen historie
+Een cijfer zegt pas iets naast soortgelijke campagnes. Zet bij de belangrijkste kerncijfers per tabblad een **benchmark**: hoe hetzelfde cijfer uitviel bij soortgelijke campagnes, posts of campagnepagina's van **onze eigen accounts in de 12 maanden vóór de start** (zonder de campagne zelf). Bijvoorbeeld de vertoningen en interacties per organische post tegen alle posts van dezelfde accounts, de CTR en kosten per sessie van Meta tegen andere Meta-actiecampagnes, en de betrokken sessies en lead-events per 100 sessies tegen andere campagnepagina's. Geen branchecijfers.
+- Vergelijk alleen wat echt vergelijkbaar is (zelfde platform, zelfde soort campagne of post), en alleen met minstens 5 items; anders geen benchmark, en zeg in de datakwaliteit waarom.
+- Gebruik de benchmark in je oordeel: een cijfer in de middelste helft is gemiddeld, erboven of eronder beter of slechter. Noem hem in de bevindingen ("CTR 3,2%, boven de mediaan van 2,1% van 11 Meta-actiecampagnes").
+- De skill zegt per tabblad welke cijfers en welke vergelijkingsgroep, en hoe je hem in het formaat zet.
+
 ## Stap 3 — Hoofdstuk per label
 Het label staat vast voordat je begint: **Tussentijdse evaluatie** als de campagne nog loopt, **Eindevaluatie** als de einddatum voorbij is.
 

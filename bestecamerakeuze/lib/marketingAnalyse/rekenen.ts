@@ -8,6 +8,7 @@ import {
   type Aanbeveling,
   type Eenheid,
   type Kerncijfer,
+  type KerncijferBenchmark,
   type Prioriteit,
   type Sectie,
   type TabOordeel,
@@ -500,6 +501,14 @@ export function normaliseerResultaat(ruw: unknown): MaResultaat {
         oordeel: s.oordeel && OORDELEN.includes(s.oordeel) ? s.oordeel : undefined,
         bevindingen: lijst(s.bevindingen).filter((b) => typeof b === "string" && b.trim()).slice(0, 5),
         acties: leesAanbevelingen(s.acties),
+        kerncijfers: Array.isArray(s.kerncijfers)
+          ? s.kerncijfers.map((k) => {
+              if (!k || typeof k !== "object") return k;
+              const { benchmark, ...rest } = k;
+              const b = leesBenchmark(benchmark);
+              return b ? { ...rest, benchmark: b } : rest;
+            })
+          : s.kerncijfers,
       }))
       .sort((a, b) => a.stap - b.stap),
     inzichten: lijst(r.inzichten),
@@ -781,4 +790,82 @@ export function voortgangVanAnalyse(a: {
     besteedPct: cijfers.besteedPct,
     tempo: budgetTempo(cijfers.besteedPct, tijdPct),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Benchmark: een kerncijfer tegen soortgelijke campagnes of posts (plan §20)
+// ---------------------------------------------------------------------------
+
+/** Onder dit aantal vergelijkbare items zegt een verdeling te weinig: dan geen benchmark. */
+export const BENCHMARK_MIN_AANTAL = 5;
+
+function getal(x: unknown): number | null {
+  return typeof x === "number" && Number.isFinite(x) ? x : null;
+}
+
+/**
+ * Een benchmark uit de analyse, of null als hij niet bruikbaar is: te weinig items, ontbrekende
+ * of niet-oplopende kwartielen, of een min/max die buiten de kwartielen valt.
+ */
+export function leesBenchmark(ruw: unknown): KerncijferBenchmark | null {
+  if (!ruw || typeof ruw !== "object") return null;
+  const b = ruw as Record<string, unknown>;
+  const mediaan = getal(b.mediaan);
+  const p25 = getal(b.p25);
+  const p75 = getal(b.p75);
+  const aantal = getal(b.aantal);
+  const groep = typeof b.groep === "string" ? b.groep.trim() : "";
+  if (mediaan === null || p25 === null || p75 === null || aantal === null || !groep) return null;
+  if (aantal < BENCHMARK_MIN_AANTAL || p25 > mediaan || mediaan > p75) return null;
+  const min = getal(b.min);
+  const max = getal(b.max);
+  return {
+    groep,
+    aantal: Math.round(aantal),
+    mediaan,
+    p25,
+    p75,
+    ...(min !== null && min <= p25 ? { min } : {}),
+    ...(max !== null && max >= p75 ? { max } : {}),
+    hogerIsBeter: b.hogerIsBeter !== false,
+  };
+}
+
+export type BenchmarkOordeel = "beter" | "gemiddeld" | "slechter";
+
+/** Boven het derde kwart is beter, onder het eerste kwart slechter (omgekeerd als lager beter is). */
+export function benchmarkOordeel(waarde: number | string | null | undefined, b: KerncijferBenchmark): BenchmarkOordeel | null {
+  if (typeof waarde !== "number" || !Number.isFinite(waarde)) return null;
+  const hoger = b.hogerIsBeter !== false;
+  if (waarde > b.p75) return hoger ? "beter" : "slechter";
+  if (waarde < b.p25) return hoger ? "slechter" : "beter";
+  return "gemiddeld";
+}
+
+export interface BenchmarkSchaal {
+  /** Posities op de balk, 0 t/m 100. */
+  bandVan: number;
+  bandTot: number;
+  mediaan: number;
+  waarde: number;
+}
+
+/**
+ * Waar de middelste helft, de mediaan en het cijfer zelf op de balk staan. De balk loopt van
+ * het laagste tot het hoogste van groep en cijfer (zonder min/max: anderhalf keer de
+ * middelste helft naar weerszijden), en draait om als lager beter is, zodat rechts altijd beter is.
+ */
+export function benchmarkSchaal(waarde: number, b: KerncijferBenchmark): BenchmarkSchaal {
+  const breedte = Math.max(b.p75 - b.p25, Math.abs(b.mediaan) * 0.1, 1e-9);
+  const laag = Math.min(b.min ?? b.p25 - 1.5 * breedte, waarde, b.p25);
+  const hoog = Math.max(b.max ?? b.p75 + 1.5 * breedte, waarde, b.p75);
+  const bereik = hoog - laag || 1;
+  const hoger = b.hogerIsBeter !== false;
+  const pos = (x: number) => {
+    const p = ((x - laag) / bereik) * 100;
+    return Math.min(100, Math.max(0, hoger ? p : 100 - p));
+  };
+  const a = pos(b.p25);
+  const z = pos(b.p75);
+  return { bandVan: Math.min(a, z), bandTot: Math.max(a, z), mediaan: pos(b.mediaan), waarde: pos(waarde) };
 }
