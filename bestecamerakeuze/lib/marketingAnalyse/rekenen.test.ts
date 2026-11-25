@@ -11,6 +11,7 @@ import {
   leesPaginas,
   paginaKort,
   paginaSleutel,
+  sorteerVoorstellen,
   leesDoelGetal,
   leadBron,
   overzichtCijfers,
@@ -399,4 +400,14 @@ test("merkenVoorMail: standaardmerken eerst, daarna de rest alfabetisch en zonde
   const lijst = merkenVoorMail(["Skoda", "Kia"], ["Audi", "Volkswagen, Ford", null]);
   assert.deepEqual(lijst.slice(0, STANDAARD_MERKEN.length), [...STANDAARD_MERKEN]);
   assert.deepEqual(lijst.slice(STANDAARD_MERKEN.length), ["Ford", "Kia"]);
+});
+
+test("voorstellen op Live sinds, nieuw naar oud, zonder datum achteraan", () => {
+  const lijst = [
+    { naam: "B", startdatum: "2026-10-07" },
+    { naam: "C", startdatum: null },
+    { naam: "A", startdatum: "2026-11-11" },
+    { naam: "D", startdatum: "2026-10-07" },
+  ];
+  assert.deepEqual(sorteerVoorstellen(lijst).map((v) => v.naam), ["A", "B", "D", "C"]);
 });
