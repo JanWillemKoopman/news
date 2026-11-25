@@ -524,3 +524,24 @@ e-mails**: per adres wie wanneer welke analyse per mail kreeg.
 - **Een analyse zonder mail** staat er ook, met de reden: geen volgers, of niet verstuurd (met de
   fout, bijvoorbeeld een ontbrekend Gmail-wachtwoord).
 
+## 19. Analysepagina: de funnel als navigatie (verzoek van de eigenaar, 25 november 2026)
+
+De eigenaar vond de analysepagina niet professioneel genoeg. Er zijn drie opzetten naast elkaar
+gelegd (het origineel, opzet A met de funnel links als navigatie en opzet B met eerst het
+totaalbeeld). De eigenaar koos **opzet A** en liet hem definitief doorvoeren.
+
+- **Links de funnel, rechts de stap.** De horizontale tabbalk is vervangen door een vaste
+  navigatie links, met de samenvatting bovenaan en de verantwoording onderaan. De stappen blijven
+  de tabbladen van §14, in dezelfde groepen en volgorde; het formaat van de analyse verandert niet,
+  dus oude versies en de skill werken ongewijzigd.
+- **De pagina opent op de samenvatting**: conclusie, voortgang tegen doel en budget met de
+  verstreken looptijd als streep, een melding per stap met oordeel probleem, wat nu te doen en de
+  funnel in één lijst.
+- **Wat nu te doen is af te vinken**, gedeeld voor het team, met naam en datum (migratie 0051).
+  Keuze van Claude: per versie, omdat een nieuwe versie de acties opnieuw bepaalt.
+- **Elke stap dezelfde volgorde**: oordeel en kerncijfers, wat we zien naast wat nu te doen,
+  grafieken en tabellen, hoe het gemeten is, vorige en volgende.
+- **Niet overgenomen uit opzet A**: de andere indeling van de stappen (Campagnepagina, Conversies,
+  Vervolg op de website). Dat vraagt een nieuw formaat en een aanpassing van prompt en skill; de
+  bestaande tabbladen dekken dezelfde funnel.
+

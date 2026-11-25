@@ -709,3 +709,76 @@ export function overzichtCijfers(
     gehaaldPct: leads !== null && doelLeads ? (leads / doelLeads) * 100 : null,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Analysepagina: voortgang in de samenvatting
+// ---------------------------------------------------------------------------
+
+function dagNummer(datum: string): number {
+  return Math.floor(Date.parse(`${datum.slice(0, 10)}T00:00:00Z`) / 86_400_000);
+}
+
+/** Budget tegen de verstreken looptijd: binnen 10 procentpunt is op schema. */
+export type BudgetTempo = "op-schema" | "te-snel" | "te-langzaam";
+
+export function budgetTempo(besteedPct: number | null, tijdPct: number | null): BudgetTempo | null {
+  if (besteedPct === null || tijdPct === null) return null;
+  const verschil = besteedPct - tijdPct;
+  if (Math.abs(verschil) <= 10) return "op-schema";
+  return verschil > 0 ? "te-snel" : "te-langzaam";
+}
+
+export interface AnalyseVoortgang {
+  /** Dag van de looptijd op de laatste dag van de analyseperiode (1 = de startdatum). */
+  dag: number | null;
+  dagen: number | null;
+  /** Verstreken deel van de looptijd, 0 t/m 100. */
+  tijdPct: number | null;
+  leads: number | null;
+  doelLeads: number | null;
+  gehaaldPct: number | null;
+  leadSoort: string | null;
+  kosten: number | null;
+  budget: number | null;
+  besteedPct: number | null;
+  tempo: BudgetTempo | null;
+}
+
+/**
+ * De voortgang bovenaan de samenvatting: hoeveel van de looptijd voorbij was op de laatste dag
+ * van de analyseperiode, en daartegen het leaddoel en het budget. Leads en kosten volgen
+ * dezelfde regels als het overzicht (`overzichtCijfers`).
+ */
+export function voortgangVanAnalyse(a: {
+  briefing: { bedrijven?: string[] | null; budget?: number | null; doel?: string | null; startdatum?: string | null; einddatum?: string | null };
+  periodeTot: string | null;
+  kerncijfers: MaKerncijfers | null | undefined;
+}): AnalyseVoortgang {
+  const b = a.briefing;
+  const cijfers = overzichtCijfers({ bedrijven: b.bedrijven ?? [], budget: b.budget ?? null, doel: b.doel ?? null }, a.kerncijfers);
+  let dag: number | null = null;
+  let dagen: number | null = null;
+  let tijdPct: number | null = null;
+  if (b.startdatum && b.einddatum && a.periodeTot) {
+    dagen = dagNummer(b.einddatum) - dagNummer(b.startdatum) + 1;
+    if (dagen > 0) {
+      dag = Math.min(dagen, Math.max(0, dagNummer(a.periodeTot) - dagNummer(b.startdatum) + 1));
+      tijdPct = (dag / dagen) * 100;
+    } else {
+      dagen = null;
+    }
+  }
+  return {
+    dag,
+    dagen,
+    tijdPct,
+    leads: cijfers.leads,
+    doelLeads: cijfers.doelLeads,
+    gehaaldPct: cijfers.gehaaldPct,
+    leadSoort: cijfers.leadSoort,
+    kosten: cijfers.kosten,
+    budget: cijfers.budget,
+    besteedPct: cijfers.besteedPct,
+    tempo: budgetTempo(cijfers.besteedPct, tijdPct),
+  };
+}

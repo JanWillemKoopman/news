@@ -1801,17 +1801,36 @@ lees dat eerst voordat je hier iets verandert.
   kanttekeningen) en voorstellen voor de semantic layer. `normaliseerResultaat` zorgt dat een
   ontbrekend veld de pagina niet breekt. **Verander je het formaat, pas dan de skill in dezelfde
   wijziging aan.**
-- **De analysepagina in tabbladen** (24 november 2026, formaat 2, op verzoek; besluiten in §14
-  van het plan). Bovenaan altijd de samenvatting in drie kolommen (`SamenvattingBlok.tsx`):
-  samenvatting met doeloordeel, de aanbevolen acties (eerst voor de campagne als geheel, dan
-  alle acties uit de tabbladen op prioriteit) en de briefing als ingeklapte verticale strook.
-  Daaronder elf tabbladen in funnelvolgorde, sinds Orders in Syntec (`ANALYSE_TABBLADEN` in `types.ts`, indeling in
-  `tabbladenVoor` in `rekenen.ts`, getest), in groepen, met onder elke naam het hoofdgetal en
-  een stipje met het oordeel; los achteraan Verantwoording. Elk tabblad: links 3/4 de cijfers
-  (`SectieBlok.tsx`), rechts 1/4 de bevindingen en acties, die blijven staan bij scrollen
-  (`AnalyseTabbladen.tsx`). Een tabblad zonder data staat grijs met de reden. Het open tabblad
-  staat in de URL (`mtab`). Dit is een derde uitzondering op "geen dubbele navigatie"; maak er
-  geen precedent van. Versies in formaat 1 en rapportages krijgen een tabblad per sectie.
+- **De analysepagina: de funnel als navigatie** (25 november 2026, opzet A, op verzoek; besluiten
+  in §19 van het plan, eerdere opzet met tabbladen in §14). Links een vaste navigatie
+  (`StapNavigatie.tsx`): bovenaan **Samenvatting**, dan de stappen van de funnel in hun groepen
+  (Media, Content, Website, Resultaat; `ANALYSE_TABBLADEN` in `types.ts`, indeling in
+  `tabbladenVoor` in `rekenen.ts`, getest), elk met nummer, hoofdgetal en stipje met het oordeel,
+  en onderaan **Verantwoording**. Rechts de open stap; de pagina opent op de samenvatting en de
+  open stap staat in de URL (`mtab`, leeg = samenvatting). Dit vervangt de horizontale tabbalk en
+  is daarmee nog steeds de derde uitzondering op "geen dubbele navigatie"; maak er geen precedent van.
+  - **Samenvatting** (`SamenvattingPagina.tsx`): de conclusie (kop, regels, toelichting
+    inklapbaar) met rechts de voortgang: dag x van y en twee balken, doel en budget, met een streep
+    voor het verstreken deel van de looptijd (`voortgangVanAnalyse` en `budgetTempo` in
+    `rekenen.ts`, getest; leads en kosten volgen `overzichtCijfers`). Daaronder een rode melding
+    per stap met oordeel probleem, **Wat nu te doen** (de acties voor de campagne als geheel, op
+    prioriteit, met knoppen naar hun stappen) en **De funnel in één oogopslag** (elke stap met
+    hoofdgetal, oordeel en kopzin, klikbaar).
+  - **Acties afvinken** is gedeeld voor het hele team (migratie 0051,
+    `marketing_analyse_acties_klaar`, route `acties`): één rij per afgevinkte actie van een versie,
+    met wie en wanneer. De actie heet naar haar plek in `aanbevelingen` (`geheel-0` …), want een
+    versie verandert nooit; een nieuwe versie begint met een lege lijst. Iedereen mag afvinken en
+    uitvinken.
+  - **Elke stap** (`StapPagina.tsx`) heeft dezelfde opbouw: "Stap n van N · groep", naam met
+    oordeel, de kopzin en de kerncijfers; dan **Wat we zien** (bevindingen) naast **Wat nu te
+    doen** (acties van de stap); dan grafieken en tabellen (`AnalyseGrafiek`, `AnalyseTabel` uit
+    `SectieBlok.tsx`); ingeklapt **Hoe is dit gemeten?** (de `tekst` van de sectie); onderaan
+    naar de vorige en volgende stap. Een stap zonder data toont de reden.
+  - **Briefing** en **Volgers** zijn knoppen in de kop en openen een zijbalk (`Briefing.tsx`,
+    `VolgersZijbalk.tsx`). Analysedatum, periode, prompt- en semantic-layerversie en "Versie
+    verwijderen" staan onderaan de rechterkolom.
+  - Versies in formaat 1 en rapportages krijgen een stap per sectie, zonder groepen; daar vallen
+    Wat we zien en Wat nu te doen per stap weg (die velden bestaan daar niet).
 - **Het overzicht**: lopende campagnes bovenaan op startdatum, afgelopen in een inklapbaar blok
   Afgelopen (rapportages hebben geen einddatum en staan altijd bij lopend); per regel de
   planning (uitklapmenu) en bij campagnes de kerncijfers uit de laatste analyse.

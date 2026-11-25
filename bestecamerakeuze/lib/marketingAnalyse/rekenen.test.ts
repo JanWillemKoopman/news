@@ -450,3 +450,42 @@ test("voorstellen op Live sinds, nieuw naar oud, zonder datum achteraan", () => 
   ];
   assert.deepEqual(sorteerVoorstellen(lijst).map((v) => v.naam), ["A", "B", "D", "C"]);
 });
+
+test("voortgangVanAnalyse: dag 68 van 105 bij de A2, doel en budget tegen de looptijd", async () => {
+  const { voortgangVanAnalyse } = await import("./rekenen");
+  const v = voortgangVanAnalyse({
+    briefing: { bedrijven: ["Van den Udenhout"], budget: 3150, doel: "20 proefritten", startdatum: "2026-09-18", einddatum: "2026-12-31" },
+    periodeTot: "2026-11-24",
+    kerncijfers: { kosten: 2016.82, leadsDoel: 20, leadBron: "ga4", doelLeads: 20, leadsDoelSoort: "proefritten" },
+  });
+  assert.equal(v.dag, 68);
+  assert.equal(v.dagen, 105);
+  assert.ok(Math.abs((v.tijdPct ?? 0) - 64.76) < 0.01);
+  assert.equal(v.leads, 20);
+  assert.equal(v.gehaaldPct, 100);
+  assert.equal(v.leadSoort, "proefritten");
+  assert.equal(v.tempo, "op-schema");
+});
+
+test("voortgangVanAnalyse: zonder looptijd of na de einddatum", async () => {
+  const { voortgangVanAnalyse } = await import("./rekenen");
+  const zonder = voortgangVanAnalyse({ briefing: { budget: null, doel: null }, periodeTot: null, kerncijfers: null });
+  assert.equal(zonder.tijdPct, null);
+  assert.equal(zonder.tempo, null);
+  const erna = voortgangVanAnalyse({
+    briefing: { startdatum: "2026-01-01", einddatum: "2026-01-10", budget: 100 },
+    periodeTot: "2026-02-01",
+    kerncijfers: { kosten: 50 },
+  });
+  assert.equal(erna.dag, 10);
+  assert.equal(erna.tijdPct, 100);
+  assert.equal(erna.tempo, "te-langzaam");
+});
+
+test("budgetTempo: binnen 10 procentpunt op schema", async () => {
+  const { budgetTempo } = await import("./rekenen");
+  assert.equal(budgetTempo(64, 65), "op-schema");
+  assert.equal(budgetTempo(80, 65), "te-snel");
+  assert.equal(budgetTempo(40, 65), "te-langzaam");
+  assert.equal(budgetTempo(null, 65), null);
+});
