@@ -11,6 +11,7 @@ import {
   leesPaginas,
   paginaKort,
   paginaSleutel,
+  sorteerVoorstellen,
   leesDoelGetal,
   leadBron,
   overzichtCijfers,
@@ -371,4 +372,14 @@ test("briefing: campagnepagina's bij een campagne, leeg bij een rapportage", () 
   assert.ok(c.ok && c.invoer.campagnePaginas[0] === "https://udenhout.nl/acties/a2-e-tron");
   const r = leesCampagneInvoer({ naam: "VDU", periodeTekst: "november", campagnePaginas: "udenhout.nl/x" }, VDU_MAAND);
   assert.ok(r.ok && r.invoer.campagnePaginas.length === 0);
+});
+
+test("voorstellen op Live sinds, nieuw naar oud, zonder datum achteraan", () => {
+  const lijst = [
+    { naam: "B", startdatum: "2026-10-07" },
+    { naam: "C", startdatum: null },
+    { naam: "A", startdatum: "2026-11-11" },
+    { naam: "D", startdatum: "2026-10-07" },
+  ];
+  assert.deepEqual(sorteerVoorstellen(lijst).map((v) => v.naam), ["A", "B", "D", "C"]);
 });

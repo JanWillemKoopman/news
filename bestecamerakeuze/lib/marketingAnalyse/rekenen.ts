@@ -122,6 +122,17 @@ export function paginaKort(url: string): string {
   return (url.trim().replace(/^[a-z]+:\/\//i, "").replace(/^www\./i, "").replace(/\/+$/, "") || url).slice(0, 80);
 }
 
+/**
+ * Voorgestelde analyses op Live sinds, nieuw naar oud (verzoek van de eigenaar). Zonder
+ * startdatum achteraan; bij gelijke datum op naam.
+ */
+export function sorteerVoorstellen<T extends { startdatum: string | null; naam: string }>(lijst: readonly T[]): T[] {
+  return [...lijst].sort(
+    (a, b) =>
+      (b.startdatum ?? "").localeCompare(a.startdatum ?? "") || a.naam.localeCompare(b.naam, "nl"),
+  );
+}
+
 export type InvoerUitkomst = { ok: true; invoer: MaCampagneInvoer } | { ok: false; fout: string };
 
 /** Wat de invoercontrole van de gekozen opzet moet weten. */
