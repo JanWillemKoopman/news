@@ -104,7 +104,8 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
   het over deze pagina's onder hun nieuwe naam en plek.
 - **Naar het startscherm**: klik op de titel "Marketing dashboard" bovenaan de sidebar
   (horizontaal gecentreerd, met een witte streep eronder op 20% dekking —
-  `bg-sidebar-ink/20`; geen subregel meer). Er staat geen beeldmerk (`LogoMark`) meer in de sidebar, op verzoek. Zonder
+  `bg-sidebar-ink/20`; geen subregel meer). Ingeklapt staat op die plek alleen de letter
+  **M** als logo; bij uitklappen maakt hij plaats voor de titel. Er staat geen beeldmerk (`LogoMark`) meer in de sidebar, op verzoek. Zonder
   `?tab=` in de URL opent het startscherm; Campagnes is nu `?tab=campagnes`.
 - **De illustraties** (`components/home/Illustraties.tsx`) zijn isometrische lijntekeningen
   in de stijl van technische "FIG"-figuren: dunne lijn in `currentColor`, vlakken in

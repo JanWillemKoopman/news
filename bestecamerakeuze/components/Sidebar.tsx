@@ -83,6 +83,14 @@ export default function Sidebar({
           aria-current={actief === "home" ? "page" : undefined}
           className="flex h-9 w-full items-center justify-center text-center"
         >
+          {/* Ingeklapt staat er alleen de letter "M" als logo (op verzoek); bij uitklappen
+              maakt hij plaats voor de volledige titel. */}
+          <span
+            aria-hidden="true"
+            className="font-sans-w7 text-title font-bold leading-none text-sidebar-ink group-hover:hidden"
+          >
+            M
+          </span>
           <span className="max-w-0 overflow-hidden whitespace-nowrap font-sans-w7 text-cell font-bold tracking-[0.04em] text-sidebar-ink opacity-0 transition-all duration-[var(--duur)] group-hover:max-w-[200px] group-hover:opacity-100">
             Marketing dashboard
           </span>
