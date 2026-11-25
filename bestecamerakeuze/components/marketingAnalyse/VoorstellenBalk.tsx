@@ -3,7 +3,7 @@
 import { Fragment, useState } from "react";
 import { getBrandLogo } from "@/components/brandLogos";
 import { IconChevronDown, IconLink } from "@/components/icons";
-import { bedrijvenLabel, datumKort, formatWaarde, looptijdLabel, paginaKort } from "@/lib/marketingAnalyse/rekenen";
+import { bedrijvenLabel, datumKort, formatWaarde, looptijdLabel, paginaKort, sorteerVoorstellen } from "@/lib/marketingAnalyse/rekenen";
 import { ZEKERHEID_NAAM, type MaVoorstel, type MaZoekronde } from "@/lib/marketingAnalyse/types";
 
 type Props = {
@@ -199,7 +199,7 @@ export default function VoorstellenBalk({ open, genegeerd, laatsteZoekronde, bez
               </tr>
             </thead>
             <tbody>
-              {open.map((v) => {
+              {sorteerVoorstellen(open).map((v) => {
                 const Logo = v.merk ? getBrandLogo(v.merk) : null;
                 const isOpen = uitgeklapt === v.id;
                 return (
