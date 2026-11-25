@@ -71,9 +71,13 @@ export interface MaCampagne {
   doel: string | null;
   budget: number | null;
   omschrijving: string | null;
+  /** De campagnepagina('s), volledige URL's. Leeg bij een rapportage. */
+  campagnePaginas: string[];
   dataCorrectie: string | null;
   dataCorrectieBijgewerktOp: string | null;
   analyseRonde: boolean;
+  /** Uit welk voorstel de campagne kwam (migratie 0046); null als hij met de hand is aangemaakt. */
+  voorstelId: string | null;
   aangemaaktOp: string;
   bijgewerktOp: string;
 }
@@ -92,6 +96,7 @@ export type MaCampagneInvoer = Pick<
   | "doel"
   | "budget"
   | "omschrijving"
+  | "campagnePaginas"
   | "dataCorrectie"
 >;
 
@@ -395,4 +400,72 @@ export interface MaSemantiek {
   opgeslagenOp: string | null;
   opgeslagenDoorNaam: string | null;
   standaard: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Voorgestelde campagne analyses (migratie 0046, campagne-voorstellen-plan.md)
+// ---------------------------------------------------------------------------
+
+export type VoorstelStatus = "open" | "toegevoegd" | "genegeerd" | "verlopen";
+export type Zekerheid = "zeker" | "waarschijnlijk" | "twijfel";
+
+export const ZEKERHEID_NAAM: Record<Zekerheid, string> = {
+  zeker: "Zeker",
+  waarschijnlijk: "Waarschijnlijk",
+  twijfel: "Twijfel",
+};
+
+/** Een platformcampagne die bij het voorstel hoort, uit het bewijs. */
+export interface VoorstelPlatformCampagne {
+  platform: string;
+  campagne: string;
+  uitgaven?: number | null;
+  laatsteUitgave?: string | null;
+}
+
+/** Een organische post over hetzelfde onderwerp, uit het bewijs. */
+export interface VoorstelPost {
+  kanaal: string;
+  datum?: string | null;
+  tekst?: string | null;
+  url?: string | null;
+}
+
+/** Wat de skill heeft gevonden; alles optioneel, want het komt uit vrije JSON. */
+export interface VoorstelBewijs {
+  platformCampagnes?: VoorstelPlatformCampagne[];
+  ga4?: { sessies?: number | null; leadEvents?: number | null; periode?: string | null; toelichting?: string | null } | null;
+  posts?: VoorstelPost[];
+  kanttekeningen?: string[];
+}
+
+export interface MaVoorstel {
+  id: string;
+  status: VoorstelStatus;
+  naam: string;
+  bedrijven: string[];
+  merk: string | null;
+  modellen: string[];
+  startdatum: string | null;
+  einddatum: string | null;
+  budget: number | null;
+  doel: string | null;
+  omschrijving: string | null;
+  campagnePaginas: string[];
+  zekerheid: Zekerheid;
+  reden: string | null;
+  kanalen: string[];
+  uitgavenTotNu: number | null;
+  laatsteUitgaveOp: string | null;
+  bewijs: VoorstelBewijs;
+  gevondenOp: string;
+  laatstGezienOp: string;
+}
+
+export interface MaZoekronde {
+  gezochtOp: string;
+  aantalNieuw: number;
+  aantalBijgewerkt: number;
+  aantalOvergeslagen: number;
+  aantalVerlopen: number;
 }

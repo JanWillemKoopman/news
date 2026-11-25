@@ -13,7 +13,12 @@ import {
   type MaOpzet,
   type MaOverzichtRegel,
   type MaVersie,
+  type MaVoorstel,
+  type MaZoekronde,
   type SemantiekInhoud,
+  type VoorstelBewijs,
+  type VoorstelStatus,
+  type Zekerheid,
 } from "./types";
 
 /**
@@ -29,7 +34,7 @@ const SEMANTIEK = "marketing_analyse_semantiek";
 const OPZETTEN = "marketing_analyse_opzetten";
 
 const CAMPAGNE_KOLOMMEN =
-  "id, opzet_id, naam, bedrijven, merk, modellen, startdatum, einddatum, periode_tekst, doel, budget, omschrijving, data_correctie, data_correctie_bijgewerkt_op, analyse_ronde, aangemaakt_op, bijgewerkt_op";
+  "id, opzet_id, naam, bedrijven, merk, modellen, startdatum, einddatum, periode_tekst, doel, budget, omschrijving, campagnepaginas, data_correctie, data_correctie_bijgewerkt_op, analyse_ronde, voorstel_id, aangemaakt_op, bijgewerkt_op";
 
 function getalOfNull(x: unknown): number | null {
   if (x === null || x === undefined || x === "") return null;
@@ -56,9 +61,11 @@ function naarCampagne(r: Record<string, unknown>): MaCampagne {
     // numeric komt als string terug uit PostgREST.
     budget: getalOfNull(r.budget),
     omschrijving: tekst(r.omschrijving),
+    campagnePaginas: Array.isArray(r.campagnepaginas) ? (r.campagnepaginas as string[]) : [],
     dataCorrectie: tekst(r.data_correctie),
     dataCorrectieBijgewerktOp: tekst(r.data_correctie_bijgewerkt_op),
     analyseRonde: Boolean(r.analyse_ronde),
+    voorstelId: tekst(r.voorstel_id),
     aangemaaktOp: r.aangemaakt_op as string,
     bijgewerktOp: r.bijgewerkt_op as string,
   };
@@ -77,6 +84,7 @@ function naarKolommen(i: MaCampagneInvoer) {
     doel: i.doel,
     budget: i.budget,
     omschrijving: i.omschrijving,
+    campagnepaginas: i.campagnePaginas,
   };
 }
 
@@ -436,4 +444,134 @@ export function bewaarSemantiek(supabase: SupabaseClient, inhoud: SemantiekInhou
     (a, b) => JSON.stringify(a) === JSON.stringify(b),
     leesSem,
   );
+}
+
+// ---------------------------------------------------------------------------
+// Voorgestelde campagne analyses (migratie 0046). Nieuwe voorstellen schrijft alleen Claude
+// Code (marketing_analyse_voorstellen_bewaar); hier lezen, toevoegen, negeren en terugzetten.
+// ---------------------------------------------------------------------------
+
+const VOORSTELLEN = "marketing_analyse_voorstellen";
+const VOORSTEL_KOLOMMEN =
+  "id, status, naam, bedrijven, merk, modellen, startdatum, einddatum, budget, doel, omschrijving, campagnepaginas, zekerheid, reden, kanalen, uitgaven_tot_nu, laatste_uitgave_op, bewijs, gevonden_op, laatst_gezien_op";
+
+function lijst(x: unknown): string[] {
+  return Array.isArray(x) ? x.filter((y): y is string => typeof y === "string") : [];
+}
+
+function naarVoorstel(r: Record<string, unknown>): MaVoorstel {
+  const bewijs = r.bewijs && typeof r.bewijs === "object" && !Array.isArray(r.bewijs) ? (r.bewijs as VoorstelBewijs) : {};
+  return {
+    id: r.id as string,
+    status: r.status as VoorstelStatus,
+    naam: r.naam as string,
+    bedrijven: lijst(r.bedrijven),
+    merk: tekst(r.merk),
+    modellen: lijst(r.modellen),
+    startdatum: tekst(r.startdatum),
+    einddatum: tekst(r.einddatum),
+    budget: getalOfNull(r.budget),
+    doel: tekst(r.doel),
+    omschrijving: tekst(r.omschrijving),
+    campagnePaginas: lijst(r.campagnepaginas),
+    zekerheid: (r.zekerheid as Zekerheid) ?? "waarschijnlijk",
+    reden: tekst(r.reden),
+    kanalen: lijst(r.kanalen),
+    uitgavenTotNu: getalOfNull(r.uitgaven_tot_nu),
+    laatsteUitgaveOp: tekst(r.laatste_uitgave_op),
+    bewijs,
+    gevondenOp: r.gevonden_op as string,
+    laatstGezienOp: r.laatst_gezien_op as string,
+  };
+}
+
+/** De open en genegeerde voorstellen, en wanneer er voor het laatst is gezocht. */
+export async function lijstVoorstellen(
+  supabase: SupabaseClient,
+): Promise<{ open: MaVoorstel[]; genegeerd: MaVoorstel[]; laatsteZoekronde: MaZoekronde | null }> {
+  const [voorstellen, ronde] = await Promise.all([
+    supabase
+      .schema(SCHEMA)
+      .from(VOORSTELLEN)
+      .select(VOORSTEL_KOLOMMEN)
+      .in("status", ["open", "genegeerd"])
+      .order("laatst_gezien_op", { ascending: false }),
+    supabase
+      .schema(SCHEMA)
+      .from("marketing_analyse_zoekrondes")
+      .select("gezocht_op, aantal_nieuw, aantal_bijgewerkt, aantal_overgeslagen, aantal_verlopen")
+      .order("gezocht_op", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  if (voorstellen.error) throw new Error(voorstellen.error.message);
+  if (ronde.error) throw new Error(ronde.error.message);
+  const alle = (voorstellen.data ?? []).map(naarVoorstel);
+  const r = ronde.data;
+  return {
+    open: alle.filter((v) => v.status === "open"),
+    genegeerd: alle.filter((v) => v.status === "genegeerd"),
+    laatsteZoekronde: r
+      ? {
+          gezochtOp: r.gezocht_op as string,
+          aantalNieuw: Number(r.aantal_nieuw ?? 0),
+          aantalBijgewerkt: Number(r.aantal_bijgewerkt ?? 0),
+          aantalOvergeslagen: Number(r.aantal_overgeslagen ?? 0),
+          aantalVerlopen: Number(r.aantal_verlopen ?? 0),
+        }
+      : null,
+  };
+}
+
+/**
+ * Negeren (open → genegeerd) of terugzetten (genegeerd → open). Alleen vanuit de verwachte
+ * status, zodat een voorstel dat net is toegevoegd niet terug in de balk springt.
+ */
+export async function zetVoorstelStatus(
+  supabase: SupabaseClient,
+  id: string,
+  naar: "genegeerd" | "open",
+  gebruikerId: string,
+): Promise<MaVoorstel | null> {
+  const van = naar === "genegeerd" ? "open" : "genegeerd";
+  const nu = new Date().toISOString();
+  const { data, error } = await supabase
+    .schema(SCHEMA)
+    .from(VOORSTELLEN)
+    .update(
+      naar === "genegeerd"
+        ? { status: naar, afgehandeld_door: gebruikerId, afgehandeld_op: nu, bijgewerkt_op: nu }
+        : { status: naar, afgehandeld_door: null, afgehandeld_op: null, bijgewerkt_op: nu },
+    )
+    .eq("id", id)
+    .eq("status", van)
+    .select(VOORSTEL_KOLOMMEN)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data ? naarVoorstel(data) : null;
+}
+
+/**
+ * Een voorstel toevoegen met de nagelopen briefing: één transactie in de database maakt de
+ * campagne aan (opzet Campagne analyse, Analyse ronde aan) en sluit het voorstel af.
+ */
+export async function voegVoorstelToe(supabase: SupabaseClient, id: string, invoer: MaCampagneInvoer): Promise<MaCampagne> {
+  const { data, error } = await supabase.schema(SCHEMA).rpc("marketing_analyse_voorstel_toevoegen", {
+    p_voorstel_id: id,
+    p_naam: invoer.naam,
+    p_bedrijven: invoer.bedrijven,
+    p_merk: invoer.merk,
+    p_modellen: invoer.modellen,
+    p_startdatum: invoer.startdatum,
+    p_einddatum: invoer.einddatum,
+    p_doel: invoer.doel,
+    p_budget: invoer.budget,
+    p_omschrijving: invoer.omschrijving,
+    p_data_correctie: invoer.dataCorrectie,
+    p_campagnepaginas: invoer.campagnePaginas,
+  });
+  if (error) throw new Error(error.message);
+  const campagne = await haalCampagne(supabase, data as string);
+  if (!campagne) throw new Error("De campagne is aangemaakt maar kon niet worden gelezen. Herlaad de pagina.");
+  return campagne;
 }

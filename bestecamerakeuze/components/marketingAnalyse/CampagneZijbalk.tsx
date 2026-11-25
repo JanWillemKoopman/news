@@ -4,11 +4,16 @@ import { useState } from "react";
 import Drawer from "@/components/Drawer";
 import BedrijvenKiezer from "@/components/marketingAnalyse/BedrijvenKiezer";
 import { bedrijvenLabel, rapportageNaam } from "@/lib/marketingAnalyse/rekenen";
-import { STANDAARD_OPZET_ID, type MaCampagne, type MaOpzet } from "@/lib/marketingAnalyse/types";
+import { STANDAARD_OPZET_ID, type MaCampagne, type MaOpzet, type MaVoorstel } from "@/lib/marketingAnalyse/types";
 
 type Props = {
   /** Zonder campagne: een nieuwe aanmaken. */
   campagne: MaCampagne | null;
+  /**
+   * Een voorgestelde campagne analyse: het formulier staat ingevuld met het voorstel en opslaan
+   * voegt hem toe (Campagne analyse, Analyse ronde aan). Alleen zonder `campagne`.
+   */
+  voorstel?: MaVoorstel | null;
   /** De analyse opzetten voor het uitklapmenu bovenaan. */
   opzetten: MaOpzet[];
   /** De keuzelijst Bedrijf, uit het blok Algemeen van de semantic layer. */
@@ -31,10 +36,28 @@ type Velden = {
   budget: string;
   doel: string;
   omschrijving: string;
+  campagnePaginas: string;
   dataCorrectie: string;
 };
 
-function beginwaarden(c: MaCampagne | null): Velden {
+function beginwaarden(c: MaCampagne | null, voorstel: MaVoorstel | null): Velden {
+  if (!c && voorstel) {
+    return {
+      opzetId: STANDAARD_OPZET_ID,
+      naam: voorstel.naam,
+      bedrijven: voorstel.bedrijven,
+      merk: voorstel.merk ?? "",
+      modellen: voorstel.modellen.join(", "),
+      startdatum: voorstel.startdatum ?? "",
+      einddatum: voorstel.einddatum ?? "",
+      periodeTekst: "",
+      budget: voorstel.budget != null ? String(voorstel.budget).replace(".", ",") : "",
+      doel: voorstel.doel ?? "",
+      omschrijving: voorstel.omschrijving ?? "",
+      campagnePaginas: voorstel.campagnePaginas.join("\n"),
+      dataCorrectie: "",
+    };
+  }
   return {
     opzetId: c?.opzetId ?? STANDAARD_OPZET_ID,
     naam: c?.naam ?? "",
@@ -47,6 +70,7 @@ function beginwaarden(c: MaCampagne | null): Velden {
     budget: c?.budget != null ? String(c.budget).replace(".", ",") : "",
     doel: c?.doel ?? "",
     omschrijving: c?.omschrijving ?? "",
+    campagnePaginas: c?.campagnePaginas.join("\n") ?? "",
     dataCorrectie: c?.dataCorrectie ?? "",
   };
 }
@@ -78,8 +102,18 @@ function Veld({ label, verplicht, hint, children }: { label: string; verplicht?:
  * haalt de briefing op bij een analyse; elke analyse legt hem (en de Data correctie) van dat
  * moment vast, dus een latere wijziging verandert een oude versie niet.
  */
-export default function CampagneZijbalk({ campagne, opzetten, bedrijven, isEigenaar, onClose, onOpgeslagen, onVerwijderd }: Props) {
-  const [v, setV] = useState<Velden>(() => beginwaarden(campagne));
+export default function CampagneZijbalk({
+  campagne,
+  voorstel = null,
+  opzetten,
+  bedrijven,
+  isEigenaar,
+  onClose,
+  onOpgeslagen,
+  onVerwijderd,
+}: Props) {
+  const uitVoorstel = !campagne && voorstel !== null;
+  const [v, setV] = useState<Velden>(() => beginwaarden(campagne, voorstel));
   // De naam van een rapportage loopt mee met opzet en periode, tot iemand hem zelf aanpast.
   const [naamAangepast, setNaamAangepast] = useState(Boolean(campagne));
   const opzet = opzetten.find((o) => o.id === v.opzetId) ?? null;
@@ -132,7 +166,9 @@ export default function CampagneZijbalk({ campagne, opzetten, bedrijven, isEigen
     if (rapportage && !v.periodeTekst.trim()) return setFout("Vul de periode in.");
     const data = campagne
       ? await verstuur(`/api/marketing-analyse?id=${encodeURIComponent(campagne.id)}`, "PATCH", v)
-      : await verstuur("/api/marketing-analyse", "POST", v);
+      : voorstel
+        ? await verstuur(`/api/marketing-analyse/voorstellen?id=${encodeURIComponent(voorstel.id)}`, "POST", { ...v, actie: "toevoegen" })
+        : await verstuur("/api/marketing-analyse", "POST", v);
     if (data?.campagne) {
       onOpgeslagen(data.campagne);
       onClose();
@@ -150,10 +186,22 @@ export default function CampagneZijbalk({ campagne, opzetten, bedrijven, isEigen
   }
 
   return (
-    <Drawer title={campagne ? `Briefing — ${campagne.naam}` : "Nieuwe analyse"} onClose={onClose}>
+    <Drawer title={campagne ? `Briefing — ${campagne.naam}` : uitVoorstel ? "Voorgestelde analyse toevoegen" : "Nieuwe analyse"} onClose={onClose}>
       <form onSubmit={opslaan} className="flex flex-col gap-4">
-        <Veld label="Analyse opzet" hint="Welke soort analyse. Bepaalt de prompt en het formulier hieronder.">
-          <select className={INVOER} value={v.opzetId} onChange={(e) => zetMetNaam({ opzetId: e.target.value })} disabled={bezig || opzetten.length === 0}>
+        {uitVoorstel && (
+          <p className="rounded-control border border-line-soft bg-surface-tint px-3 py-2.5 text-sm text-ink-muted">
+            Claude heeft deze briefing ingevuld uit de advertenties, de campagnepagina en de social posts. Loop hem na, vooral het
+            doel, het budget en de einddatum. Met <span className="font-medium text-ink">Toevoegen</span> komt hij op de lijst, met
+            de Analyse ronde aan.
+          </p>
+        )}
+        <Veld label="Analyse opzet" hint={uitVoorstel ? "Een voorstel is altijd een campagne-analyse." : "Welke soort analyse. Bepaalt de prompt en het formulier hieronder."}>
+          <select
+            className={INVOER}
+            value={v.opzetId}
+            onChange={(e) => zetMetNaam({ opzetId: e.target.value })}
+            disabled={bezig || opzetten.length === 0 || uitVoorstel}
+          >
             {opzetOpties.length === 0 && <option value={v.opzetId}>Campagne analyse</option>}
             {opzetOpties.map((o) => (
               <option key={o.id} value={o.id}>
@@ -230,6 +278,18 @@ export default function CampagneZijbalk({ campagne, opzetten, bedrijven, isEigen
         <Veld label="Doel van de campagne" hint="In je eigen woorden, bijv. “20 proefritaanvragen”. De analyse beoordeelt hoe het ervoor staat.">
           <textarea className={`${INVOER} min-h-16 resize-y`} value={v.doel} onChange={zet("doel")} disabled={bezig} />
         </Veld>
+        <Veld
+          label="Campagnepagina('s)"
+          hint="Eén webadres per regel. De analyse begint hier, en een zoekronde stelt een campagne met deze pagina niet nog eens voor."
+        >
+          <textarea
+            className={`${INVOER} min-h-16 resize-y font-mono text-xs`}
+            value={v.campagnePaginas}
+            onChange={zet("campagnePaginas")}
+            disabled={bezig}
+            placeholder="https://www.udenhout.nl/acties/a2-e-tron"
+          />
+        </Veld>
         </>
         )}
         <Veld label={rapportage ? "Omschrijving en aandachtspunten" : "Omschrijving"}>
@@ -268,7 +328,7 @@ export default function CampagneZijbalk({ campagne, opzetten, bedrijven, isEigen
             disabled={bezig}
             className="rounded-button bg-primary px-4 py-2 text-sm font-medium text-on-primary transition-colors hover:bg-primary-dark disabled:cursor-wait disabled:opacity-60"
           >
-            {bezig ? "Opslaan…" : campagne ? "Opslaan" : "Aanmaken"}
+            {bezig ? "Opslaan…" : campagne ? "Opslaan" : uitVoorstel ? "Toevoegen" : "Aanmaken"}
           </button>
         </div>
       </form>

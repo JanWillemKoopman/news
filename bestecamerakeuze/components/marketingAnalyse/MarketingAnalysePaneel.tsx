@@ -9,6 +9,7 @@ import CampagneZijbalk from "@/components/marketingAnalyse/CampagneZijbalk";
 import AnalysePromptZijbalk from "@/components/marketingAnalyse/AnalysePromptZijbalk";
 import SemantiekZijbalk from "@/components/marketingAnalyse/SemantiekZijbalk";
 import VolgersZijbalk from "@/components/marketingAnalyse/VolgersZijbalk";
+import VoorstellenBalk from "@/components/marketingAnalyse/VoorstellenBalk";
 import { getBrandLogo } from "@/components/brandLogos";
 import { IconBook, IconBrain, IconChevronDown, IconMail, IconPencil, IconPlus } from "@/components/icons";
 import {
@@ -22,7 +23,9 @@ import {
   type LeadBron,
 } from "@/lib/marketingAnalyse/rekenen";
 import { STANDAARD_SEMANTIEK } from "@/lib/marketingAnalyse/standaardSemantiek";
-import type { MaCampagne, MaOpzet, MaOverzichtRegel } from "@/lib/marketingAnalyse/types";
+import type { MaCampagne, MaOpzet, MaOverzichtRegel, MaVoorstel, MaZoekronde } from "@/lib/marketingAnalyse/types";
+
+type Voorstellen = { open: MaVoorstel[]; genegeerd: MaVoorstel[]; laatsteZoekronde: MaZoekronde | null };
 
 const URL_PARAM = "analyse";
 
@@ -466,7 +469,9 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
   const [isEigenaar, setIsEigenaar] = useState(false);
   const [fout, setFout] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
-  const [zijbalk, setZijbalk] = useState<{ campagne: MaCampagne | null } | null>(null);
+  const [zijbalk, setZijbalk] = useState<{ campagne: MaCampagne | null; voorstel?: MaVoorstel } | null>(null);
+  const [voorstellen, setVoorstellen] = useState<Voorstellen | null>(null);
+  const [voorstelBezig, setVoorstelBezig] = useState<Set<string>>(new Set());
   const [paneel, setPaneel] = useState<{ soort: "prompt"; opzetId: string | null } | { soort: "semantiek" } | null>(null);
   const [afgelopenOpen, setAfgelopenOpen] = useState(false);
   const [rondeBezig, setRondeBezig] = useState<Set<string>>(new Set());
@@ -488,6 +493,13 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
         setFout(null);
       })
       .catch((err) => setFout(err instanceof Error ? err.message : String(err)));
+    // De voorgestelde analyses staan los: lukt dat niet, dan staat de balk er gewoon niet.
+    fetch("/api/marketing-analyse/voorstellen")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: Voorstellen | null) => {
+        if (data) setVoorstellen({ open: data.open ?? [], genegeerd: data.genegeerd ?? [], laatsteZoekronde: data.laatsteZoekronde ?? null });
+      })
+      .catch(() => {});
     // De keuzelijst Bedrijf komt uit de semantic layer; lukt dat niet, dan de startlijst.
     fetch("/api/marketing-analyse/semantiek")
       .then((res) => (res.ok ? res.json() : null))
@@ -539,6 +551,38 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
       setRondeBezig((s) => {
         const n = new Set(s);
         n.delete(c.id);
+        return n;
+      });
+    }
+  }
+
+  /** Negeren of terugzetten: meteen in beeld, terug als het niet lukt. */
+  async function zetVoorstel(v: MaVoorstel, actie: "negeren" | "terugzetten") {
+    const vorige = voorstellen;
+    setVoorstelBezig((s) => new Set(s).add(v.id));
+    setVoorstellen((h) => {
+      if (!h) return h;
+      const open = h.open.filter((x) => x.id !== v.id);
+      const genegeerd = h.genegeerd.filter((x) => x.id !== v.id);
+      return actie === "negeren"
+        ? { ...h, open, genegeerd: [{ ...v, status: "genegeerd" }, ...genegeerd] }
+        : { ...h, open: [{ ...v, status: "open" }, ...open], genegeerd };
+    });
+    try {
+      const res = await fetch(`/api/marketing-analyse/voorstellen?id=${encodeURIComponent(v.id)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ actie }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { fout?: string };
+      if (!res.ok) throw new Error(data.fout ?? "Kon het voorstel niet aanpassen.");
+    } catch (err) {
+      setVoorstellen(vorige);
+      setFout(err instanceof Error ? err.message : String(err));
+    } finally {
+      setVoorstelBezig((s) => {
+        const n = new Set(s);
+        n.delete(v.id);
         return n;
       });
     }
@@ -610,6 +654,17 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
         </>
       ) : (
         <>
+          {voorstellen && (
+            <VoorstellenBalk
+              open={voorstellen.open}
+              genegeerd={voorstellen.genegeerd}
+              laatsteZoekronde={voorstellen.laatsteZoekronde}
+              bezig={voorstelBezig}
+              onToevoegen={(v) => setZijbalk({ campagne: null, voorstel: v })}
+              onNegeren={(v) => zetVoorstel(v, "negeren")}
+              onTerugzetten={(v) => zetVoorstel(v, "terugzetten")}
+            />
+          )}
           <section className="kaart-accent overflow-hidden rounded-panel border border-line bg-card shadow-card">
             <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line-soft px-6 py-4">
               <div>
@@ -662,12 +717,18 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
 
       {zijbalk && (
         <CampagneZijbalk
+          key={zijbalk.campagne?.id ?? zijbalk.voorstel?.id ?? "nieuw"}
           campagne={zijbalk.campagne}
+          voorstel={zijbalk.voorstel ?? null}
           opzetten={opzetten}
           bedrijven={bedrijven}
           isEigenaar={isEigenaar}
           onClose={() => setZijbalk(null)}
-          onOpgeslagen={bijgewerkt}
+          onOpgeslagen={(c) => {
+            bijgewerkt(c);
+            const uit = zijbalk.voorstel?.id;
+            if (uit) setVoorstellen((h) => (h ? { ...h, open: h.open.filter((x) => x.id !== uit) } : h));
+          }}
           onVerwijderd={(id) => {
             setCampagnes((lijst) => lijst?.filter((x) => x.id !== id) ?? lijst);
             if (openId === id) open(null);

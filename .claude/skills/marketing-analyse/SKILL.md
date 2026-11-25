@@ -53,7 +53,8 @@ analyses; jij maakt ze. Het plan en alle besluiten van de eigenaar staan in
 ## Stap 0 — Welke campagne(s) of rapportage(s)
 ```sql
 select c.id, c.naam, c.bedrijven, c.merk, c.modellen, c.startdatum, c.einddatum, c.periode_tekst,
-       c.doel, c.budget, c.omschrijving, c.data_correctie, c.analyse_ronde, c.laatste_versie,
+       c.doel, c.budget, c.omschrijving, c.campagnepaginas, c.herkenning, c.data_correctie,
+       c.analyse_ronde, c.laatste_versie,
        o.id as opzet_id, o.naam as opzet, o.formulier
 from dataloket.marketing_analyse_campagnes c
 join dataloket.marketing_analyse_opzetten o on o.id = c.opzet_id
@@ -68,6 +69,11 @@ where c.naam ilike '%<deel van de naam>%';   -- "voer de analyseronde uit": wher
   rapportage ook `periode_tekst`, en blijven merk, modellen, data, doel en budget leeg. Zonder
   `opzet_id` wordt het Campagne analyse. Vraag ontbrekende essentiële gegevens eerst.
 - Meerdere treffers: vraag welke.
+- **Campagnepagina's en herkenning** (migratie 0046): `campagnepaginas` zijn de pagina's uit de
+  briefing, `herkenning` is het bewijs uit het voorstel waaruit de campagne is gemaakt
+  (platformcampagnes, uitgaven, social posts; skill campagne-voorstellen). Gebruik ze als
+  **startpunt** voor de herkenning, niet als eindpunt: zoek zelf grondig of er meer of minder bij
+  hoort, en noem in `herkenning` van het resultaat wat je ervan overnam en wat je anders deed.
 
 ## Stap 1 — Opdracht ophalen
 ```sql
