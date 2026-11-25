@@ -10,9 +10,13 @@ import AnalysePromptZijbalk from "@/components/marketingAnalyse/AnalysePromptZij
 import SemantiekZijbalk from "@/components/marketingAnalyse/SemantiekZijbalk";
 import VolgersZijbalk from "@/components/marketingAnalyse/VolgersZijbalk";
 import MerkMailZijbalk from "@/components/marketingAnalyse/MerkMailZijbalk";
+import MailLogZijbalk from "@/components/marketingAnalyse/MailLogZijbalk";
 import VoorstellenBalk from "@/components/marketingAnalyse/VoorstellenBalk";
+import PlanningKeuze from "@/components/marketingAnalyse/PlanningKeuze";
+import RondeBalk from "@/components/marketingAnalyse/RondeBalk";
+import { dagNL, type PlanningInvoer } from "@/lib/marketingAnalyse/planning";
 import { getBrandLogo } from "@/components/brandLogos";
-import { IconBook, IconBrain, IconChevronDown, IconMail, IconPencil, IconPlus, IconShield } from "@/components/icons";
+import { IconBook, IconBrain, IconChevronDown, IconMail, IconNotes, IconPencil, IconPlus, IconShield } from "@/components/icons";
 import {
   bedrijvenLabel,
   deelOpInLopendEnAfgelopen,
@@ -24,7 +28,7 @@ import {
   type LeadBron,
 } from "@/lib/marketingAnalyse/rekenen";
 import { STANDAARD_SEMANTIEK } from "@/lib/marketingAnalyse/standaardSemantiek";
-import type { MaCampagne, MaOpzet, MaOverzichtRegel, MaVoorstel, MaZoekronde } from "@/lib/marketingAnalyse/types";
+import type { MaCampagne, MaOpzet, MaOverzichtRegel, MaVoorstel, MaZoekronde, Planning } from "@/lib/marketingAnalyse/types";
 
 type Voorstellen = { open: MaVoorstel[]; genegeerd: MaVoorstel[]; laatsteZoekronde: MaZoekronde | null };
 
@@ -40,32 +44,15 @@ function zetUrl(id: string | null) {
   window.history.replaceState(null, "", `${window.location.pathname}${zoek ? `?${zoek}` : ""}`);
 }
 
-/**
- * De schakelaar Analyse ronde: aan = "voer de analyseronde uit" neemt deze regel mee. Klein en
- * zonder tekst ernaast, zodat hij vooraan in de regel niet de aandacht trekt.
- */
-function RondeSchakelaar({ aan, bezig, onWissel, naam }: { aan: boolean; bezig: boolean; onWissel: () => void; naam: string }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={aan}
-      aria-label={`Analyse ronde voor ${naam}`}
-      title={aan ? "In de analyseronde" : "Niet in de analyseronde"}
-      disabled={bezig}
-      onClick={(e) => {
-        e.stopPropagation();
-        onWissel();
-      }}
-      className="inline-flex items-center disabled:opacity-60"
-    >
-      <span className={`relative h-4 w-7 shrink-0 rounded-pill transition-colors duration-[var(--duur-snel)] ${aan ? "bg-primary/60" : "bg-progress-track"}`}>
-        <span
-          className={`absolute left-0 top-0.5 h-3 w-3 rounded-full bg-card shadow-subtle transition-transform duration-[var(--duur-snel)] ease-merk ${aan ? "translate-x-3.5" : "translate-x-0.5"}`}
-        />
-      </span>
-    </button>
-  );
+/** Wat de rekenregel van de planning van een regel nodig heeft. */
+function planningInvoer(c: MaOverzichtRegel, opzet: MaOpzet | undefined): PlanningInvoer {
+  return {
+    planning: c.planning,
+    formulier: opzet?.formulier ?? "campagne",
+    startdatum: c.startdatum,
+    einddatum: c.einddatum,
+    laatsteAnalyse: c.laatsteAnalyse ? dagNL(c.laatsteAnalyse.geanalyseerdOp) : null,
+  };
 }
 
 function AnalysePromptsMenu({
@@ -178,10 +165,11 @@ function AnalysePromptsMenu({
 type TabelProps = {
   campagnes: MaOverzichtRegel[];
   opzetten: Map<string, MaOpzet>;
-  rondeBezig: Set<string>;
+  vandaag: string;
+  planningBezig: Set<string>;
   onOpen: (id: string) => void;
   onBewerk: (c: MaOverzichtRegel) => void;
-  onRonde: (c: MaOverzichtRegel) => void;
+  onPlanning: (c: MaOverzichtRegel, planning: Planning) => void;
   onVolgers: (c: MaOverzichtRegel) => void;
 };
 
@@ -285,18 +273,18 @@ function leadOnderschrift(o: { bron: LeadBron; leadSoort: string | null; oudeTel
 }
 
 /**
- * Campagne-analyses: Analyse ronde, campagne, uitgaven tegen budget, gezamenlijke CTR van de
+ * Campagne-analyses: planning, campagne, uitgaven tegen budget, gezamenlijke CTR van de
  * advertentiekanalen, bezoekers op de campagnepagina, leads (met bron) en het leaddoel met
  * hoeveel er gehaald is. De cijfers komen uit de laatste analyse.
  */
-function CampagneAnalyseTabel({ campagnes, opzetten, rondeBezig, onOpen, onBewerk, onRonde, onVolgers }: TabelProps) {
+function CampagneAnalyseTabel({ campagnes, opzetten, vandaag, planningBezig, onOpen, onBewerk, onPlanning, onVolgers }: TabelProps) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-separate border-spacing-0 text-sm">
         <thead>
           <tr className="text-left text-label text-ink-faint">
-            <th className="w-12 py-2.5 pl-6 pr-1" title="Aan: “voer de analyseronde uit” neemt deze campagne mee">
-              <span className="label-theme font-normal">Ronde</span>
+            <th className="w-48 py-2.5 pl-6 pr-1" title="Hoe vaak “voer de analyseronde uit” deze campagne maakt">
+              <span className="label-theme font-normal">Planning</span>
             </th>
             <th className={`${KOP} pl-3`}>Campagne</th>
             <th className={KOP} title="Mediakosten uit Google Ads, Meta Ads en LinkedIn Ads, tegen het totaalbudget">
@@ -327,8 +315,14 @@ function CampagneAnalyseTabel({ campagnes, opzetten, rondeBezig, onOpen, onBewer
             const geanalyseerd = Boolean(c.laatsteAnalyse);
             return (
               <tr key={c.id} onClick={() => onOpen(c.id)} className={RIJ}>
-                <td className="py-3 pl-6 pr-1 pt-3.5">
-                  <RondeSchakelaar aan={c.analyseRonde} bezig={rondeBezig.has(c.id)} onWissel={() => onRonde(c)} naam={c.naam} />
+                <td className="py-3 pl-6 pr-1">
+                  <PlanningKeuze
+                    regel={planningInvoer(c, opzet)}
+                    naam={c.naam}
+                    vandaag={vandaag}
+                    bezig={planningBezig.has(c.id)}
+                    onKies={(p) => onPlanning(c, p)}
+                  />
                 </td>
                 <td className="max-w-[340px] px-3 py-3">
                   <div className="flex items-center gap-2">
@@ -415,15 +409,15 @@ function CampagneAnalyseTabel({ campagnes, opzetten, rondeBezig, onOpen, onBewer
   );
 }
 
-/** Rapportages en andere opzetten zonder funnel: alleen naam, Analyse ronde en laatste analyse. */
-function RapportageTabel({ campagnes, opzetten, rondeBezig, onOpen, onBewerk, onRonde, onVolgers }: TabelProps) {
+/** Rapportages en andere opzetten zonder funnel: alleen planning, naam en laatste analyse. */
+function RapportageTabel({ campagnes, opzetten, vandaag, planningBezig, onOpen, onBewerk, onPlanning, onVolgers }: TabelProps) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-separate border-spacing-0 text-sm">
         <thead>
           <tr className="text-left text-label text-ink-faint">
-            <th className="w-12 py-2.5 pl-6 pr-1" title="Aan: “voer de analyseronde uit” neemt deze rapportage mee">
-              <span className="label-theme font-normal">Ronde</span>
+            <th className="w-48 py-2.5 pl-6 pr-1" title="Hoe vaak “voer de analyseronde uit” deze rapportage maakt">
+              <span className="label-theme font-normal">Planning</span>
             </th>
             <th className={`${KOP} pl-3`}>Rapportage</th>
             <th className={KOP}>Laatste analyse</th>
@@ -437,8 +431,14 @@ function RapportageTabel({ campagnes, opzetten, rondeBezig, onOpen, onBewerk, on
             const opzet = opzetten.get(c.opzetId);
             return (
               <tr key={c.id} onClick={() => onOpen(c.id)} className={RIJ}>
-                <td className="py-3 pl-6 pr-1 pt-3.5">
-                  <RondeSchakelaar aan={c.analyseRonde} bezig={rondeBezig.has(c.id)} onWissel={() => onRonde(c)} naam={c.naam} />
+                <td className="py-3 pl-6 pr-1">
+                  <PlanningKeuze
+                    regel={planningInvoer(c, opzet)}
+                    naam={c.naam}
+                    vandaag={vandaag}
+                    bezig={planningBezig.has(c.id)}
+                    onKies={(p) => onPlanning(c, p)}
+                  />
                 </td>
                 <td className="max-w-[420px] px-3 py-3">
                   <p className="truncate font-semibold text-ink" title={c.naam}>
@@ -493,12 +493,12 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
   const [voorstellen, setVoorstellen] = useState<Voorstellen | null>(null);
   const [voorstelBezig, setVoorstelBezig] = useState<Set<string>>(new Set());
   const [paneel, setPaneel] = useState<
-    { soort: "prompt"; opzetId: string | null } | { soort: "semantiek" } | { soort: "merk-mail" } | null
+    { soort: "prompt"; opzetId: string | null } | { soort: "semantiek" } | { soort: "merk-mail" } | { soort: "mails" } | null
   >(null);
   // Analyse prompts en Semantic layer staan achter het schildje: ze zijn vooral voor beheerders.
   const [beheerOpen, setBeheerOpen] = useState(false);
   const [afgelopenOpen, setAfgelopenOpen] = useState(false);
-  const [rondeBezig, setRondeBezig] = useState<Set<string>>(new Set());
+  const [planningBezig, setPlanningBezig] = useState<Set<string>>(new Set());
   const [volgersVan, setVolgersVan] = useState<MaOverzichtRegel | null>(null);
 
   const laad = useCallback(() => {
@@ -573,24 +573,25 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
     });
   }
 
-  async function wisselRonde(c: MaOverzichtRegel) {
-    const aan = !c.analyseRonde;
-    setRondeBezig((s) => new Set(s).add(c.id));
-    bijgewerkt({ ...c, analyseRonde: aan });
+  /** De planning omzetten: meteen in beeld, terug als het niet lukt. */
+  async function kiesPlanning(c: MaOverzichtRegel, planning: Planning) {
+    const vorige = c.planning;
+    setPlanningBezig((s) => new Set(s).add(c.id));
+    bijgewerkt({ ...c, planning, analyseRonde: planning !== "uit" });
     try {
       const res = await fetch(`/api/marketing-analyse?id=${encodeURIComponent(c.id)}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ analyseRonde: aan }),
+        body: JSON.stringify({ planning }),
       });
       const data = (await res.json().catch(() => ({}))) as { campagne?: MaCampagne; fout?: string };
-      if (!res.ok || !data.campagne) throw new Error(data.fout ?? "Kon de Analyse ronde niet aanpassen.");
+      if (!res.ok || !data.campagne) throw new Error(data.fout ?? "Kon de planning niet aanpassen.");
       bijgewerkt(data.campagne);
     } catch (err) {
-      bijgewerkt({ ...c, analyseRonde: !aan });
+      bijgewerkt({ ...c, planning: vorige, analyseRonde: vorige !== "uit" });
       setFout(err instanceof Error ? err.message : String(err));
     } finally {
-      setRondeBezig((s) => {
+      setPlanningBezig((s) => {
         const n = new Set(s);
         n.delete(c.id);
         return n;
@@ -635,8 +636,9 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
   const geopend = campagnes?.find((c) => c.id === openId) ?? null;
   const opzetPerId = new Map(opzetten.map((o) => [o.id, o]));
   const promptOpzet = paneel?.soort === "prompt" && paneel.opzetId ? (opzetPerId.get(paneel.opzetId) ?? null) : null;
-  const { lopend, afgelopen } = deelOpInLopendEnAfgelopen(campagnes ?? [], vandaagNL());
-  const inRonde = (campagnes ?? []).filter((c) => c.analyseRonde).length;
+  const vandaag = vandaagNL();
+  const { lopend, afgelopen } = deelOpInLopendEnAfgelopen(campagnes ?? [], vandaag);
+  const ingepland = (campagnes ?? []).filter((c) => c.planning !== "uit").length;
 
   const knoppen = (
     <div className="flex items-center gap-2">
@@ -656,6 +658,17 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
             <IconBook className="h-4 w-4 text-ink-muted" />
             Semantic layer
           </button>
+          {isEigenaar && (
+            <button
+              type="button"
+              onClick={() => setPaneel({ soort: "mails" })}
+              title="Wie wanneer welke analyse per mail kreeg"
+              className="flex items-center gap-2 rounded-button border border-line bg-card px-4 py-2 text-sm font-medium text-ink transition-colors duration-[var(--duur-snel)] hover:bg-surface"
+            >
+              <IconNotes className="h-4 w-4 text-ink-muted" />
+              Verzonden e-mails
+            </button>
+          )}
         </div>
       )}
       <button
@@ -663,8 +676,8 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
         onClick={wisselBeheer}
         aria-expanded={beheerOpen}
         aria-controls="ma-beheer"
-        aria-label={beheerOpen ? "Beheer verbergen" : "Beheer: Analyse prompts en Semantic layer"}
-        title={beheerOpen ? "Beheer verbergen" : "Beheer: Analyse prompts en Semantic layer"}
+        aria-label={beheerOpen ? "Beheer verbergen" : "Beheer: Analyse prompts, Semantic layer en Verzonden e-mails"}
+        title={beheerOpen ? "Beheer verbergen" : "Beheer: Analyse prompts, Semantic layer en Verzonden e-mails"}
         className={`flex items-center justify-center self-stretch rounded-button border px-2.5 transition-colors duration-[var(--duur-snel)] ${
           beheerOpen ? "border-line bg-surface text-ink" : "border-line bg-card text-ink-muted hover:bg-surface hover:text-ink"
         }`}
@@ -694,10 +707,11 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
 
   const tabelProps = {
     opzetten: opzetPerId,
-    rondeBezig,
+    vandaag,
+    planningBezig,
     onOpen: (id: string) => open(id),
     onBewerk: (c: MaOverzichtRegel) => setZijbalk({ campagne: c }),
-    onRonde: wisselRonde,
+    onPlanning: kiesPlanning,
     onVolgers: (c: MaOverzichtRegel) => setVolgersVan(c),
   };
 
@@ -732,13 +746,20 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
               onTerugzetten={(v) => zetVoorstel(v, "terugzetten")}
             />
           )}
+          {campagnes && campagnes.length > 0 && (
+            <RondeBalk
+              regels={campagnes.map((c) => ({ ...planningInvoer(c, opzetPerId.get(c.opzetId)), id: c.id, naam: c.naam }))}
+              vandaag={vandaag}
+              onOpen={(id) => open(id)}
+            />
+          )}
           <section className="kaart-accent overflow-hidden rounded-panel border border-line bg-card shadow-card">
             <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line-soft px-6 py-4">
               <div>
                 <h2 className="label-theme text-label text-ink-muted">Lopende analyses</h2>
                 <p className="mt-0.5 text-meta text-ink-faint">
                   Cijfers uit de laatste analyse. Klik op een regel voor de volledige analyse.
-                  {inRonde > 0 && ` ${inRonde} ${inRonde === 1 ? "staat" : "staan"} in de analyseronde.`}
+                  {ingepland > 0 && ` ${ingepland} ${ingepland === 1 ? "staat" : "staan"} ingepland.`}
                 </p>
               </div>
               {knoppen}
@@ -831,6 +852,15 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
         />
       )}
       {paneel?.soort === "merk-mail" && <MerkMailZijbalk onClose={() => setPaneel(null)} onGewijzigd={laad} />}
+      {paneel?.soort === "mails" && (
+        <MailLogZijbalk
+          onClose={() => setPaneel(null)}
+          onOpen={(id) => {
+            setPaneel(null);
+            open(id);
+          }}
+        />
+      )}
       {paneel?.soort === "semantiek" && (
         <SemantiekZijbalk onClose={() => setPaneel(null)} onOpgeslagen={(inhoud) => setBedrijven(inhoud.bedrijven)} />
       )}

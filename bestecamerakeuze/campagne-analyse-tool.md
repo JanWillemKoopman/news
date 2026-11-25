@@ -4,6 +4,8 @@
 
 *Voorgestelde campagne analyses (25 november 2026, migratie 0046): zie `campagne-voorstellen-plan.md`.*
 
+*Planning van de analyseronde (25 november 2026, migratie 0049): zie §17. De schakelaar Analyse ronde is vervangen door een uitklapmenu Planning.*
+
 ## 1. Waar het om gaat
 
 Van den Udenhout draait campagnes (bijv. "Audi A2") over meerdere kanalen tegelijk: betaalde advertenties, organische posts, e-mail en één of meer campagnepagina's. De tool maakt per campagne een **full-funnel analyse**:
@@ -32,7 +34,7 @@ Drie kennislagen sturen de analyse:
 | 7 | E-mailcijfers (Selligent) | **Nu niet**, later misschien. E-mail alleen vanaf de klik (GA4). |
 | 8 | Toerekening | Bij **elke** analyse grondig onderzoeken welke data bij de campagne hoort en dat tonen in het resultaat. Plus een open veld **Data correctie** per campagne (zie §6). |
 | 9 | Label | Analysedatum vóór de einddatum: **Tussentijdse evaluatie** (gericht op bijsturen). Einddatum verstreken: **Eindevaluatie** (terugblik op de hele campagne). |
-| 10 | Starten | Handmatig via de skill. Elke campagne krijgt in het overzicht een schakelaar **Analyse ronde** (Aan/Uit). "Voer de analyseronde uit" analyseert alle campagnes die op Aan staan. |
+| 10 | Starten | Handmatig via de skill. Elke campagne krijgt in het overzicht een schakelaar **Analyse ronde** (Aan/Uit). "Voer de analyseronde uit" analyseert alle campagnes die op Aan staan. **Gewijzigd 25 november 2026:** de schakelaar is een uitklapmenu **Planning** (Uit, Wekelijks, Maandelijks, Per kwartaal) geworden, zie §17. |
 | 11 | Rechten | **Iedereen** mag campagnes aanmaken. **Alleen de eigenaar** past de hoofdprompt (en de semantic layer) aan; iedereen mag ze lezen. |
 | 12 | Benchmarks | **Nu niet.** |
 | 13 | Naam pagina | **Marketing analyse** |
@@ -42,7 +44,7 @@ Drie kennislagen sturen de analyse:
 | v2-A | Leads-data | Een **nachtelijke kopie** van "Data leads" in Supabase, alleen voor de analyse: zes kolommen (Ordersoort, Onderwerp, Kanaalgroep, Merk, Model, Aangelegd), de laatste 365 dagen, zonder rijen met "FW:" in Onderwerp (zie §3.1). Sinds 25 november 2026 zeven: Kanaal kwam erbij (§15). |
 | v2-B | Kostenverdeling | De rekensom in §5.3 klopt. |
 | v2-C | GA4 udenhout.nl | Alleen property **"GA4_https://udenhout.nl"** (255949462) voor Van den Udenhout. |
-| v2-D | Analyse ronde | Springt automatisch op **Uit** na een eindevaluatie. |
+| v2-D | Analyse ronde | Springt automatisch op **Uit** na een eindevaluatie. Geldt nu voor de planning (§17). |
 | v2-E | Merk en model | Blijven in de briefing (optioneel). |
 | v2-F | Semantic layer | Krijgt een blok **Algemeen**, met daarin ook welke accounts bij welk bedrijf horen. |
 | v2-G | Labelgrens | Einddatum vandaag = tussentijds (t/m gisteren); vanaf de dag erna = eindevaluatie. |
@@ -465,3 +467,60 @@ De analyse mag naast de leads ook de verkochte auto's raadplegen, uit het sheet-
   met "Cupra - " en horen alleen bij CUPRA.
 - **Waar het staat**: semantic layer versie 4 (Algemeen, nieuw blok Syntec orders), de
   standaard-hoofdprompt ("Orders", tabblad 10), de skill en dit plan.
+
+## 17. Planning van de analyseronde (verzoek van de eigenaar, 25 november 2026)
+
+Elke vrijdag zegt de eigenaar in Claude Code "voer de analyseronde uit". Tot nu toe nam de skill
+alles mee wat op Aan stond, dus een maandrapportage draaide elke week opnieuw. Nu heeft elke regel
+een planning, en bepaalt de database welke regels aan de beurt zijn.
+
+| # | Onderwerp | Besluit |
+|---|---|---|
+| 1 | Standen | **Uit, Wekelijks, Maandelijks, Per kwartaal.** Geen Jaarlijks. |
+| 2 | In het overzicht | Het schuifje Ronde vooraan in elke regel wordt een **uitklapmenu Planning** (campagnes en rapportages). Achter elke keuze staat wanneer de volgende analyse dan komt; onder het knopje de volgende datum van de gekozen stand. Iedereen die ingelogd is mag hem omzetten. |
+| 3 | Uit | **Geen updates meer**, ook geen eindevaluatie. Een losse analyse ("maak een marketing analyse van …") kan nog wel. |
+| 4 | Welke dag | Wekelijks: elke ronde. Maandelijks: vanaf de **eerste vrijdag van de maand**. Per kwartaal: vanaf de eerste vrijdag van **januari, april, juli en oktober**. |
+| 5 | Gemiste vrijdag | **Inhalen.** Een regel blijft aan de beurt tot er sinds de geplande week een versie is. Alleen de laatste periode wordt ingehaald, niet elke gemiste. |
+| 6 | Data die achterloopt | **Altijd op de eerste vrijdag**, niet wachten. Loopt een bron (orders, leads) niet tot het einde van de periode, dan staat dat in de datakwaliteit van het rapport. |
+| 7 | Periode van een rapportage | **Volgt uit de planning**: Maandelijks = de vorige volle maand, Per kwartaal = het vorige volle kwartaal, nooit later dan gisteren. De vrije periode uit de briefing geldt alleen bij Wekelijks en Uit. |
+| 8 | Campagnes | Kunnen alle vier de standen krijgen. De **eindevaluatie komt in de eerste ronde na de einddatum**, welke stand ook (behalve Uit); daarna springt de planning op Uit. Een campagne die nog niet begonnen is, wacht tot de eerste ronde na de startdatum. |
+| 9 | Balk boven het overzicht | **Volgende analyseronde**: de eerstvolgende vrijdag, het aantal analyses en hun namen (een klik opent de analyse). Dezelfde lijst als die van de skill. |
+| 10 | Standaard per opzet | Elke opzet heeft een **standaardplanning** (Campagne analyse Wekelijks, maandrapportages Maandelijks, kwartaalrapportages Per kwartaal, een nieuwe opzet Uit), in te stellen bij de opzet onder Analyse prompts. Een nieuwe analyse krijgt die stand; een toegevoegd voorstel ook (Wekelijks). |
+
+**Hoe het rekent** (keuzes van Claude, ter controle door de eigenaar):
+- Een ronde hoort bij een **week, maandag t/m zondag**. De vrijdag van die week is de rondedag. Wie
+  een keer op donderdag draait (een feestdag), draait de ronde van die vrijdag. Donderdag
+  31 december 2026 is dus de ronde van vrijdag 1 januari 2027.
+- Een versie uit de week van de geplande vrijdag, of later, telt als gedaan. Twee keer draaien in
+  dezelfde week maakt niets dubbel. Een losse analyse in die week telt ook.
+- Een nieuwe maand- of kwartaalregel draait in de eerstvolgende ronde, over de vorige volle periode.
+
+**Waar het staat**:
+- Migratie 0049: kolom `planning` op `marketing_analyse_campagnes`, `standaard_planning` op
+  `marketing_analyse_opzetten`, en de functie `marketing_analyse_ronde(datum)` die per regel geeft
+  of hij aan de beurt is, waarom (`reden`), de volgende datum en de periode. De oude kolom
+  `analyse_ronde` loopt via een trigger mee (planning ≠ uit), zodat `marketing_analyse_bewaar` en
+  `marketing_analyse_voorstel_toevoegen` ongewijzigd werken: wie hem aanzet krijgt de
+  standaardplanning van de opzet, wie hem uitzet krijgt Uit.
+- Dezelfde rekenregel in TypeScript voor het dashboard: `lib/marketingAnalyse/planning.ts`, getest
+  met dezelfde gevallen als waarmee de SQL-functie is nagelopen. Houd ze gelijk.
+- Dashboard: `PlanningKeuze.tsx` (uitklapmenu, in een portal omdat de tabel horizontaal scrolt) en
+  `RondeBalk.tsx`; PATCH `{ planning }` op `/api/marketing-analyse`.
+- De skill `marketing-analyse` vraagt de ronde op met `select * from dataloket.marketing_analyse_ronde()`
+  en maakt alleen de regels met `aan_de_beurt`.
+
+## 18. Verzonden e-mails (verzoek van de eigenaar, 25 november 2026)
+
+Achter het schildje Beheer, naast Analyse prompts en Semantic layer, staat de knop **Verzonden
+e-mails**: per adres wie wanneer welke analyse per mail kreeg.
+
+- **Alleen de eigenaar** ziet de knop en het overzicht (keuze van Claude: het zijn de adressen van
+  collega's en het is een beheerscherm).
+- **Per adres gelogd vanaf 25 november 2026** (migratie 0050, `marketing_analyse_mail_log`), ook als
+  een mail mislukt, met de fout. Campagnenaam, versie en label worden meegeschreven, zodat het
+  logboek blijft kloppen als een analyse later wordt verwijderd.
+- **Eerder verstuurde mails** zijn niet per adres terug te halen: de versie bewaarde alleen het
+  aantal. Die staan erin als "Verstuurd aan 1 adres, welke is niet bewaard".
+- **Een analyse zonder mail** staat er ook, met de reden: geen volgers, of niet verstuurd (met de
+  fout, bijvoorbeeld een ontbrekend Gmail-wachtwoord).
+

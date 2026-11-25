@@ -7,7 +7,7 @@ description: Zoek in de Windsor-data van alle bedrijven van de groep Van den Ude
 
 Het dashboard (`bestecamerakeuze/`, tabblad **Campagnes → Marketing analyse**) toont bovenaan de
 balk **Voorgestelde campagne analyses**; jij vult hem. Een gebruiker klikt op Toevoegen, loopt de
-briefing na en zet hem op de lijst (Campagne analyse, Analyse ronde aan). Plan en besluiten:
+briefing na en zet hem op de lijst (Campagne analyse, planning Wekelijks). Plan en besluiten:
 `bestecamerakeuze/campagne-voorstellen-plan.md`. Supabase-project `pzpoptfljgrskebnuggt` ("MMM"),
 schema `dataloket`.
 

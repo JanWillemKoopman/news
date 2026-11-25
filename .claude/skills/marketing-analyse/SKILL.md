@@ -101,14 +101,28 @@ in de hoofdprompt.
 ```sql
 select c.id, c.naam, c.bedrijven, c.merk, c.modellen, c.startdatum, c.einddatum, c.periode_tekst,
        c.doel, c.budget, c.omschrijving, c.campagnepaginas, c.herkenning, c.data_correctie,
-       c.analyse_ronde, c.laatste_versie,
+       c.planning, c.laatste_versie,
        o.id as opzet_id, o.naam as opzet, o.formulier
 from dataloket.marketing_analyse_campagnes c
 join dataloket.marketing_analyse_opzetten o on o.id = c.opzet_id
-where c.naam ilike '%<deel van de naam>%';   -- "voer de analyseronde uit": where c.analyse_ronde
+where c.naam ilike '%<deel van de naam>%';
 ```
-- **Analyseronde**: alle regels met `analyse_ronde = true`, één voor één. Sla een campagne
-  over waarvan de startdatum nog niet bereikt is, en meld dat.
+- **Analyseronde** ("voer de analyseronde uit", meestal op vrijdag; migratie 0049, plan §17).
+  Vraag de ronde op; die bepaalt wat er aan de beurt is, niet jij:
+  ```sql
+  select * from dataloket.marketing_analyse_ronde();   -- standaard vandaag, Nederlandse kalender
+  ```
+  Maak een analyse van elke regel met `aan_de_beurt = true`, één voor één, met de periode uit
+  `periode_van`/`periode_tot` (zie stap 2). De planning per regel staat in het overzicht
+  (uitklapmenu vooraan): **Uit** (nooit, ook geen eindevaluatie), **Wekelijks** (elke week),
+  **Maandelijks** (vanaf de eerste vrijdag van de maand), **Per kwartaal** (vanaf de eerste vrijdag
+  van januari, april, juli en oktober). Een ronde hoort bij een week (maandag t/m zondag): op
+  donderdag draaien is de ronde van die vrijdag. Een gemiste week wordt ingehaald (`reden =
+  'ingehaald'`); twee keer draaien maakt niets dubbel, want een versie uit de geplande week telt.
+  Een campagne na haar einddatum krijgt de eindevaluatie (`reden = 'eindevaluatie'`), een
+  campagne die nog niet begonnen is wacht (`'nog niet gestart'`). Doe niets met regels die niet
+  aan de beurt zijn, en draai nooit een regel op Uit mee. Een losse vraag ("maak een marketing
+  analyse van …") mag altijd, ook bij Uit.
 - Bestaat hij niet en geeft de gebruiker de gegevens in de chat: maak hem aan met
   `insert into dataloket.marketing_analyse_campagnes (opzet_id, naam, bedrijven, merk, modellen, startdatum, einddatum, periode_tekst, doel, budget, omschrijving) values (…) returning id;`
   Naam en minstens één bedrijf (`bedrijven`, een lijst) zijn verplicht; een opzet met vaste
@@ -146,7 +160,14 @@ select id, versie, inhoud from dataloket.marketing_analyse_semantiek order by ve
   (of is hij leeg): t/m **gisteren**. Niets daarbuiten. Label (bepaalt de functie bij het
   opslaan, jij past het hoofdstuk toe): einddatum vóór vandaag = **Eindevaluatie**; anders
   **Tussentijdse evaluatie**.
-- **Rapportage** — de periode is vrije tekst (`periode_tekst`). Zet hem om in een begin- en
+- **Rapportage met planning Maandelijks of Per kwartaal** (besluit van de eigenaar, plan §17):
+  de periode volgt uit de planning, niet uit `periode_tekst`. Neem `periode_van` en `periode_tot`
+  uit `marketing_analyse_ronde()`: de vorige volle maand of het vorige volle kwartaal, nooit later
+  dan gisteren. Kapt de functie de periode af op gisteren (een ronde op de eerste van de maand),
+  meld dat in `datakwaliteit`. Loopt een bron niet tot het einde van de periode (de orders-kopie
+  loopt soms meer dan een week achter), maak de analyse toch en meld tot wanneer de bron loopt in
+  `datakwaliteit` (besluit van de eigenaar: altijd op de eerste vrijdag, niet wachten).
+- **Rapportage met planning Wekelijks of Uit** — de periode is vrije tekst (`periode_tekst`). Zet hem om in een begin- en
   einddatum, gerekend vanaf vandaag (Nederlandse kalender): "Afgelopen 3 maanden" = de drie
   volle kalendermaanden vóór de lopende maand, "Q4 2026" = 1 okt t/m 31 dec 2026, "november
   2026" = de hele maand, "1 januari t/m 10 februari 2026" letterlijk. Nooit later dan
@@ -297,7 +318,8 @@ select * from dataloket.marketing_analyse_bewaar(
 );
 ```
 De functie kent het versienummer toe (nooit hergebruikt), bepaalt het label, legt de briefing
-en de Data correctie van dat moment vast, en zet de Analyse ronde uit na een eindevaluatie. Te
+en de Data correctie van dat moment vast, en zet de planning op Uit na een eindevaluatie
+(via `analyse_ronde`, die met de planning meeloopt; migratie 0049). Te
 groot (> ~2 MB)? Maak het resultaat compacter, niet in stukken.
 
 Na het bewaren mailt het dashboard vanzelf de volgers van de campagne (trigger in migratie
@@ -306,7 +328,10 @@ adressen uit E-mail settings voor haar merk vanzelf als volgers (trigger in migr
 de vijf regels en het doeloordeel, dus schrijf die zo dat ze zonder de rest te begrijpen zijn.
 
 ## Stap 6 — Terugmelden
-Per campagne: versie, label, periode, de kop en de vijf regels, het doeloordeel, wat er met de
+Na een analyseronde eerst een overzicht: wat er gemaakt is, wat er is overgeslagen en waarom
+(geen prompt, nog niet gestart, een fout), en per ingeplande regel wanneer hij weer aan de beurt
+is (`volgende` uit `marketing_analyse_ronde()`, opnieuw opgevraagd na het bewaren). Daarna
+per campagne: versie, label, periode, de kop en de vijf regels, het doeloordeel, wat er met de
 Data correctie is gedaan, eventuele voorstellen voor de semantic layer en kanttekeningen. De
 analyse staat in het dashboard onder Campagnes → Marketing analyse
 (`?tab=marketing-analyse&analyse=<campagne-id>`). Meld ook of de volgers gemaild zijn: kijk

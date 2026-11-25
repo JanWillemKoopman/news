@@ -4,7 +4,15 @@ import { useEffect, useState } from "react";
 import Drawer from "@/components/Drawer";
 import BedrijvenKiezer from "@/components/marketingAnalyse/BedrijvenKiezer";
 import { bedrijvenLabel } from "@/lib/marketingAnalyse/rekenen";
-import { FORMULIER_NAAM, type Formulier, type MaOpzet, type MaPrompt } from "@/lib/marketingAnalyse/types";
+import {
+  FORMULIER_NAAM,
+  PLANNING_NAAM,
+  PLANNINGEN,
+  type Formulier,
+  type MaOpzet,
+  type MaPrompt,
+  type Planning,
+} from "@/lib/marketingAnalyse/types";
 
 export function opgeslagenRegel(
   p: { standaard: boolean; versie: number; opgeslagenOp: string | null; opgeslagenDoorNaam: string | null },
@@ -34,7 +42,7 @@ type Props = {
   onClose: () => void;
 };
 
-/** Naam, formulier, bedrijven en actief van een opzet; alleen de eigenaar ziet dit als formulier. */
+/** Naam, formulier, bedrijven, standaardplanning en actief van een opzet; alleen de eigenaar ziet dit als formulier. */
 function OpzetInstellingen({
   opzet,
   bedrijven,
@@ -50,12 +58,15 @@ function OpzetInstellingen({
   const [formulier, setFormulier] = useState<Formulier>(opzet?.formulier ?? "rapportage");
   const [gekozen, setGekozen] = useState<string[]>(opzet?.bedrijven ?? []);
   const [actief, setActief] = useState(opzet?.actief ?? true);
+  const [standaardPlanning, setStandaardPlanning] = useState<Planning>(opzet?.standaardPlanning ?? "uit");
   const [bezig, setBezig] = useState(false);
   const [fout, setFout] = useState<string | null>(null);
   const [melding, setMelding] = useState<string | null>(null);
   const [bevestigWeg, setBevestigWeg] = useState(false);
   const gewijzigd =
-    !opzet || naam.trim() !== opzet.naam || formulier !== opzet.formulier || gekozen.join("|") !== opzet.bedrijven.join("|") || actief !== opzet.actief;
+    !opzet || naam.trim() !== opzet.naam || formulier !== opzet.formulier || gekozen.join("|") !== opzet.bedrijven.join("|") ||
+    actief !== opzet.actief ||
+    standaardPlanning !== opzet.standaardPlanning;
 
   async function verstuur(method: "POST" | "PATCH" | "DELETE") {
     setBezig(true);
@@ -66,7 +77,7 @@ function OpzetInstellingen({
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: method === "DELETE" ? undefined : JSON.stringify({ naam, formulier, bedrijven: gekozen, actief }),
+        body: method === "DELETE" ? undefined : JSON.stringify({ naam, formulier, bedrijven: gekozen, actief, standaardPlanning }),
       });
       const data = (await res.json().catch(() => ({}))) as { opzet?: MaOpzet; fout?: string };
       if (!res.ok) throw new Error(data.fout ?? "Er ging iets mis.");
@@ -107,6 +118,21 @@ function OpzetInstellingen({
             {(Object.keys(FORMULIER_NAAM) as Formulier[]).map((f) => (
               <option key={f} value={f}>
                 {FORMULIER_NAAM[f]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="col-span-2 flex flex-col gap-1">
+          <span className="text-meta text-ink-faint">Standaard planning — wat een nieuwe analyse met deze opzet krijgt</span>
+          <select
+            className={INVOER}
+            value={standaardPlanning}
+            onChange={(e) => setStandaardPlanning(e.target.value as Planning)}
+            disabled={bezig}
+          >
+            {PLANNINGEN.map((p) => (
+              <option key={p} value={p}>
+                {PLANNING_NAAM[p]}
               </option>
             ))}
           </select>

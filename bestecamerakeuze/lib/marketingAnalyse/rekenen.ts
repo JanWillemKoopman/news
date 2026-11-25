@@ -14,7 +14,9 @@ import {
   BEDRIJF_MET_SYNTEC,
   type FunnelStap,
   type Formulier,
+  isPlanning,
   type LeadBron,
+  type Planning,
   type MaKerncijfers,
   type MaCampagneInvoer,
   type MaResultaat,
@@ -311,7 +313,7 @@ export function sorteerOpzetten<T extends { volgorde: number; naam: string; acti
 }
 
 export type OpzetInvoerUitkomst =
-  | { ok: true; invoer: { naam: string; formulier: Formulier; bedrijven: string[]; actief: boolean } }
+  | { ok: true; invoer: { naam: string; formulier: Formulier; bedrijven: string[]; actief: boolean; standaardPlanning: Planning } }
   | { ok: false; fout: string };
 
 /** Een nieuwe of gewijzigde opzet uit het dashboard, gecontroleerd. */
@@ -322,7 +324,13 @@ export function leesOpzetInvoer(body: unknown): OpzetInvoerUitkomst {
   if (b.formulier !== "campagne" && b.formulier !== "rapportage") return { ok: false, fout: "Kies een formulier." };
   return {
     ok: true,
-    invoer: { naam, formulier: b.formulier, bedrijven: leesBedrijven(b.bedrijven ?? b.bedrijf), actief: b.actief !== false },
+    invoer: {
+      naam,
+      formulier: b.formulier,
+      bedrijven: leesBedrijven(b.bedrijven ?? b.bedrijf),
+      actief: b.actief !== false,
+      standaardPlanning: isPlanning(b.standaardPlanning) ? b.standaardPlanning : "uit",
+    },
   };
 }
 

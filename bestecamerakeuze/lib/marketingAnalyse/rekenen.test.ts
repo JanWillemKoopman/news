@@ -211,6 +211,12 @@ test("opzetten: naam, sortering en invoer", () => {
   assert.ok(o.ok && o.invoer.bedrijven.length === 0 && o.invoer.actief);
   const m = leesOpzetInvoer({ naam: "PGZ + VELOO", formulier: "rapportage", bedrijven: ["PGZ", "VELOO", "pgz"] });
   assert.ok(m.ok && m.invoer.bedrijven.join("|") === "PGZ|VELOO");
+  // Standaardplanning: alleen de vier standen, anders Uit.
+  assert.ok(o.ok && o.invoer.standaardPlanning === "uit");
+  const p = leesOpzetInvoer({ naam: "VDU maand", formulier: "rapportage", standaardPlanning: "maand" });
+  assert.ok(p.ok && p.invoer.standaardPlanning === "maand");
+  const q = leesOpzetInvoer({ naam: "VDU jaar", formulier: "rapportage", standaardPlanning: "jaar" });
+  assert.ok(q.ok && q.invoer.standaardPlanning === "uit");
 });
 
 test("doel als getal uit vrije tekst", () => {

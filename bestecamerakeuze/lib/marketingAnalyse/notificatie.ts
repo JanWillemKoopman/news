@@ -59,6 +59,24 @@ function kort(fout: unknown): string {
   return (fout instanceof Error ? fout.message : String(fout)).slice(0, 500);
 }
 
+/**
+ * Eén regel in het logboek Verzonden e-mails (migratie 0050), ook als het versturen mislukte.
+ * Een fout bij het loggen mag het mailen nooit stoppen: dan ontbreekt alleen die regel.
+ */
+async function logMail(
+  client: Client,
+  regel: { versieId: string; campagneId: string; campagneNaam: string; versie: number; label: Label | null; email: string; onderwerp: string; gelukt: boolean; fout: string | null },
+) {
+  await client
+    .query(
+      `insert into dataloket.marketing_analyse_mail_log
+         (versie_id, campagne_id, campagne_naam, versie, label, email, onderwerp, gelukt, fout)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [regel.versieId, regel.campagneId, regel.campagneNaam, regel.versie, regel.label, regel.email, regel.onderwerp, regel.gelukt, regel.fout],
+    )
+    .catch(() => {});
+}
+
 /** Mailt de volgers van de campagne van deze versie, als dat nog niet gebeurd is. */
 export async function verstuurNotificaties(client: Client, analyseId: string): Promise<NotificatieUitkomst> {
   const gmail = gmailInstellingen();
@@ -121,6 +139,7 @@ export async function verstuurNotificaties(client: Client, analyseId: string): P
 
     let aantal = 0;
     const fouten: string[] = [];
+    const logBasis = { versieId: analyseId, campagneId: versie.campagne_id, campagneNaam: c.naam, versie: versie.versie, label: versie.label };
     for (const v of volgers.rows) {
       const mail = bouwMail({
         campagneNaam: c.naam,
@@ -143,8 +162,10 @@ export async function verstuurNotificaties(client: Client, analyseId: string): P
           html: mail.html,
         });
         aantal++;
+        await logMail(client, { ...logBasis, email: v.email, onderwerp: mail.onderwerp, gelukt: true, fout: null });
       } catch (err) {
         fouten.push(`${v.email}: ${kort(err)}`);
+        await logMail(client, { ...logBasis, email: v.email, onderwerp: mail.onderwerp, gelukt: false, fout: kort(err) });
       }
     }
     transport.close();

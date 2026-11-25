@@ -11,8 +11,8 @@ export const dynamic = "force-dynamic";
  * Marketing analyse — de analyse opzetten (analysetypes), elk met een eigen prompt.
  *
  * GET                                         → alle opzetten (iedereen)
- * POST { naam, formulier, bedrijven }        → nieuwe opzet (alleen de eigenaar); geen bedrijven = kiezen in de briefing
- * PATCH ?id=… { naam, formulier, bedrijven, actief } → wijzigen (alleen de eigenaar)
+ * POST { naam, formulier, bedrijven, standaardPlanning } → nieuwe opzet (alleen de eigenaar); geen bedrijven = kiezen in de briefing
+ * PATCH ?id=… { naam, formulier, bedrijven, actief, standaardPlanning } → wijzigen (alleen de eigenaar)
  * DELETE ?id=…                                → weg, alleen zonder analyses en niet de
  *                                               standaard (alleen de eigenaar); anders uitzetten
  */
