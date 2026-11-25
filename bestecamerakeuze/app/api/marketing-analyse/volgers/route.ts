@@ -28,6 +28,7 @@ interface Rij {
   gebruiker_id: string | null;
   toegevoegd_door: string | null;
   toegevoegd_op: Date;
+  via_merk: string | null;
 }
 
 function fout(tekst: string, status: number) {
@@ -42,10 +43,11 @@ function alsVolger(r: Rij, gebruiker: { id: string; email: string | null }): MaV
     toegevoegdOp: r.toegevoegd_op.toISOString(),
     ikZelf,
     magVerwijderen: ikZelf || r.toegevoegd_door === gebruiker.id || isBeheerder(gebruiker.email),
+    viaMerk: r.via_merk,
   };
 }
 
-const KOLOMMEN = "id, email, gebruiker_id, toegevoegd_door, toegevoegd_op";
+const KOLOMMEN = "id, email, gebruiker_id, toegevoegd_door, toegevoegd_op, via_merk";
 
 export async function GET(request: Request) {
   const gebruiker = await getGebruiker();

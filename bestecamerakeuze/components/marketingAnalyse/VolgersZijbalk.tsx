@@ -120,6 +120,11 @@ export default function VolgersZijbalk({
               <span className="min-w-0 truncate">
                 {v.email}
                 {v.ikZelf && <span className="ml-1.5 text-meta text-ink-faint">(jij)</span>}
+                {v.viaMerk && (
+                  <span className="ml-1.5 text-meta text-ink-faint" title={`Standaard voor ${v.viaMerk} (E-mail settings)`}>
+                    via {v.viaMerk}
+                  </span>
+                )}
               </span>
               {v.magVerwijderen && (
                 <button

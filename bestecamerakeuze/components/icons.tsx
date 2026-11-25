@@ -298,6 +298,16 @@ export function IconLock({ className }: IconProps) {
   );
 }
 
+/** Schild: beheerdersfuncties (Marketing analyse: Analyse prompts en Semantic layer). */
+export function IconShield({ className }: IconProps) {
+  return (
+    <svg {...base} className={className} aria-hidden="true">
+      <path d="M12 3 5 6v5.5c0 4.3 2.9 8 7 9.5 4.1-1.5 7-5.2 7-9.5V6l-7-3Z" />
+      <path d="m9.5 12 1.8 1.8L15 10" />
+    </svg>
+  );
+}
+
 export function IconPin({ className }: IconProps) {
   return (
     <svg {...base} className={className} aria-hidden="true">

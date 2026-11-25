@@ -18,6 +18,10 @@ import {
   rapportageNaam,
   sorteerOpzetten,
   leesModellen,
+  merkSleutel,
+  merkSleutels,
+  merkenVoorMail,
+  STANDAARD_MERKEN,
   leesSemantiek,
   looptijdLabel,
   normaliseerResultaat,
@@ -371,4 +375,28 @@ test("briefing: campagnepagina's bij een campagne, leeg bij een rapportage", () 
   assert.ok(c.ok && c.invoer.campagnePaginas[0] === "https://udenhout.nl/acties/a2-e-tron");
   const r = leesCampagneInvoer({ naam: "VDU", periodeTekst: "november", campagnePaginas: "udenhout.nl/x" }, VDU_MAAND);
   assert.ok(r.ok && r.invoer.campagnePaginas.length === 0);
+});
+
+test("merkSleutel: zonder hoofdletters en accenten", () => {
+  assert.equal(merkSleutel("Škoda"), "skoda");
+  assert.equal(merkSleutel(" SEAT "), "seat");
+  assert.equal(merkSleutel("Volkswagen  Bedrijfswagens"), "volkswagen bedrijfswagens");
+  assert.equal(merkSleutel("Mercedes-Benz"), "mercedes benz");
+  assert.equal(merkSleutel(""), null);
+  assert.equal(merkSleutel(null), null);
+});
+
+test("merkSleutels: een merkveld met meer merken telt voor elk merk", () => {
+  assert.deepEqual(merkSleutels("Volkswagen, Audi"), ["volkswagen", "audi"]);
+  assert.deepEqual(merkSleutels("Audi en Škoda"), ["audi", "skoda"]);
+  assert.deepEqual(merkSleutels("SEAT / CUPRA"), ["seat", "cupra"]);
+  assert.deepEqual(merkSleutels("Audi, audi"), ["audi"]);
+  assert.deepEqual(merkSleutels("Volkswagen Bedrijfswagens"), ["volkswagen bedrijfswagens"]);
+  assert.deepEqual(merkSleutels(null), []);
+});
+
+test("merkenVoorMail: standaardmerken eerst, daarna de rest alfabetisch en zonder dubbele", () => {
+  const lijst = merkenVoorMail(["Skoda", "Kia"], ["Audi", "Volkswagen, Ford", null]);
+  assert.deepEqual(lijst.slice(0, STANDAARD_MERKEN.length), [...STANDAARD_MERKEN]);
+  assert.deepEqual(lijst.slice(STANDAARD_MERKEN.length), ["Ford", "Kia"]);
 });

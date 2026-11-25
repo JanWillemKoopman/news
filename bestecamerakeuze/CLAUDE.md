@@ -1731,6 +1731,18 @@ lees dat eerst voordat je hier iets verandert.
   bestaande, nog niet verstuurde versie van hoogstens zeven dagen oud. Mislukt het, dan blijft
   de fout in `notificatie_fout` staan en probeert `/api/sync` het 's nachts opnieuw. De
   trigger-URL staat vast in de migratie (productie, `news-ten-chi.vercel.app`).
+- **E-mail settings: adressen per merk** (25 november 2026, migratie 0047, op verzoek). Per automerk
+  de adressen die standaard volger worden van elke nieuwe analyse voor dat merk, zodat niemand ze per
+  analyse opnieuw hoeft op te geven (`MerkMailZijbalk.tsx`, route `merk-mail`, tabel
+  `marketing_analyse_merk_mail`). Een trigger op `marketing_analyse_campagnes` zet ze erbij bij een
+  insert (dashboard, voorgestelde analyse én Claude Code) en bij een ander merk in de briefing; de
+  route zet een nieuw adres ook bij de lopende analyses van het merk (einddatum leeg of vandaag of
+  later). Weghalen bij een merk laat de volgers bij analyses staan; zo'n volger heeft `via_merk` en
+  toont "via Audi" in de volgerszijbalk. Het merk is vrije tekst: vergelijken gaat op een sleutel
+  zonder hoofdletters en accenten, en "Volkswagen, Audi" telt voor beide merken (`merkSleutel` en
+  `merkSleutels` in `rekenen.ts`, getest, gelijk aan de SQL-functies). De lijst begint met
+  `STANDAARD_MERKEN`, aangevuld met merken met adressen en merken uit de briefings. Rechten als bij
+  volgers: iedereen voegt toe; weghalen kan het adres zelf, wie het toevoegde of de eigenaar.
 - **Versies en label.** `marketing_analyse_bewaar` kent het versienummer toe uit
   `laatste_versie` op de campagne (een verwijderde versie wordt nooit hergebruikt), bepaalt het
   label (**Eindevaluatie** als de einddatum vóór vandaag ligt, anders **Tussentijdse
@@ -1760,7 +1772,9 @@ lees dat eerst voordat je hier iets verandert.
 - **Het overzicht**: lopende campagnes bovenaan op startdatum, afgelopen in een inklapbaar blok
   Afgelopen (rapportages hebben geen einddatum en staan altijd bij lopend); per regel de
   schakelaar Analyse ronde en bij campagnes de kerncijfers uit de laatste analyse.
-  Rechtsboven Analyse prompts, Semantic layer en Nieuwe analyse. De open analyse staat in de URL
+  Rechtsboven (25 november 2026, op verzoek) een schildje **Beheer**, dan **E-mail settings** en Nieuwe
+  analyse. Analyse prompts en Semantic layer staan achter het schildje (vooral voor beheerders, maar
+  iedereen kan ze openen); open of dicht wordt per browser onthouden. De open analyse staat in de URL
   (`?analyse=<campagne-id>`).
 - **Voorgestelde campagne analyses** (25 november 2026, migratie 0046, plan en besluiten in
   `campagne-voorstellen-plan.md`). Claude Code zoekt met de skill `campagne-voorstellen` op
