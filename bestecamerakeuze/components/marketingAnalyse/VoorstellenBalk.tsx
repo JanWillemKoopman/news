@@ -48,17 +48,38 @@ function PaginaLink({ url }: { url: string }) {
   );
 }
 
-/** Wat de skill vond: platformcampagnes, GA4, social posts en kanttekeningen. */
+/** Eén kolom van de gevonden datapunten: kopje met aantal en de regels eronder. */
+function DatapuntKolom({ titel, aantal, leeg, children }: { titel: string; aantal: number; leeg: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="label-theme text-label text-ink-faint">
+        {titel} <span className="tabular-nums">({aantal})</span>
+      </p>
+      {aantal === 0 ? <p className="mt-1.5 text-ink-muted">{leeg}</p> : <div className="mt-1.5">{children}</div>}
+    </div>
+  );
+}
+
+/**
+ * De gevonden datapunten: alles wat Claude bij deze campagne vond en volgens hem erbij hoort,
+ * in drie kolommen (advertentiecampagnes, campagnepagina, social media posts) en eronder de
+ * kanttekeningen. Dit is ook het startpunt voor de eerste analyse na Toevoegen.
+ */
 function Bewijs({ v }: { v: MaVoorstel }) {
   const { platformCampagnes = [], ga4, posts = [], kanttekeningen = [] } = v.bewijs;
+  const opmerkingen = [...(v.reden ? [v.reden] : []), ...kanttekeningen];
   return (
-    <div className="grid gap-5 px-6 py-4 text-sm lg:grid-cols-3">
-      <div>
-        <p className="label-theme text-label text-ink-faint">Advertenties</p>
-        {platformCampagnes.length === 0 ? (
-          <p className="mt-1.5 text-ink-muted">Geen platformcampagnes vastgelegd.</p>
-        ) : (
-          <ul className="mt-1.5 flex flex-col gap-1">
+    <div className="px-6 py-4 text-sm">
+      <div className="mb-3">
+        <p className="font-medium text-ink">Gevonden datapunten</p>
+        <p className="mt-0.5 text-meta text-ink-faint">
+          Dit is alles wat Claude bij deze campagne heeft gevonden en volgens hem erbij hoort. De analyse begint met deze datapunten
+          en controleert ze zelf opnieuw.
+        </p>
+      </div>
+      <div className="grid gap-5 lg:grid-cols-3">
+        <DatapuntKolom titel="Advertentiecampagnes" aantal={platformCampagnes.length} leeg="Geen advertentiecampagnes gevonden.">
+          <ul className="flex flex-col gap-1">
             {platformCampagnes.map((p, i) => (
               <li key={i} className="flex justify-between gap-3">
                 <span className="min-w-0">
@@ -69,38 +90,28 @@ function Bewijs({ v }: { v: MaVoorstel }) {
               </li>
             ))}
           </ul>
-        )}
-      </div>
-      <div>
-        <p className="label-theme text-label text-ink-faint">Campagnepagina</p>
-        {v.campagnePaginas.length === 0 ? (
-          <p className="mt-1.5 text-ink-muted">Geen eigen campagnepagina gevonden.</p>
-        ) : (
-          <ul className="mt-1.5 flex flex-col gap-1">
+        </DatapuntKolom>
+        <DatapuntKolom titel="Campagnepagina" aantal={v.campagnePaginas.length} leeg="Geen eigen campagnepagina gevonden.">
+          <ul className="flex flex-col gap-1">
             {v.campagnePaginas.map((url) => (
               <li key={url}>
                 <PaginaLink url={url} />
               </li>
             ))}
           </ul>
-        )}
-        {ga4 && (
-          <p className="mt-2 text-ink-muted">
-            {ga4.sessies != null && <>{formatWaarde(ga4.sessies)} sessies</>}
-            {ga4.leadEvents != null && <> · {formatWaarde(ga4.leadEvents)} lead-events</>}
-            {ga4.periode && <> · {ga4.periode}</>}
-            {ga4.toelichting && <span className="block text-meta text-ink-faint">{ga4.toelichting}</span>}
-          </p>
-        )}
-      </div>
-      <div>
-        <p className="label-theme text-label text-ink-faint">Social media en kanttekeningen</p>
-        {posts.length === 0 && kanttekeningen.length === 0 && !v.reden ? (
-          <p className="mt-1.5 text-ink-muted">Geen organische posts over dit onderwerp gevonden.</p>
-        ) : (
-          <ul className="mt-1.5 flex flex-col gap-1 text-ink-muted">
+          {ga4 && (
+            <p className="mt-2 text-ink-muted">
+              {ga4.sessies != null && <>{formatWaarde(ga4.sessies)} sessies</>}
+              {ga4.leadEvents != null && <> · {formatWaarde(ga4.leadEvents)} lead-events</>}
+              {ga4.periode && <> · {ga4.periode}</>}
+              {ga4.toelichting && <span className="block text-meta text-ink-faint">{ga4.toelichting}</span>}
+            </p>
+          )}
+        </DatapuntKolom>
+        <DatapuntKolom titel="Social media posts" aantal={posts.length} leeg="Geen organische posts over dit onderwerp gevonden.">
+          <ul className="flex flex-col gap-1 text-ink-muted">
             {posts.map((p, i) => (
-              <li key={`p${i}`}>
+              <li key={i}>
                 <span className="text-ink-faint">
                   {p.kanaal}
                   {p.datum ? ` · ${datumKort(p.datum)}` : ""} ·{" "}
@@ -114,13 +125,19 @@ function Bewijs({ v }: { v: MaVoorstel }) {
                 )}
               </li>
             ))}
-            {v.reden && <li className="text-ink">{v.reden}</li>}
-            {kanttekeningen.map((k, i) => (
-              <li key={`k${i}`}>{k}</li>
+          </ul>
+        </DatapuntKolom>
+      </div>
+      {opmerkingen.length > 0 && (
+        <div className="mt-4 border-t border-line-soft pt-3">
+          <p className="label-theme text-label text-ink-faint">Kanttekeningen</p>
+          <ul className="mt-1.5 flex flex-col gap-1 text-ink-muted">
+            {opmerkingen.map((k, i) => (
+              <li key={i}>{k}</li>
             ))}
           </ul>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -131,7 +148,8 @@ function Bewijs({ v }: { v: MaVoorstel }) {
  * ingevulde briefing; een klik op de regel toont wat er is gevonden.
  */
 export default function VoorstellenBalk({ open, genegeerd, laatsteZoekronde, bezig, onToevoegen, onNegeren, onTerugzetten }: Props) {
-  const [ingeklapt, setIngeklapt] = useState(false);
+  // Standaard ingeklapt (verzoek van de eigenaar): de lopende analyses gaan voor.
+  const [ingeklapt, setIngeklapt] = useState(true);
   const [uitgeklapt, setUitgeklapt] = useState<string | null>(null);
   const [genegeerdOpen, setGenegeerdOpen] = useState(false);
 
