@@ -641,7 +641,9 @@ export function tabbladenVoor(
   opties: { rapportage: boolean; bedrijven: readonly string[] | null | undefined },
 ): AnalyseTab[] {
   const losse = (secties: Sectie[]) =>
-    secties.map((s, i) => tabUitSecties(`sectie-${i + 1}`, s.titel || `Onderdeel ${i + 1}`, null, [s], null));
+    secties.map((s, i) =>
+      tabUitSecties(`sectie-${i + 1}`, s.titel || `Onderdeel ${i + 1}`, typeof s.groep === "string" && s.groep.trim() ? s.groep.trim() : null, [s], null),
+    );
   if (resultaat.formaat === 1 || opties.rapportage) return losse(resultaat.secties);
 
   const lijst: readonly { sleutel: string; naam: string; groep: string }[] =

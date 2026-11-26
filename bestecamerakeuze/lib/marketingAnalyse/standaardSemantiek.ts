@@ -13,7 +13,9 @@ import type { SemantiekInhoud } from "./types";
  * blok Syntec orders; verzoek van de eigenaar van dezelfde dag. Het overzicht van alle leads en
  * orders (views marketing_analyse_leads_soort en _orders_type) staat in Algemeen, Data leads en
  * Syntec orders, en de benchmarkgroep van campagnepagina's in GA4 (versie 5, plan §22). Het blok
- * Werving hoort bij de opzet HRM analyse (versie 7, 26 november 2026; hrm-analyse-onderzoek.md).
+ * Werving hoort bij de opzet HRM analyse (versie 7, 26 november 2026; hrm-analyse-onderzoek.md). Het blok
+ * Google Analytics 4 is gelijk aan versie 9 (26 november 2026): tellen in Windsor, en e-mail als één
+ * kanaal dat nooit per deel of per mailing wordt uitgesplitst.
  */
 export const STANDAARD_SEMANTIEK: SemantiekInhoud = {
   bedrijven: [
@@ -139,17 +141,36 @@ Aanvullingen van de eigenaar voor de zoekronde naar live actiecampagnes (skill c
 ## Campagnepagina en sessies
 - Een campagnepagina vind je via de bestemmings-URL's van de advertenties en via landing_page met het model of de actie in het pad (bijv. /acties/a2-e-tron). Er kunnen meerdere pagina's zijn.
 - **landing_page hoort bij de hele sessie.** Vraag events op met landing_page × event_name × event_count: dan tel je de events in sessies die op de campagnepagina begonnen, ook als het event later elders op de site viel.
+- landing_page is het pad zonder querystring. Groepeer altijd op landing_page. Gebruik landing_page_plus_query_string alleen als filter (bijv. voor M_BT), anders levert elke trackingparameter een aparte rij op. Voeg paden samen die alleen verschillen in een slash aan het eind of in hoofdletters.
 - Sessies tellen op over dagen, gebruikers niet.
+- **Een voorraadpagina (/auto/<merk>/<model>/…) is nooit de campagnepagina van een actiecampagne** (Campagne analyse; besluit van de eigenaar, november 2026). Het zijn detailpagina's van voorraadauto's, vooral via Gaspedaal. Tel sessies die daar begonnen niet mee, ook niet als het model in het pad staat.
 
 ## Benchmark: welke pagina's zijn campagnepagina's
 - Voor de vergelijking met eigen historie (benchmark per blok) tellen als campagnepagina's van Van den Udenhout: alle pagina's onder **/acties/** op udenhout.nl met minstens **200 sessies** in hun eigen looptijd, **behalve** acties voor after sales en service (onderhoud, APK, werkplaats, banden, winter- of zomercheck). Neem de pagina van de campagne zelf niet op in de groep.
 - Vergelijk per pagina over de eigen looptijd (eerste tot laatste dag met sessies), dus in verhoudingen (per sessie, per klik), niet in totalen. Noem in de benchmark de groep en het aantal pagina's; onder vijf pagina's geen benchmark.
 
+## Tellen in Windsor (gecontroleerd november 2026)
+- **Unieke sessies met minstens één event uit een lijst**: vraag sessions op met een **filter** op event_name (of op is_conversion_event), zonder event_name als dimensie. GA4 telt elke sessie dan één keer, ook als er meerdere events in vielen.
+- **event_name × sessions** geeft per event het aantal sessies waarin dat event viel. Eén sessie kan bij meerdere events meetellen, dus tel deze sessies nooit op tot een totaal.
+- **Key events**: is_conversion_event = "true".
+- **Gebruik session_conversion_rate niet.** Windsor levert daar het aantal key events ÷ het aantal sessies, geen percentage sessies: 0,3444 = 250 events ÷ 726 sessies, terwijl 238 sessies een key event hadden.
+- **Volgorde**: GA4 levert via Windsor geen volgorde van events binnen een sessie. Schrijf "in dezelfde sessie", niet "daarna". Een landingspagina die zelf een key event afvuurt bij het laden (bijv. een bedankpagina) markeer je.
+- **Controle**: vraag een periodetotaal ook op zonder extra dimensies. Wijkt de som van de rijen meer dan 2% af, meld dat dan en gebruik het periodetotaal.
+
 ## E-mailverkeer herkennen
 - E-mail = session_default_channel_group = "Email" **of** (session_source_medium = "(direct) / (none)" **en** landing_page_plus_query_string bevat "M_BT="). Reden: de tracking vanuit Selligent ging mis, waardoor klikken uit mailings als direct binnenkomen met M_BT= in de URL. Alleen op hostnames udenhout.nl en www.udenhout.nl.
+- **Eén kanaal: E-mail** (besluit van de eigenaar, 26 november 2026). Vraag de twee delen apart op (dat is technisch nodig), tel ze bij elkaar op en rapporteer alleen het totaal, als "e-mail". Ze sluiten elkaar uit, dus optellen geeft geen dubbeltelling. Noem nergens in een analyse dat e-mail uit twee delen bestaat, ook niet in de verantwoording, de datakwaliteit of de acties: geen M_BT, geen Selligent-correctie, geen "e-mailkanaal" tegenover "direct", geen aantal of aandeel per deel en geen actie over de tagging van mailings. Voor de lezer is het gewoon e-mailverkeer.
+- M_BT-sessies die GA4 aan een andere bron toeschrijft (google / cpc, google / organic …) tellen niet als e-mail. Noem ze niet.
+- **Niet per mailing te splitsen.** M_BT is een code per ontvanger, geen code per mailing, en alleen het e-mailkanaal heeft een campagnenaam (session_manual_campaign_name; in 2026 vooral de automatische servicemelding). Splits e-mail daarom niet per mailing: de landingspagina laat zien waar een mailing naartoe linkte.
+- Controle voor je eigen telling, nooit in een analyse noemen: in dertig dagen (oktober–november 2026) ongeveer 3.600 e-mailsessies, waarvan ongeveer 80% via M_BT.
 
 ## Welke events tellen als lead (Van den Udenhout)
 - Alle events met "lead" in de naam, waaronder: generate_lead_proefrit, generate_lead_offerte, generate_lead_onderhoudsofferte, generate_lead_verhuur, generate_lead_privatelease, generate_lead_private_lease, generate_lead_zakelijk_lease, generate_lead_zakelijk_offerte, generate_lead_leasecontact, generate_lead_werkplaats.
+- Ook deze vuren (november 2026) en tellen als autolead: generate_lead_contact, generate_lead, generate_lead_overige, generate_lead_inruilwaarde, generate_lead_financiering (controleren). generate_lead_werkplaats vuurde in oktober–november 2026 niet.
+- Alle lead-events en bedanktpagina_werkplaatsplanner zijn in GA4 als key event gemarkeerd (gecontroleerd november 2026).
+- **Vóór april 2026 (de oude tracking) heetten de lead-events anders** (gecontroleerd juni 2025 t/m maart 2026). Met "lead" in de naam: generate_lead_proefrit_aanvraag, generate_lead_offerte_aanvraag, generate_lead_contactformulier, generate_lead_inruilen, generate_lead_bel_me_terug, generate_lead_financieringsaanvraag, generate_lead_private_lease. Zonder "lead" in de naam, maar wel autolead: offerte_onderhoud, verhuur_aanvraag, verhuuractie_verzonden, verhuur_losse_formulieren, private_groeilease. Sollicitaties (geen autolead): snelsolliciteren_verzonden, sollicitatie_verzonden. Tel over de wissel heen op **eventnaam**, niet op de key-eventvlag: de nieuwe namen waren vóór april nog geen key event.
+- generate_lead_HMODH is de knop **"Houd me op de hoogte"**: een aanmelding om op de hoogte te blijven, geen proefrit- of offerteaanvraag. Telt als lead-event, maar noem hem apart als "Houd me op de hoogte".
+- generate_lead_nieuwsbrief is een aanmelding voor de nieuwsbrief, geen autolead: apart noemen.
 - generate_lead_vacature is een sollicitatie, geen autolead: apart noemen.
 - bedanktpagina_werkplaatsplanner telt als lead (werkplaatsafspraak) maar is veel groter dan de rest; apart noemen.
 - Op proefrit-, offerte-, private lease- en financieringsformulieren zitten de parameters customevent_car_brand en customevent_car_model: daarmee is te zien voor welk merk en model de lead was.
@@ -160,7 +181,7 @@ Standaard komt het leadcijfer uit GA4 (zie Algemeen, "Leads bij een Campagne ana
 - **offertes**: generate_lead_offerte (generate_lead_zakelijk_offerte alleen als het doel over zakelijk gaat);
 - **private lease**: generate_lead_privatelease + generate_lead_private_lease;
 - **zakelijke lease**: generate_lead_zakelijk_lease + generate_lead_zakelijk_offerte + generate_lead_leasecontact;
-- **"leads" of geen soort (alle autoleads)**: alle lead-events uit de lijst hierboven, behalve generate_lead_vacature, generate_lead_HMODH ("Houd me op de hoogte") en bedanktpagina_werkplaatsplanner; die noem je apart.
+- **"leads" of geen soort (alle autoleads)**: alle lead-events uit de lijst hierboven, behalve generate_lead_vacature, generate_lead_HMODH ("Houd me op de hoogte"), generate_lead_nieuwsbrief en bedanktpagina_werkplaatsplanner; die noem je apart.
 - Vóór april 2026 heetten de events anders (generate_lead_proefrit_aanvraag, generate_lead_offerte_aanvraag): tel die mee als de periode daarvoor ligt.
 Passen de parameters customevent_car_brand en customevent_car_model niet bij het merk en model uit de briefing, dan tellen ze niet mee; noem hoeveel events geen model hadden.
 

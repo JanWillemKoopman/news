@@ -303,6 +303,11 @@ export interface Sectie {
   ondertitel?: string;
   /** Formaat 2: bij welk tabblad de sectie hoort. Ontbreekt hij, dan wordt de sectie een eigen tabblad. */
   tab?: TabSleutel | string;
+  /**
+   * Alleen bij een rapportage: de groep in de navigatie links (bijv. "E-mail", "Website",
+   * "Resultaat"). Opeenvolgende stappen met dezelfde groep staan onder één kopje.
+   */
+  groep?: string;
   /** Het eerste kerncijfer is het hoofdgetal dat in de tabbalk staat. */
   kerncijfers?: Kerncijfer[];
   /** Links: alleen hoe je de cijfers leest (twee of drie zinnen). Oordelen staan rechts. */
