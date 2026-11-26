@@ -1667,6 +1667,11 @@ campagne een full-funnel analyse die **Claude Code maakt** (skill
 zichtbaar. **Het plan en alle besluiten van de eigenaar staan in `campagne-analyse-tool.md`**;
 lees dat eerst voordat je hier iets verandert.
 
+- **HRM analyse** (26 november 2026, migratie 0053, verzoek van de eigenaar): een opzet `rapportage`
+  (vast id `...0006`) voor werving bij alle bedrijven, wekelijks: uitgaven aan vacaturecampagnes per
+  week, leads via social media en sollicitaties op de website. Prompt versie 1 bij de opzet, het blok
+  **Werving** in de semantic layer (`werving` in `standaardSemantiek.ts`, gelijk aan semantic layer
+  versie 7) en een eigen paragraaf in de skill. Onderzoek en besluiten: `hrm-analyse-onderzoek.md`.
 - **Harde regel voor de data** (besluit van de eigenaar, november 2026): een analyse gebruikt
   alleen Windsor **live** (Google, Meta en LinkedIn Ads, de organische kanalen en GA4), de
   leads-kopie `marketing_analyse_leads` en de orders-kopie `marketing_analyse_orders` (beide alleen

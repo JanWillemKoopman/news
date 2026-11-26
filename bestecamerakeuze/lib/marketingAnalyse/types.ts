@@ -485,6 +485,7 @@ export const SEMANTIEK_BLOKKEN = [
   { sleutel: "data_leads", naam: "Data leads (Syntec)" },
   { sleutel: "data_orders", naam: "Syntec orders" },
   { sleutel: "kanaalkosten", naam: "Extra kanaalkosten" },
+  { sleutel: "werving", naam: "Werving (HRM analyse)" },
 ] as const;
 
 export type SemantiekSleutel = (typeof SEMANTIEK_BLOKKEN)[number]["sleutel"];
