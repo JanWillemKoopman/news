@@ -14,6 +14,7 @@ export type DashboardView =
   | "tijdlijn"
   | "campagnebeheer"
   | "marketing-analyse"
+  | "campagne-timeline"
   | "kpi-overzicht"
   | "kpi-2027"
   | "kpi-2027-syntec"

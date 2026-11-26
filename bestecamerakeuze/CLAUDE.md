@@ -44,7 +44,7 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
   inhoud omdat de weekstand de aanleiding is om iets vast te leggen. Daaronder staat de
   navigatie in twee
   groepen onder een klein, uppercase groepskopje (net als de "Planning"/"Budget"-
-  groepskoppen in de campagnetabel): **Campagnes** (Campagnes, Tijdlijn) en **Chatbot**
+  groepskoppen in de campagnetabel): **Campagnes** (Campagnes, Tijdlijn, Campagnebeheer, Marketing analyse, Campagne timeline) en **Chatbot**
   (Start gesprek, Prikbord, Kennisbank) — het Prikbord staat bewust onder Chatbot, want
   het is een functie van de chat (grafieken die je daaruit vastpint), niet van het
   wekelijkse cijferoverzicht.
@@ -1917,6 +1917,28 @@ lees dat eerst voordat je hier iets verandert.
   herkenning als startpunt.
 - **Een eigen tabel, niet de sheet.** Dit is geen campagnelijst maar de briefing voor een
   analyse; de sheet blijft de bron van de campagnetabel.
+
+### Campagnes → Campagne timeline
+
+Vijfde tabblad onder **Campagnes** (view `campagne-timeline`, `components/campagneTimeline/`,
+rekenwerk in `lib/campagneTimeline.ts`, getest; 26 november 2026, op verzoek van de eigenaar). Het
+jaaroverzicht van alle **Campagne analyses** uit Marketing analyse, in de opzet van het tabblad
+Tijdlijn: per campagne een rij, een balk over de looptijd in de vier balkkleuren van de Tijdlijn
+(gepland, actief, loopt bijna af, afgelopen; uit de looptijd tegen vandaag), maanden boven de
+ISO-weeknummers en een streep bij vandaag.
+
+- **Bron**: `GET /api/marketing-analyse` (dezelfde route als Marketing analyse, geen eigen tabel of
+  route). Alleen analyses met een opzet met formulier `campagne`; rapportages (maand, kwartaal,
+  E-mail, HRM) staan er niet in. Naam, bedrijven, merk, start- en einddatum komen uit de briefing.
+- **Filters**: alleen **Bedrijf** en **Merk** (keuze van de eigenaar). Merk gaat via `merkSleutel`,
+  dus "Skoda" en "Škoda" zijn één merk en "Volkswagen, Audi" telt voor beide.
+- **Jaar**: bladeren met ‹ jaar ›, van het vroegste startjaar tot het laatste eindjaar (altijd met
+  het huidige jaar); 52 of 53 ISO-weken (2026 heeft er 53). Alleen campagnes die in dat jaar lopen
+  staan erin; zonder startdatum staat een campagne er altijd, onderaan. Balken staan op de dag
+  nauwkeurig; over de jaargrens loopt de balk recht het beeld uit, zonder einddatum vervaagt hij.
+- **Hover** toont periode, status (met dag x van y), budget, uitgaven en leads tegen het doel uit
+  de laatste analyse (`overzichtCijfers`, dus dezelfde getallen als het overzicht); **klik** op naam
+  of balk opent de analyse (`?tab=marketing-analyse&analyse=<id>`).
 
 ### Component- en codepatronen
 

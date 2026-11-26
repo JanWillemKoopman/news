@@ -3,6 +3,7 @@ import { magTabbladZien } from "@/lib/beperkteTabbladen";
 import {
   IconAdHeart,
   IconCalendar,
+  IconCalendarRange,
   IconChartBar,
   IconCoin,
   IconGlobe,
@@ -56,6 +57,7 @@ export const NAV_GROEPEN: NavGroep[] = [
       { view: "tijdlijn", label: "Tijdlijn", icon: <IconCalendar /> },
       { view: "campagnebeheer", label: "Campagnebeheer", icon: <IconSettings /> },
       { view: "marketing-analyse", label: "Marketing analyse", icon: <IconChartBar /> },
+      { view: "campagne-timeline", label: "Campagne timeline", icon: <IconCalendarRange /> },
     ],
   },
   {
