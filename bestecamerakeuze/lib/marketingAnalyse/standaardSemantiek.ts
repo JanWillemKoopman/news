@@ -12,7 +12,8 @@ import type { SemantiekInhoud } from "./types";
  * orderregel (bron Syntec orders, altijd uitgesplitst per klantgroep) staat in Algemeen en in het
  * blok Syntec orders; verzoek van de eigenaar van dezelfde dag. Het overzicht van alle leads en
  * orders (views marketing_analyse_leads_soort en _orders_type) staat in Algemeen, Data leads en
- * Syntec orders, en de benchmarkgroep van campagnepagina's in GA4 (versie 5, plan §22).
+ * Syntec orders, en de benchmarkgroep van campagnepagina's in GA4 (versie 5, plan §22). Het blok
+ * Werving hoort bij de opzet HRM analyse (versie 7, 26 november 2026; hrm-analyse-onderzoek.md).
  */
 export const STANDAARD_SEMANTIEK: SemantiekInhoud = {
   bedrijven: [
@@ -245,5 +246,51 @@ Gecontroleerd in november 2026: dit klopt voor 99,9% met de kolom Lead type in S
 - Verdeling over sessies: kosten per sessie = maandbedrag ÷ alle sessies van die bron/medium in die maand (op de GA4-property van het bedrijf). Campagnekosten = Σ kosten per sessie × sessies van die bron/medium op de campagnepagina('s) binnen de periode.
 - Lopende maand: het maandbedrag naar rato van de verstreken dagen (t/m gisteren), gedeeld door de sessies t/m gisteren.
 - **Niet bij een campagne-analyse** (besluit van de eigenaar, november 2026): de kosten van een campagne zijn alleen de mediakosten uit de advertentieplatformen. Alleen een rapportage mag deze kosten gebruiken, en dan apart genoemd naast de mediakosten.`,
+
+    werving: `## Wat telt als wervingscampagne
+- Een campagne is werving als de naam "Vacature" of "Vacatures", "Werving" of "Meeloopdag" bevat, of begint met "LL14--" (hoofdletters tellen niet). Zo heten ze in Meta Ads ("4. Vacatures - Werkplaats - Leads") en Google Ads ("T | Vacature - Monteur", "T | Vacatures - Techniek").
+- **Geen werving**: after sales campagnes met "Werkplaats" in de naam maar zonder Vacature, zoals "3. Acties - Werkplaatscampagne - 2026" (Porsche).
+- LinkedIn Ads draaide in 2026 geen werving. Kijk het toch elke keer na en zeg het als er een wervingscampagne bijkomt.
+
+## Welk bedrijf (besluit van de eigenaar, 25 november 2026)
+- Meta "Van den Udenhout" (69324444) en Google Ads "Udenhout" (210-769-6929): **Van den Udenhout**. Uitzondering: een campagne met "Instra" in de naam is **Instra**, met "Caromi" in de naam is **Caromi**. Die werven via het Meta-account van Van den Udenhout.
+- Meta "Porsche Groep Zuid" (293327521823561) en Google Ads "Porsche Centrum Brabant B.V." (846-005-3447): een eigen regel **Porsche Groep Zuid**, voor Porsche Centrum Brabant en PGZ samen. Niet per campagne verdelen, ook niet als PCB of PGZ in de naam staat.
+- Meta "Porsche centrum Maastricht" (315013592825616) en Google Ads 383-831-5062: **Porsche Centrum Maastricht**.
+- Meta "Veloo" (1662865740824278): **VELOO**. Meta "Bentley Maastricht" (192180818785600): **Bentley Maastricht**.
+- Meta "PGZ" (744220736319839): **PGZ**. In 2026 draaide hier geen werving.
+
+## Leads via social media
+- Leadcijfer = Meta \`actions_lead\` van de wervingscampagnes. Splits uit in \`actions_onsite_conversion_lead_grouped\` (leadformulier of Messenger in Facebook en Instagram) en \`actions_offsite_conversion_fb_pixel_lead\` (pixel op de website). Die twee tellen op tot \`actions_lead\`.
+- Een lead is interesse, geen sollicitatie. Wat HR ermee doet (gesprek, aanname) staat niet in Windsor; schrijf "leads", nooit "sollicitanten".
+- Google Ads levert geen leads. Gebruik de conversies van de Google-vacaturecampagnes niet: Van den Udenhout telt sollicitaties daar niet als conversie.
+- Kosten per lead = Meta-uitgaven ÷ Meta-leads over dezelfde periode, nooit met Google-uitgaven erbij.
+
+## Sollicitaties op de website (GA4)
+- Sollicitatie = event \`generate_lead_vacature\`, geteld met \`event_count\`:
+  - udenhout.nl, property "GA4_https://udenhout.nl" (255949462): **vanaf 10 juni 2026**;
+  - pgz.nl, property "www.pgz.nl" (405407306): **vanaf 27 mei 2026**.
+- Oudere events tellen niet mee en staan niet in de weekgrafiek: op udenhout.nl \`snelsolliciteren_verzonden\` en \`generate_lead_snelsolliciteren\` (t/m april 2026), op pgz.nl \`job_application\` (t/m januari 2026; \`job_application_click_mailto\` en \`_click_tel\` zijn klikken). Noem in datakwaliteit vanaf wanneer gemeten wordt.
+- Porsche Centrum Brabant (306403800), Porsche Centrum Maastricht (306394313), Bentley Maastricht (435349999) en VELOO (381559171) meten **geen** sollicitatie. Zet daar "niet gemeten" (tekst), nooit 0. Klikken op e-mail of telefoon op een vacaturepagina zijn geen sollicitaties.
+- Gebruik de property "JP.cars clicks" (469094476) niet: die telt dezelfde pagina's van Porsche Centrum Brabant nog een keer.
+- Het event valt op udenhout.nl op \`/vacatures\`; een losse vacature heeft geen eigen \`page_path\`, dus per vacature tellen kan niet.
+- Herkomst: \`session_source_medium\` en \`campaign\` × \`event_count\`, ingedeeld in: Google Ads merkcampagne ("T | Branding VDU", ook via bing / cpc), Google Ads vacaturecampagnes (campagne met Vacature), overige Google Ads, Google organisch, Bing, Direct, Google Bedrijfsprofiel (\`gmb / organic\`), Meta Ads (\`facebook / paid\`, \`fb / paid\`, \`meta / paid\`), social verwijzing (facebook.com, m.facebook.com, l.facebook.com, lm.facebook.com, l.instagram.com, \`ig / social\`), vacaturesites (stagemarkt, leerbanenmarkt, onze-jobs, uw-stad-werkt, jobleads, vacatures.roc) en overig.
+
+## Vacaturepagina's
+- Sessies op pagina's met "vacature", "werken-bij", "werkenbij" of "solliciteren" in \`page_path\`, per property. Belangrijkste pagina's: udenhout.nl \`/vacatures\`, \`/vacatures/waarom-werken-bij\`, \`/vacatures/stage\`, de landingspagina's voor alternatieve doelgroepen (\`/vacatures/hobby\`, \`/vacatures/bouw\`, \`/vacatures/oss\`) en \`/vacatures/meeloopdagen\`; Porsche Brabant en Maastricht \`/over-ons-contact/vacatures\` en \`/werken-bij-porsche\`; pgz.nl \`/vacatures\`; Bentley \`/contact/vacatures\`; VELOO \`/pages/vacatures\`.
+
+## Functiegroep (uit de campagnenaam)
+De eerste groep die past, in deze volgorde:
+1. **Instroom en opleiding**: Stage, BBL, Meeloopdag.
+2. **Employer branding**: Branding, Alternatieve doelgroep, Werving Oss, en de algemene campagnes per bedrijf (Vacatures - VELOO, Vacatures - PCM, Vacatures - Bentley Maastricht, Vacatures - Instra, Vacatures - Caromi, "5. OK - Leads … Vacatures", Vacatures_marketing).
+3. **Schade**: Schade.
+4. **Techniek en werkplaats**: Werkplaats, Technisch, Techniek, Monteur, Automonteur, Fietsmonteur, Fietstechnicus.
+5. **Verkoop**: Sales, Verkoop, Verkoper, Lease Functies, Filiaalleider.
+6. **Service en logistiek**: Magazijn, Autowasser / Hiker, Gastvrouw, Facilitair, Service Functies.
+7. **Kantoor**: Klantenservice, Binnendienst, Administratie, Backoffice, Finance, HR, IT, BI, Marketing.
+Past er niets, dan "Overig", en noem de campagne in datakwaliteit.
+
+## Ophalen
+- Meta Ads en GA4 **per dag** (\`date\`) ophalen en zelf per ISO-week (maandag t/m zondag) optellen. Opvragen met \`week_iso\` of \`year_week_iso\` liep bij Meta vast; per dag in stukken van een half jaar werkt.
+- Instagram-posts gaven in november 2026 een time-out. Lukt het niet, zet dan "niet opgehaald" in datakwaliteit, geen nul.`,
   },
 };
