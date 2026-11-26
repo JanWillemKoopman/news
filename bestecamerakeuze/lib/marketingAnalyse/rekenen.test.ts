@@ -375,6 +375,22 @@ test("tabbladen: formaat 1 en rapportage krijgen een tabblad per sectie", () => 
   );
 });
 
+test("tabbladen: een rapportage neemt de groep van een sectie over", () => {
+  const r = normaliseerResultaat({
+    formaat: 3,
+    secties: [
+      { stap: 1, titel: "E-mailverkeer", groep: "E-mail" },
+      { stap: 2, titel: "Per mailing", groep: " E-mail " },
+      { stap: 3, titel: "Landingspagina's", groep: "Website" },
+      { stap: 4, titel: "Zonder groep", groep: "  " },
+    ],
+  });
+  assert.deepEqual(
+    tabbladenVoor(r, { rapportage: true, bedrijven: [] }).map((t) => t.groep),
+    ["E-mail", "E-mail", "Website", null],
+  );
+});
+
 test("acties uit de tabbladen: op prioriteit, verder in tabvolgorde", () => {
   const resultaat = normaliseerResultaat({
     formaat: 2,
