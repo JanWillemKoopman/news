@@ -4,38 +4,41 @@ import type { OpzetFilterKnop } from "@/lib/marketingAnalyse/rekenen";
 
 type Props = {
   knoppen: OpzetFilterKnop[];
-  /** Totaal aantal analyses, voor de knop Alle. */
+  /** Aantal lopende analyses, voor de knop Alle. */
   totaal: number;
-  /** De gekozen opzet; `null` = Alle. */
+  /** De gekozen soort (sleutel); `null` = Alle. */
   gekozen: string | null;
-  onKies: (opzetId: string | null) => void;
+  onKies: (soort: string | null) => void;
 };
 
 function Knop({ naam, aantal, aan, onClick }: { naam: string; aantal: number; aan: boolean; onClick: () => void }) {
+  // Geen lopende analyses van deze soort: grijs, maar wel aanklikbaar (dan zie je Afgelopen en Nieuwe analyse).
+  const leeg = aantal === 0 && !aan;
   return (
     <button
       type="button"
       aria-pressed={aan}
       onClick={onClick}
+      title={leeg ? `Geen lopende analyses van het soort ${naam}` : undefined}
       className={`inline-flex items-center gap-2 whitespace-nowrap rounded-button border px-3.5 py-1.5 text-sm transition-colors duration-[var(--duur-snel)] ease-merk ${
         aan
           ? "border-primary bg-primary/10 font-medium text-ink"
-          : "border-line bg-card text-ink-muted hover:bg-surface hover:text-ink"
+          : leeg
+            ? "border-line-soft bg-surface text-ink-faint hover:text-ink-muted"
+            : "border-line bg-card text-ink-muted hover:bg-surface hover:text-ink"
       }`}
     >
       {naam}
-      <span className={`text-meta tabular-nums ${aan ? "text-ink-muted" : aantal === 0 ? "text-ink-faint/70" : "text-ink-faint"}`}>
-        {aantal}
-      </span>
+      <span className={`text-meta tabular-nums ${aan ? "text-ink-muted" : "text-ink-faint"}`}>{aantal}</span>
     </button>
   );
 }
 
 /**
- * Filterbalk boven het overzicht: één knop per analyse opzet (Campagne analyse, de maand- en
- * kwartaalrapportages, …) plus Alle. De knoppen komen uit de opzetten, dus een nieuwe opzet uit
- * Analyse prompts staat er vanzelf bij. Eén keuze tegelijk; nog een klik op de gekozen knop zet
- * het filter terug op Alle.
+ * Filterbalk boven het overzicht: één knop per soort analyse (Campagne analyse, Maandrapportage,
+ * Kwartaalrapportage, … over de bedrijven heen) plus Alle, met het aantal lopende analyses. De
+ * knoppen komen uit de opzetten, dus een nieuwe opzet uit Analyse prompts staat er vanzelf bij.
+ * Eén keuze tegelijk; nog een klik op de gekozen knop zet het filter terug op Alle.
  */
 export default function OpzetFilterBalk({ knoppen, totaal, gekozen, onKies }: Props) {
   return (

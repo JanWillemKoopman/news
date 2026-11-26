@@ -20,6 +20,7 @@ import {
   rapportageNaam,
   sorteerOpzetten,
   opzetFilterKnoppen,
+  opzetSoort,
   filterOpOpzet,
   leesModellen,
   merkSleutel,
@@ -453,32 +454,50 @@ test("voorstellen op Live sinds, nieuw naar oud, zonder datum achteraan", () => 
   assert.deepEqual(sorteerVoorstellen(lijst).map((v) => v.naam), ["A", "B", "D", "C"]);
 });
 
-test("opzetFilterKnoppen: elke actieve opzet, ook zonder analyses; uitgezet alleen met analyses", () => {
+test("opzetSoort: afkortingen van bedrijven eruit, over de bedrijven heen dezelfde sleutel", () => {
+  assert.deepEqual(opzetSoort("VDU maandrapportage"), { sleutel: "maandrapportage", naam: "Maandrapportage" });
+  assert.deepEqual(opzetSoort("PGZ maandrapportage").sleutel, "maandrapportage");
+  assert.deepEqual(opzetSoort("PGZ kwartaalrapportage"), { sleutel: "kwartaalrapportage", naam: "Kwartaalrapportage" });
+  assert.deepEqual(opzetSoort("E-mail VDU"), { sleutel: "e-mail", naam: "E-mail" });
+  assert.deepEqual(opzetSoort("Campagne analyse"), { sleutel: "campagne analyse", naam: "Campagne analyse" });
+  assert.deepEqual(opzetSoort("VDU"), { sleutel: "vdu", naam: "VDU" });
+});
+
+test("opzetFilterKnoppen: gegroepeerd per soort, telt alleen lopend, uitgezet alleen met analyses", () => {
   const opzetten = [
-    { id: "vdu-maand", naam: "VDU maandrapportage", volgorde: 20, actief: true },
-    { id: "campagne", naam: "Campagne analyse", volgorde: 0, actief: true },
+    { id: "vm", naam: "VDU maandrapportage", volgorde: 20, actief: true },
+    { id: "c", naam: "Campagne analyse", volgorde: 0, actief: true },
+    { id: "pm", naam: "PGZ maandrapportage", volgorde: 40, actief: true },
+    { id: "vk", naam: "VDU kwartaalrapportage", volgorde: 10, actief: true },
     { id: "oud", naam: "Oude opzet", volgorde: 5, actief: false },
     { id: "weg", naam: "Uitgezet zonder analyses", volgorde: 6, actief: false },
-    { id: "nieuw", naam: "E-mail VDU", volgorde: 30, actief: true },
+    { id: "ev", naam: "E-mail VDU", volgorde: 50, actief: true },
   ];
-  const analyses = [{ opzetId: "campagne" }, { opzetId: "campagne" }, { opzetId: "oud" }, { opzetId: "vdu-maand" }, { opzetId: "onbekend" }];
+  const analyses = [
+    { opzetId: "c", lopend: true },
+    { opzetId: "c", lopend: false },
+    { opzetId: "oud", lopend: false },
+    { opzetId: "vm", lopend: true },
+    { opzetId: "pm", lopend: true },
+  ];
   assert.deepEqual(opzetFilterKnoppen(opzetten, analyses), [
-    { id: "campagne", naam: "Campagne analyse", aantal: 2 },
-    { id: "vdu-maand", naam: "VDU maandrapportage", aantal: 1 },
-    { id: "nieuw", naam: "E-mail VDU", aantal: 0 },
-    { id: "oud", naam: "Oude opzet", aantal: 1 },
+    { id: "campagne analyse", naam: "Campagne analyse", aantal: 1, opzetIds: ["c"], startOpzetId: "c" },
+    { id: "kwartaalrapportage", naam: "Kwartaalrapportage", aantal: 0, opzetIds: ["vk"], startOpzetId: "vk" },
+    { id: "maandrapportage", naam: "Maandrapportage", aantal: 2, opzetIds: ["vm", "pm"], startOpzetId: null },
+    { id: "e-mail", naam: "E-mail", aantal: 0, opzetIds: ["ev"], startOpzetId: "ev" },
+    { id: "oude opzet", naam: "Oude opzet", aantal: 0, opzetIds: ["oud"], startOpzetId: null },
   ]);
 });
 
-test("filterOpOpzet: null is alles, anders alleen die opzet", () => {
+test("filterOpOpzet: null is alles, anders alleen de opzetten van de soort", () => {
   const analyses = [
     { id: 1, opzetId: "a" },
     { id: 2, opzetId: "b" },
-    { id: 3, opzetId: "a" },
+    { id: 3, opzetId: "c" },
   ];
   assert.deepEqual(filterOpOpzet(analyses, null).map((x) => x.id), [1, 2, 3]);
-  assert.deepEqual(filterOpOpzet(analyses, "a").map((x) => x.id), [1, 3]);
-  assert.deepEqual(filterOpOpzet(analyses, "c"), []);
+  assert.deepEqual(filterOpOpzet(analyses, ["a", "c"]).map((x) => x.id), [1, 3]);
+  assert.deepEqual(filterOpOpzet(analyses, []), []);
 });
 
 test("voortgangVanAnalyse: dag 68 van 105 bij de A2, doel en budget tegen de looptijd", async () => {

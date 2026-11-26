@@ -1859,13 +1859,18 @@ lees dat eerst voordat je hier iets verandert.
   analyse. Analyse prompts, Semantic layer en (alleen voor de eigenaar) Verzonden e-mails staan achter het schildje (vooral voor beheerders, maar
   iedereen kan ze openen); open of dicht wordt per browser onthouden. De open analyse staat in de URL
   (`?analyse=<campagne-id>`).
-- **Filterbalk op soort analyse** (25 november 2026, op verzoek; `OpzetFilterBalk.tsx`). Tussen de planningsbalk van de
-  analyseronde (`RondeBalk`) en het blok Lopende analyses een rij knoppen: **Alle** en één per opzet met
-  het aantal analyses (`opzetFilterKnoppen` en `filterOpOpzet` in `rekenen.ts`, getest). De knoppen
-  komen uit de opzetten, dus een nieuwe opzet uit Analyse prompts krijgt vanzelf een knop, ook met 0
-  analyses; een uitgezette opzet alleen zolang er analyses van zijn. Eén keuze tegelijk, nog eens
-  klikken = terug naar Alle. Het filter geldt voor Lopend én Afgelopen, staat in de URL
-  (`?soort=<opzet-id>`), en Nieuwe analyse begint dan met die opzet.
+- **Filterbalk op soort analyse** (25–26 november 2026, op verzoek; `OpzetFilterBalk.tsx`). Tussen de
+  planningsbalk van de analyseronde (`RondeBalk`) en het blok Lopende analyses een rij knoppen:
+  **Alle** en één per **soort**, met het aantal **lopende** analyses. Een soort is de naam van de opzet
+  zonder afkortingen in hoofdletters (`opzetSoort` in `rekenen.ts`, getest): VDU en PGZ
+  maandrapportage vallen samen onder **Maandrapportage**, kwartaal onder **Kwartaalrapportage**,
+  "E-mail VDU" wordt **E-mail** (besluit van de eigenaar: over de bedrijven heen, niet per bedrijf).
+  De knoppen komen uit de opzetten (`opzetFilterKnoppen`, `filterOpOpzet`), dus een nieuwe opzet krijgt
+  vanzelf een knop of valt in een bestaande soort; een soort met alleen uitgezette opzetten staat er
+  alleen zolang er analyses van zijn. Een soort zonder lopende analyses staat **grijs** maar is
+  klikbaar. Eén keuze tegelijk, nog eens klikken = terug naar Alle. Het filter geldt voor Lopend én
+  Afgelopen (de planningsbalk filtert niet mee), staat in de URL (`?soort=maandrapportage`), en Nieuwe
+  analyse begint met de opzet van de soort als daar precies één actieve opzet onder valt.
 - **Voorgestelde campagne analyses** (25 november 2026, migratie 0046, plan en besluiten in
   `campagne-voorstellen-plan.md`). Claude Code zoekt met de skill `campagne-voorstellen` op
   verzoek in Windsor welke actiecampagnes van alle bedrijven nu live zijn (uitgaven in de laatste 7

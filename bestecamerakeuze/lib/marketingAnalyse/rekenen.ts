@@ -314,34 +314,70 @@ export function sorteerOpzetten<T extends { volgorde: number; naam: string; acti
   );
 }
 
-/** Een knop in de filterbalk boven het overzicht: één per opzet, met het aantal analyses. */
+/**
+ * De soort van een opzet over de bedrijven heen: de naam zonder afkortingen in hoofdletters
+ * ("VDU maandrapportage" en "PGZ maandrapportage" → "Maandrapportage", "E-mail VDU" → "E-mail").
+ * Een opzet zonder zo'n afkorting is zijn eigen soort ("Campagne analyse").
+ */
+export function opzetSoort(naam: string): { sleutel: string; naam: string } {
+  const woorden = naam.trim().split(/\s+/).filter(Boolean);
+  const zonder = woorden.filter((w) => !/^[A-Z0-9]{2,5}$/.test(w));
+  const tekst = (zonder.length > 0 ? zonder : woorden).join(" ");
+  const netjes = tekst.charAt(0).toLocaleUpperCase("nl") + tekst.slice(1);
+  return { sleutel: netjes.toLocaleLowerCase("nl"), naam: netjes };
+}
+
+/** Een knop in de filterbalk boven het overzicht: één per soort analyse. */
 export interface OpzetFilterKnop {
+  /** Sleutel van de soort (ook in de URL). */
   id: string;
   naam: string;
+  /** Aantal lopende analyses van deze soort. */
   aantal: number;
+  /** De opzetten die onder deze soort vallen. */
+  opzetIds: string[];
+  /** De opzet waarmee Nieuwe analyse begint: alleen als er precies één actieve opzet onder valt. */
+  startOpzetId: string | null;
 }
 
 /**
- * De knoppen van de filterbalk "soort analyse": elke actieve opzet (ook zonder analyses, zodat
- * een nieuwe opzet meteen een knop krijgt) en een uitgezette opzet alleen zolang er nog analyses
- * van zijn. Volgorde als in het menu Analyse prompts. Een analyse met een onbekende opzet telt
- * alleen mee in "Alle".
+ * De knoppen van de filterbalk "soort analyse": opzetten gegroepeerd op `opzetSoort`, dus
+ * maand- en kwartaalrapportages over de bedrijven heen. Een soort staat erin zodra er een
+ * actieve opzet onder valt (ook zonder analyses, zodat een nieuwe opzet meteen een knop
+ * krijgt) of er nog analyses van zijn. Het aantal telt alleen de lopende analyses. Volgorde:
+ * die van de eerste opzet van de soort in het menu Analyse prompts.
  */
 export function opzetFilterKnoppen<O extends { id: string; naam: string; volgorde: number; actief: boolean }>(
   opzetten: readonly O[],
-  analyses: readonly { opzetId: string }[],
+  analyses: readonly { opzetId: string; lopend: boolean }[],
 ): OpzetFilterKnop[] {
-  const aantallen = new Map<string, number>();
-  for (const a of analyses) aantallen.set(a.opzetId, (aantallen.get(a.opzetId) ?? 0) + 1);
-  return sorteerOpzetten(opzetten)
-    .map((o) => ({ id: o.id, naam: o.naam, aantal: aantallen.get(o.id) ?? 0, actief: o.actief }))
-    .filter((k) => k.actief || k.aantal > 0)
-    .map(({ id, naam, aantal }) => ({ id, naam, aantal }));
+  const totaal = new Map<string, number>();
+  const lopend = new Map<string, number>();
+  for (const a of analyses) {
+    totaal.set(a.opzetId, (totaal.get(a.opzetId) ?? 0) + 1);
+    if (a.lopend) lopend.set(a.opzetId, (lopend.get(a.opzetId) ?? 0) + 1);
+  }
+  const groepen = new Map<string, { knop: OpzetFilterKnop; actief: string[]; zichtbaar: boolean }>();
+  for (const o of sorteerOpzetten(opzetten)) {
+    const soort = opzetSoort(o.naam);
+    let g = groepen.get(soort.sleutel);
+    if (!g) {
+      g = { knop: { id: soort.sleutel, naam: soort.naam, aantal: 0, opzetIds: [], startOpzetId: null }, actief: [], zichtbaar: false };
+      groepen.set(soort.sleutel, g);
+    }
+    g.knop.opzetIds.push(o.id);
+    g.knop.aantal += lopend.get(o.id) ?? 0;
+    if (o.actief) g.actief.push(o.id);
+    if (o.actief || (totaal.get(o.id) ?? 0) > 0) g.zichtbaar = true;
+  }
+  return [...groepen.values()]
+    .filter((g) => g.zichtbaar)
+    .map((g) => ({ ...g.knop, startOpzetId: g.actief.length === 1 ? g.actief[0] : null }));
 }
 
-/** Alleen de analyses van één opzet; `null` = alle. */
-export function filterOpOpzet<T extends { opzetId: string }>(analyses: readonly T[], opzetId: string | null): T[] {
-  return opzetId === null ? [...analyses] : analyses.filter((a) => a.opzetId === opzetId);
+/** Alleen de analyses van de opzetten van één soort; `null` = alle. */
+export function filterOpOpzet<T extends { opzetId: string }>(analyses: readonly T[], opzetIds: readonly string[] | null): T[] {
+  return opzetIds === null ? [...analyses] : analyses.filter((a) => opzetIds.includes(a.opzetId));
 }
 
 export type OpzetInvoerUitkomst =

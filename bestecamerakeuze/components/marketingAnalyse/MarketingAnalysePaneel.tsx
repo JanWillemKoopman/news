@@ -22,6 +22,7 @@ import {
   bedrijvenLabel,
   deelOpInLopendEnAfgelopen,
   filterOpOpzet,
+  isAfgelopen,
   formatWaarde,
   looptijdLabel,
   opzetFilterKnoppen,
@@ -574,9 +575,9 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
     window.scrollTo({ top: 0 });
   }
 
-  function kiesFilter(opzetId: string | null) {
-    setFilter(opzetId);
-    zetUrl(opzetId, FILTER_PARAM);
+  function kiesFilter(soort: string | null) {
+    setFilter(soort);
+    zetUrl(soort, FILTER_PARAM);
   }
 
   function bijgewerkt(c: MaCampagne) {
@@ -651,11 +652,15 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
   const opzetPerId = new Map(opzetten.map((o) => [o.id, o]));
   const promptOpzet = paneel?.soort === "prompt" && paneel.opzetId ? (opzetPerId.get(paneel.opzetId) ?? null) : null;
   const vandaag = vandaagNL();
-  const filterKnoppen = opzetFilterKnoppen(opzetten, campagnes ?? []);
-  // Een filter uit de URL op een opzet die er niet (meer) is, telt als Alle.
-  const actiefFilter = filter !== null && filterKnoppen.some((k) => k.id === filter) ? filter : null;
-  const filterOpzet = actiefFilter ? (opzetPerId.get(actiefFilter) ?? null) : null;
-  const gefilterd = filterOpOpzet(campagnes ?? [], actiefFilter);
+  const filterKnoppen = opzetFilterKnoppen(
+    opzetten,
+    (campagnes ?? []).map((c) => ({ opzetId: c.opzetId, lopend: !isAfgelopen(c.einddatum, vandaag) })),
+  );
+  // Een filter uit de URL op een soort die er niet (meer) is, telt als Alle.
+  const filterKnop = filter !== null ? (filterKnoppen.find((k) => k.id === filter) ?? null) : null;
+  const actiefFilter = filterKnop?.id ?? null;
+  const filterHeeftActieve = Boolean(filterKnop?.opzetIds.some((id) => opzetPerId.get(id)?.actief));
+  const gefilterd = filterOpOpzet(campagnes ?? [], filterKnop?.opzetIds ?? null);
   const { lopend, afgelopen } = deelOpInLopendEnAfgelopen(gefilterd, vandaag);
   const ingepland = gefilterd.filter((c) => c.planning !== "uit").length;
 
@@ -715,7 +720,7 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
         <button
           type="button"
           // Staat het filter op een soort, dan begint de nieuwe analyse met die opzet.
-          onClick={() => setZijbalk({ campagne: null, startOpzetId: filterOpzet?.actief ? filterOpzet.id : undefined })}
+          onClick={() => setZijbalk({ campagne: null, startOpzetId: filterKnop?.startOpzetId ?? undefined })}
           className="flex items-center gap-2 rounded-button bg-primary px-4 py-2 text-sm font-medium text-on-primary transition-colors duration-[var(--duur-snel)] hover:bg-primary-dark"
         >
           <IconPlus className="h-4 w-4" />
@@ -774,13 +779,16 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
             />
           )}
           {campagnes && filterKnoppen.length > 0 && (
-            <OpzetFilterBalk knoppen={filterKnoppen} totaal={campagnes.length} gekozen={actiefFilter} onKies={kiesFilter} />
+            <OpzetFilterBalk
+              knoppen={filterKnoppen}
+              totaal={campagnes.filter((c) => !isAfgelopen(c.einddatum, vandaag)).length}
+              gekozen={actiefFilter} onKies={kiesFilter} />
           )}
           <section className="kaart-accent overflow-hidden rounded-panel border border-line bg-card shadow-card">
             <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line-soft px-6 py-4">
               <div>
                 <h2 className="label-theme text-label text-ink-muted">
-                  Lopende analyses{filterOpzet && <span className="text-ink"> · {filterOpzet.naam}</span>}
+                  Lopende analyses{filterKnop && <span className="text-ink"> · {filterKnop.naam}</span>}
                 </h2>
                 <p className="mt-0.5 text-meta text-ink-faint">
                   Cijfers uit de laatste analyse. Klik op een regel voor de volledige analyse.
@@ -792,16 +800,16 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
             {fout && <p className="px-6 py-3 text-sm text-negative">{fout}</p>}
             {!campagnes ? (
               !fout && <p className="px-6 py-5 text-sm text-ink-muted">Laden…</p>
-            ) : lopend.length === 0 && filterOpzet ? (
+            ) : lopend.length === 0 && filterKnop ? (
               <div className="px-6 py-10 text-center">
-                <p className="font-semibold text-ink">Geen lopende analyses van het soort {filterOpzet.naam}</p>
+                <p className="font-semibold text-ink">Geen lopende analyses van het soort {filterKnop.naam}</p>
                 <p className="mx-auto mt-1 max-w-lg text-sm text-ink-muted">
                   {afgelopen.length > 0
                     ? `Er ${afgelopen.length === 1 ? "staat er één" : `staan er ${afgelopen.length}`} onder Afgelopen. `
                     : ""}
-                  {filterOpzet.actief ? "Maak er een aan met Nieuwe analyse, of " : ""}
+                  {filterHeeftActieve ? "Maak er een aan met Nieuwe analyse, of " : ""}
                   <button type="button" onClick={() => kiesFilter(null)} className="text-ink underline underline-offset-2 hover:text-primary">
-                    {filterOpzet.actief ? "toon alle analyses" : "Toon alle analyses"}
+                    {filterHeeftActieve ? "toon alle analyses" : "Toon alle analyses"}
                   </button>
                   .
                 </p>
