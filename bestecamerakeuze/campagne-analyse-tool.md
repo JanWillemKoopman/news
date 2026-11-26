@@ -634,5 +634,11 @@ planning Maandelijks), prompt versie 2.
 - **Concrete lead** = autolead of werkplaatsafspraak, altijd ook apart. Over de trackingwissel van
   april 2026 heen telt de analyse op eventnaam (oude namen in semantic layer versie 9), niet op de
   key-eventvlag.
-- Staat in prompt versie 2, de semantic layer (versie 9, gelijk aan `standaardSemantiek.ts`) en de
+- **Het algemene formulier generate_lead is geen autolead** (semantic layer versie 11): het vuurt op
+  /vacatures, /broodjes en /sinterklaasfeest. Unieke sessies met een lead tellen met
+  is_conversion_event = true en neq-uitsluitingen (versie 10): een filter met in of of op eventnamen
+  telt een sessie met twee lead-events dubbel.
+- Eerste analyse (26 november 2026): 1 juni 2025 t/m 25 november 2026, focusmaand oktober.
+  Daarna maandelijks op de eerste vrijdag.
+- Staat in prompt versie 2, de semantic layer (versie 11, gelijk aan `standaardSemantiek.ts`) en de
   skill (paragraaf E-mail VDU).

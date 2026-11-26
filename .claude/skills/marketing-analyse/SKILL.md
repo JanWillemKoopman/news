@@ -179,8 +179,8 @@ het blok Google Analytics 4 van de semantic layer zegt hoe je e-mail en lead-eve
   - sessies, `engaged_sessions` per maand, en per `landing_page` (voor de focusmaand, de maand
     ervoor en de hele periode);
   - sessies met een concrete lead: `is_conversion_event` = "true" met de niet-autoleads als `neq`
-    (generate_lead_vacature, _HMODH, _nieuwsbrief, _snelsolliciteren, _meeloopdagen,
-    snelsolliciteren_verzonden, sollicitatie_verzonden), zonder `event_name` als dimensie; met een
+    (generate_lead_vacature, _HMODH, _nieuwsbrief, _snelsolliciteren, _meeloopdagen, het algemene
+    generate_lead, snelsolliciteren_verzonden, sollicitatie_verzonden), zonder `event_name` als dimensie; met een
     werkplaatsafspraak: `event_name` = bedanktpagina_werkplaatsplanner; autolead = concrete lead min
     werkplaatsafspraak. Een filter met bevat, in of of op `event_name` splitst per event en telt
     sessies dubbel (semantic layer, "Tellen in Windsor");
