@@ -11,7 +11,7 @@ type Props = {
   campagne: MaCampagne | null;
   /**
    * Een voorgestelde campagne analyse: het formulier staat ingevuld met het voorstel en opslaan
-   * voegt hem toe (Campagne analyse, Analyse ronde aan). Alleen zonder `campagne`.
+   * voegt hem toe (Campagne analyse, planning Wekelijks). Alleen zonder `campagne`.
    */
   voorstel?: MaVoorstel | null;
   /** De analyse opzetten voor het uitklapmenu bovenaan. */
@@ -198,7 +198,7 @@ export default function CampagneZijbalk({
           <p className="rounded-control border border-line-soft bg-surface-tint px-3 py-2.5 text-sm text-ink-muted">
             Claude heeft deze briefing ingevuld uit de advertenties, de campagnepagina en de social posts. Loop hem na, vooral het
             doel, het budget en de einddatum. Met <span className="font-medium text-ink">Toevoegen</span> komt hij op de lijst, met
-            de Analyse ronde aan.
+            de planning op Wekelijks.
           </p>
         )}
         <Veld label="Analyse opzet" hint={uitVoorstel ? "Een voorstel is altijd een campagne-analyse." : "Welke soort analyse. Bepaalt de prompt en het formulier hieronder."}>
@@ -347,8 +347,8 @@ export default function CampagneZijbalk({
           <p className="text-sm font-semibold text-ink">Analyse starten</p>
           <p className="mt-1 text-sm text-ink-muted">
             Zeg in Claude Code: <span className="font-medium text-ink">“maak een marketing analyse van {v.naam.trim() || "…"}”</span>. Of
-            zet de schakelaar <span className="font-medium text-ink">Analyse ronde</span> in het overzicht aan en zeg “voer de
-            analyseronde uit”. Elke analyse wordt een nieuwe versie; eerdere blijven bewaard.
+            kies in het overzicht een <span className="font-medium text-ink">Planning</span> (Wekelijks, Maandelijks of Per
+            kwartaal) en zeg op vrijdag “voer de analyseronde uit”. Elke analyse wordt een nieuwe versie; eerdere blijven bewaard.
           </p>
         </div>
         {campagne && isEigenaar && (

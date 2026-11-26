@@ -4,6 +4,8 @@
 
 *Voorgestelde campagne analyses (25 november 2026, migratie 0046): zie `campagne-voorstellen-plan.md`.*
 
+*Planning van de analyseronde (25 november 2026, migratie 0049): zie §17. De schakelaar Analyse ronde is vervangen door een uitklapmenu Planning.*
+
 ## 1. Waar het om gaat
 
 Van den Udenhout draait campagnes (bijv. "Audi A2") over meerdere kanalen tegelijk: betaalde advertenties, organische posts, e-mail en één of meer campagnepagina's. De tool maakt per campagne een **full-funnel analyse**:
@@ -32,7 +34,7 @@ Drie kennislagen sturen de analyse:
 | 7 | E-mailcijfers (Selligent) | **Nu niet**, later misschien. E-mail alleen vanaf de klik (GA4). |
 | 8 | Toerekening | Bij **elke** analyse grondig onderzoeken welke data bij de campagne hoort en dat tonen in het resultaat. Plus een open veld **Data correctie** per campagne (zie §6). |
 | 9 | Label | Analysedatum vóór de einddatum: **Tussentijdse evaluatie** (gericht op bijsturen). Einddatum verstreken: **Eindevaluatie** (terugblik op de hele campagne). |
-| 10 | Starten | Handmatig via de skill. Elke campagne krijgt in het overzicht een schakelaar **Analyse ronde** (Aan/Uit). "Voer de analyseronde uit" analyseert alle campagnes die op Aan staan. |
+| 10 | Starten | Handmatig via de skill. Elke campagne krijgt in het overzicht een schakelaar **Analyse ronde** (Aan/Uit). "Voer de analyseronde uit" analyseert alle campagnes die op Aan staan. **Gewijzigd 25 november 2026:** de schakelaar is een uitklapmenu **Planning** (Uit, Wekelijks, Maandelijks, Per kwartaal) geworden, zie §17. |
 | 11 | Rechten | **Iedereen** mag campagnes aanmaken. **Alleen de eigenaar** past de hoofdprompt (en de semantic layer) aan; iedereen mag ze lezen. |
 | 12 | Benchmarks | **Nu niet.** |
 | 13 | Naam pagina | **Marketing analyse** |
@@ -42,7 +44,7 @@ Drie kennislagen sturen de analyse:
 | v2-A | Leads-data | Een **nachtelijke kopie** van "Data leads" in Supabase, alleen voor de analyse: zes kolommen (Ordersoort, Onderwerp, Kanaalgroep, Merk, Model, Aangelegd), de laatste 365 dagen, zonder rijen met "FW:" in Onderwerp (zie §3.1). Sinds 25 november 2026 zeven: Kanaal kwam erbij (§15). |
 | v2-B | Kostenverdeling | De rekensom in §5.3 klopt. |
 | v2-C | GA4 udenhout.nl | Alleen property **"GA4_https://udenhout.nl"** (255949462) voor Van den Udenhout. |
-| v2-D | Analyse ronde | Springt automatisch op **Uit** na een eindevaluatie. |
+| v2-D | Analyse ronde | Springt automatisch op **Uit** na een eindevaluatie. Geldt nu voor de planning (§17). |
 | v2-E | Merk en model | Blijven in de briefing (optioneel). |
 | v2-F | Semantic layer | Krijgt een blok **Algemeen**, met daarin ook welke accounts bij welk bedrijf horen. |
 | v2-G | Labelgrens | Einddatum vandaag = tussentijds (t/m gisteren); vanaf de dag erna = eindevaluatie. |
@@ -70,9 +72,10 @@ Drie kennislagen sturen de analyse:
 | Facebook, Instagram, LinkedIn (organisch) | **Windsor** (live) | Posts met tekst, bereik, interacties, klikken |
 | Google Analytics 4 (alle websites) | **Windsor** (live) | Sessies, landingspagina's, kanalen, bron/medium, events, betrokkenheid |
 | Leads (**alleen Van den Udenhout**) | **Nachtelijke kopie van de spreadsheet "Data leads"** in Supabase (`marketing_analyse_leads`, §3.1) | Ordersoort, Onderwerp, Kanaalgroep, Merk, Model, Aangelegd — laatste 365 dagen, zonder "FW:" |
+| Orders (**alleen Van den Udenhout**) | **Nachtelijke kopie van de spreadsheet "Data orders"** in Supabase (`marketing_analyse_orders`, bron "Syntec orders", §16) | Ordersoort, Klantgroep, Merk, Model, Orderdatum — laatste 365 dagen, één rij is één verkochte auto |
 | Extra kanaalkosten | **Supabase `dataloket.lead_kanaalkosten`** | Maandkosten per GA4-bron/medium die niet in de advertentieaccounts staan |
 
-**Uitdrukkelijk niet:** de andere tabellen in Supabase. Dat geldt ook voor de kopieën `windsor_*` en `leads_raw`/`v_leads`. De analyse leest Windsor dus **rechtstreeks**, en leads alleen uit `marketing_analyse_leads`.
+**Uitdrukkelijk niet:** de andere tabellen in Supabase. Dat geldt ook voor de kopieën `windsor_*` en `leads_raw`/`v_leads`. De analyse leest Windsor dus **rechtstreeks**, leads alleen uit `marketing_analyse_leads` en orders alleen uit `marketing_analyse_orders`.
 
 **Wel in Supabase, maar dat is geen analysedata:**
 
@@ -137,6 +140,7 @@ Analyse (versie N) ◀───────────── 6. wegschrijven al
 | 7 | **E-mailverkeer apart**: gedrag op de pagina en lead-events | Windsor GA4 (hoe e-mail te herkennen: semantic layer) |
 | 8 | **Lead-events en andere interessante events in de sessie** (proefrit, offerte, servicebeurt …) — voor **elk** bedrijf | Windsor GA4, zie §5.2 (welke events tellen: semantic layer) |
 | 9 | **Leads in Syntec** — **alleen bij Van den Udenhout**: totaal, via Internet (kanaalgroep), per soort lead (volgens de semantic layer). Bij de andere bedrijven vervalt deze stap en meldt de analyse dat leads alleen uit GA4 komen. | `marketing_analyse_leads` |
+| 9a | **Orders in Syntec** — **alleen bij Van den Udenhout**: de verkochte auto's voor merk en model in de periode, **altijd uitgesplitst per klantgroep**, en in Nieuw en Gebruikt (§16). | `marketing_analyse_orders` |
 | 10 | **Doel**: hoe staat de campagne ervoor, gezien doel, budget en periode | Briefing + alles hierboven |
 
 ### 5.2 Lead-events later in de sessie (geverifieerd)
@@ -429,3 +433,181 @@ staat, komt altijd uit precies één bron. Nooit opgeteld, nooit gemengd.
   in GA4 alle lead-events behalve vacature, "Houd me op de hoogte" (HMODH) en de
   werkplaatsplanner; die staan apart.
 
+## 16. Orders uit Syntec, bron "Syntec orders" (verzoek van de eigenaar, 25 november 2026)
+
+De analyse mag naast de leads ook de verkochte auto's raadplegen, uit het sheet-tabblad
+"Data orders". Precies dezelfde opzet als de leads-kopie (§3.1).
+
+| | |
+|---|---|
+| **Tabel** | `dataloket.marketing_analyse_orders` (migratie 0048); in de semantic layer het blok **Syntec orders** |
+| **Kolommen** | Precies deze vijf, 1-op-1 zoals in de sheet: Ordersoort, Klantgroep, Merk, Model, Orderdatum, plus `orderdatum_op` als datum |
+| **Rijen** | Orderdatum in de **laatste 365 dagen**; rijen zonder leesbare datum eruit. Eén rij is één verkochte auto. Handel blijft erin. |
+| **Verversen** | Elke nacht in `/api/sync`, eigen transactie en eigen regel `Marketing analyse orders` in `sync_runs`. "Data orders" staat niet in `BRONNEN`, dus de sync leest dit tabblad zelf (`ANALYSE_ORDERS_BRON` in `lib/sync/analyseOrders.ts`). |
+| **Telling** | De view `marketing_analyse_orders_klant`: alleen Ordersoort Nieuw en Gebruikt (verkoop aan klanten), met `klantgroep_naam` ("Geen klantgroep" als hij leeg is). Gelijk aan `isKlantOrder` / `klantgroepNaam` in TypeScript, getest. |
+| **Rechten** | Lezen voor ingelogde collega's en Claude Code; schrijven alleen door de nachtelijke taak |
+
+- **Klantgroep altijd uitsplitsen.** Waar orders in een analyse staan, staat de uitsplitsing per
+  klantgroep erbij (aantal, aandeel, totaalregel), plus Nieuw tegen Gebruikt. Dat is een harde
+  regel in de semantic layer (Algemeen "Orders bij een Campagne analyse"), de hoofdprompt en de skill.
+- **Tabblad Orders in Syntec** (`orders`, groep Resultaat, na Leads in Syntec). Grijs met "niet van
+  toepassing" als de analyse niet uitsluitend over Van den Udenhout gaat.
+- **Handel apart** (keuze van Claude, ter controle door de eigenaar): Ordersoort heeft drie
+  waarden, niet twee. Handel (1.712 van de 12.926 orders in 2026) heeft bijna nooit een
+  klantgroep en is geen verkoop aan een klant. Hij staat in de kopie, maar niet in de view; de
+  analyse noemt hem hoogstens apart.
+- **Nooit het leadcijfer, geen koppeling met leads.** Gaat het doel over verkochte auto's, dan
+  beoordeelt de analyse het doel op de orders. Een order voor merk en model in de periode is
+  niet per se door de campagne gekomen.
+- **Alleen Van den Udenhout** (aanname van Claude, net als bij de leads): de andere bedrijven
+  hebben geen orders in deze bron.
+- **Gemeten (november 2026)**: de sheet begint op 1 januari 2026; op 25 november liep hij tot
+  14 november. 12.926 orders: Nieuw 8.134, Gebruikt 3.080, Handel 1.712; 25 klantgroepen, de
+  grootste Koop Particulier (BM), Dealer Lease en Koop Zakelijk (BM). Zeven klantgroepen beginnen
+  met "Cupra - " en horen alleen bij CUPRA.
+- **Waar het staat**: semantic layer versie 4 (Algemeen, nieuw blok Syntec orders), de
+  standaard-hoofdprompt ("Orders", tabblad 10), de skill en dit plan.
+
+## 17. Planning van de analyseronde (verzoek van de eigenaar, 25 november 2026)
+
+Elke vrijdag zegt de eigenaar in Claude Code "voer de analyseronde uit". Tot nu toe nam de skill
+alles mee wat op Aan stond, dus een maandrapportage draaide elke week opnieuw. Nu heeft elke regel
+een planning, en bepaalt de database welke regels aan de beurt zijn.
+
+| # | Onderwerp | Besluit |
+|---|---|---|
+| 1 | Standen | **Uit, Wekelijks, Maandelijks, Per kwartaal.** Geen Jaarlijks. |
+| 2 | In het overzicht | Het schuifje Ronde vooraan in elke regel wordt een **uitklapmenu Planning** (campagnes en rapportages). Achter elke keuze staat wanneer de volgende analyse dan komt; onder het knopje de volgende datum van de gekozen stand. Iedereen die ingelogd is mag hem omzetten. |
+| 3 | Uit | **Geen updates meer**, ook geen eindevaluatie. Een losse analyse ("maak een marketing analyse van …") kan nog wel. |
+| 4 | Welke dag | Wekelijks: elke ronde. Maandelijks: vanaf de **eerste vrijdag van de maand**. Per kwartaal: vanaf de eerste vrijdag van **januari, april, juli en oktober**. |
+| 5 | Gemiste vrijdag | **Inhalen.** Een regel blijft aan de beurt tot er sinds de geplande week een versie is. Alleen de laatste periode wordt ingehaald, niet elke gemiste. |
+| 6 | Data die achterloopt | **Altijd op de eerste vrijdag**, niet wachten. Loopt een bron (orders, leads) niet tot het einde van de periode, dan staat dat in de datakwaliteit van het rapport. |
+| 7 | Periode van een rapportage | **Volgt uit de planning**: Maandelijks = de vorige volle maand, Per kwartaal = het vorige volle kwartaal, nooit later dan gisteren. De vrije periode uit de briefing geldt alleen bij Wekelijks en Uit. |
+| 8 | Campagnes | Kunnen alle vier de standen krijgen. De **eindevaluatie komt in de eerste ronde na de einddatum**, welke stand ook (behalve Uit); daarna springt de planning op Uit. Een campagne die nog niet begonnen is, wacht tot de eerste ronde na de startdatum. |
+| 9 | Balk boven het overzicht | **Volgende analyseronde**: de eerstvolgende vrijdag, het aantal analyses en hun namen (een klik opent de analyse). Dezelfde lijst als die van de skill. |
+| 10 | Standaard per opzet | Elke opzet heeft een **standaardplanning** (Campagne analyse Wekelijks, maandrapportages Maandelijks, kwartaalrapportages Per kwartaal, een nieuwe opzet Uit), in te stellen bij de opzet onder Analyse prompts. Een nieuwe analyse krijgt die stand; een toegevoegd voorstel ook (Wekelijks). |
+
+**Hoe het rekent** (keuzes van Claude, ter controle door de eigenaar):
+- Een ronde hoort bij een **week, maandag t/m zondag**. De vrijdag van die week is de rondedag. Wie
+  een keer op donderdag draait (een feestdag), draait de ronde van die vrijdag. Donderdag
+  31 december 2026 is dus de ronde van vrijdag 1 januari 2027.
+- Een versie uit de week van de geplande vrijdag, of later, telt als gedaan. Twee keer draaien in
+  dezelfde week maakt niets dubbel. Een losse analyse in die week telt ook.
+- Een nieuwe maand- of kwartaalregel draait in de eerstvolgende ronde, over de vorige volle periode.
+
+**Waar het staat**:
+- Migratie 0049: kolom `planning` op `marketing_analyse_campagnes`, `standaard_planning` op
+  `marketing_analyse_opzetten`, en de functie `marketing_analyse_ronde(datum)` die per regel geeft
+  of hij aan de beurt is, waarom (`reden`), de volgende datum en de periode. De oude kolom
+  `analyse_ronde` loopt via een trigger mee (planning ≠ uit), zodat `marketing_analyse_bewaar` en
+  `marketing_analyse_voorstel_toevoegen` ongewijzigd werken: wie hem aanzet krijgt de
+  standaardplanning van de opzet, wie hem uitzet krijgt Uit.
+- Dezelfde rekenregel in TypeScript voor het dashboard: `lib/marketingAnalyse/planning.ts`, getest
+  met dezelfde gevallen als waarmee de SQL-functie is nagelopen. Houd ze gelijk.
+- Dashboard: `PlanningKeuze.tsx` (uitklapmenu, in een portal omdat de tabel horizontaal scrolt) en
+  `RondeBalk.tsx`; PATCH `{ planning }` op `/api/marketing-analyse`.
+- De skill `marketing-analyse` vraagt de ronde op met `select * from dataloket.marketing_analyse_ronde()`
+  en maakt alleen de regels met `aan_de_beurt`.
+
+## 18. Verzonden e-mails (verzoek van de eigenaar, 25 november 2026)
+
+Achter het schildje Beheer, naast Analyse prompts en Semantic layer, staat de knop **Verzonden
+e-mails**: per adres wie wanneer welke analyse per mail kreeg.
+
+- **Alleen de eigenaar** ziet de knop en het overzicht (keuze van Claude: het zijn de adressen van
+  collega's en het is een beheerscherm).
+- **Per adres gelogd vanaf 25 november 2026** (migratie 0050, `marketing_analyse_mail_log`), ook als
+  een mail mislukt, met de fout. Campagnenaam, versie en label worden meegeschreven, zodat het
+  logboek blijft kloppen als een analyse later wordt verwijderd.
+- **Eerder verstuurde mails** zijn niet per adres terug te halen: de versie bewaarde alleen het
+  aantal. Die staan erin als "Verstuurd aan 1 adres, welke is niet bewaard".
+- **Een analyse zonder mail** staat er ook, met de reden: geen volgers, of niet verstuurd (met de
+  fout, bijvoorbeeld een ontbrekend Gmail-wachtwoord).
+
+## 19. Analysepagina: de funnel als navigatie (verzoek van de eigenaar, 25 november 2026)
+
+De eigenaar vond de analysepagina niet professioneel genoeg. Er zijn drie opzetten naast elkaar
+gelegd (het origineel, opzet A met de funnel links als navigatie en opzet B met eerst het
+totaalbeeld). De eigenaar koos **opzet A** en liet hem definitief doorvoeren.
+
+- **Links de funnel, rechts de stap.** De horizontale tabbalk is vervangen door een vaste
+  navigatie links, met de samenvatting bovenaan en de verantwoording onderaan. De stappen blijven
+  de tabbladen van §14, in dezelfde groepen en volgorde; het formaat van de analyse verandert niet,
+  dus oude versies en de skill werken ongewijzigd.
+- **De pagina opent op de samenvatting**: conclusie, voortgang tegen doel en budget met de
+  verstreken looptijd als streep, een melding per stap met oordeel probleem, wat nu te doen en de
+  funnel in één lijst.
+- **Wat nu te doen is af te vinken**, gedeeld voor het team, met naam en datum (migratie 0051).
+  Keuze van Claude: per versie, omdat een nieuwe versie de acties opnieuw bepaalt.
+- **Elke stap dezelfde volgorde**: oordeel en kerncijfers, wat we zien naast wat nu te doen,
+  grafieken en tabellen, hoe het gemeten is, vorige en volgende.
+- **Niet overgenomen uit opzet A**: de andere indeling van de stappen (Campagnepagina, Conversies,
+  Vervolg op de website). Dat vraagt een nieuw formaat en een aanpassing van prompt en skill; de
+  bestaande tabbladen dekken dezelfde funnel.
+
+## 20. Benchmarks: hoe goed is goed (verzoek van de eigenaar, 25 november 2026)
+
+De eigenaar wil per blok zien of een resultaat goed, gemiddeld of slecht is, bijvoorbeeld of
+organische posts beter of slechter bereik en engagement halen dan soortgelijke posts.
+
+- **Vergelijkingsgroep: eigen historie** (keuze van de eigenaar): dezelfde accounts en
+  properties, de 12 maanden vóór de start, zonder de campagne zelf. Geen branchecijfers: die zijn
+  niet na te rekenen en wijken per bron sterk af.
+- **Weergave: label plus bandbreedte** (keuze van de eigenaar): onder het kerncijfer Beter,
+  Gemiddeld of Slechter, de mediaan, het aantal vergeleken items en een dunne balk met de
+  middelste helft, de mediaan en het cijfer. Rechts is altijd beter, ook bij kosten.
+- **Het oordeel rekent het dashboard**, niet Claude: boven het derde kwart beter, onder het
+  eerste slechter. Zo is het label altijd na te rekenen uit de verdeling.
+- **Minstens 5 items**, anders geen benchmark. Welke cijfers en groepen per tabblad staat in de
+  skill; de standaard-hoofdprompt vraagt de benchmark mee te wegen in het oordeel.
+- Oude versies hebben geen benchmark en blijven er hetzelfde uitzien. De volgende analyse van een
+  campagne vult ze.
+
+## 21. De stappen van de funnel, formaat 3 (verzoek van de eigenaar, 25 november 2026)
+
+Uit opzet A (§19) is de indeling van de stappen overgenomen, zoals de eigenaar de funnel
+beschreef: advertenties op verschillende platforms, organische posts en e-mail sturen verkeer naar
+de campagnepagina; daar kijken we wat bezoekers doen, welke conversies ze doen en wat ze daarna
+op de website doen; daarna leads en orders in Syntec.
+
+- **Acht stappen in drie groepen**: Media (Advertenties, Organische social, E-mail), Website
+  (Campagnepagina, Conversies, Vervolg op de website), Resultaat (Leads in Syntec, Orders in Syntec).
+- **Bereik en Investering zijn geen eigen stap meer**: ze horen bij Advertenties (de mediakosten
+  zijn daar het eerste kerncijfer; budget en tempo staan ook op de samenvatting). Organisch bereik
+  staat bij Organische social.
+- **Verkeer en Gedrag zijn samen Campagnepagina**, het belangrijkste punt van de funnel.
+- **Conversies** vervangt Lead-events en zegt per soort of hij op de campagnepagina zelf of elders
+  op de site viel. Het leadcijfer blijft hetzelfde (sessies die op de campagnepagina begonnen).
+- **Vervolg op de website is nieuw**: welke pagina's en paginagroepen bezoekers daarna bekijken,
+  welke belangrijke events ze daar doen en hoeveel er meteen weggaan. Keuze van Claude voor het
+  hoofdgetal: het aandeel sessies dat na de campagnepagina nog een andere pagina bekijkt.
+- **Formaat 3** in de code; versies in formaat 2 houden hun oude tabbladen. Prompt, skill en de
+  standaardtekst van de semantic layer zijn bijgewerkt. De opgeslagen semantic layer (versie 4)
+  noemt nog de oude namen Lead-events en Investering; de skill vertaalt die.
+
+
+## 22. Altijd het totaal van leads en orders (verzoek van de eigenaar, 25 november 2026)
+
+Vraag: "Ik wil dat er bij de leads uit Syntec altijd een opsomming is van alle leads, hoeveel vanuit
+internet en welke lead types dan uit internet zoals proefrit en offerte etc. Daarnaast wil ik bij de
+orders ook altijd een totaal en een uitsplits ordertype zoals rent, zakelijk lease oid etc zodat ik een
+goed beeld heb wat deze auto's in totaal hebben gedaan wat betreft leads en orders."
+
+- **Twee views** (migratie 0052): `marketing_analyse_leads_soort` (alle leads met `soort`, `internet`,
+  `website`, `kanaalgroep_naam`) en `marketing_analyse_orders_type` (alle orders, ook Handel en verhuur,
+  met `ordertype` en `klantorder`). Het ordertype staat ook in TypeScript (`ordertypeVan` in
+  `lib/sync/analyseOrders.ts`, getest); houd ze gelijk.
+- **Ordertypes**: koop particulier, koop zakelijk, private lease, zakelijke lease, verhuur (Rent), demo,
+  handel, overig. Handel op ordersoort, de rest op klantgroep. Keuze van Claude, aan te passen: "Dealer
+  Lease" telt als zakelijke lease; Restmarge deal, Centrale Bestelling en Cupra - Euromobi - Koop als
+  overig.
+- **Stap Leads in Syntec**: altijd eerst de tabel Alle leads (Internet en offline per kanaalgroep) en
+  Internet per soort lead, met de websiteleads ernaast. **Stap Orders in Syntec**: altijd eerst het totaal
+  van alle orders per ordertype, dan de klantgroepen van de verkoop aan klanten. Verhuur (Rent) altijd
+  apart noemen.
+- Context, geen doelcijfer: het leadcijfer tegen het doel blijft uit één bron komen (§15).
+- **Semantic layer versie 5**: dit overzicht, de stapnamen van formaat 3 (Conversies, Orders in Syntec als
+  stap), de modelnaam "A2 e-tron (A1)" in de orders, en de benchmarkgroep van campagnepagina's (alle
+  /acties/-pagina's op udenhout.nl met minstens 200 sessies, zonder after sales en service).
+- Staat in de standaard-hoofdprompt, de semantic layer (`standaardSemantiek.ts` en versie 5 in de
+  database) en de skill.

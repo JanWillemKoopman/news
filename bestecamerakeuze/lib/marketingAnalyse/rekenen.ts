@@ -4,17 +4,21 @@
  */
 import {
   ANALYSE_TABBLADEN,
+  ANALYSE_TABBLADEN_V2,
   SEMANTIEK_BLOKKEN,
   type Aanbeveling,
   type Eenheid,
   type Kerncijfer,
+  type KerncijferBenchmark,
   type Prioriteit,
   type Sectie,
   type TabOordeel,
   BEDRIJF_MET_SYNTEC,
   type FunnelStap,
   type Formulier,
+  isPlanning,
   type LeadBron,
+  type Planning,
   type MaKerncijfers,
   type MaCampagneInvoer,
   type MaResultaat,
@@ -341,7 +345,7 @@ export function filterOpOpzet<T extends { opzetId: string }>(analyses: readonly 
 }
 
 export type OpzetInvoerUitkomst =
-  | { ok: true; invoer: { naam: string; formulier: Formulier; bedrijven: string[]; actief: boolean } }
+  | { ok: true; invoer: { naam: string; formulier: Formulier; bedrijven: string[]; actief: boolean; standaardPlanning: Planning } }
   | { ok: false; fout: string };
 
 /** Een nieuwe of gewijzigde opzet uit het dashboard, gecontroleerd. */
@@ -352,7 +356,13 @@ export function leesOpzetInvoer(body: unknown): OpzetInvoerUitkomst {
   if (b.formulier !== "campagne" && b.formulier !== "rapportage") return { ok: false, fout: "Kies een formulier." };
   return {
     ok: true,
-    invoer: { naam, formulier: b.formulier, bedrijven: leesBedrijven(b.bedrijven ?? b.bedrijf), actief: b.actief !== false },
+    invoer: {
+      naam,
+      formulier: b.formulier,
+      bedrijven: leesBedrijven(b.bedrijven ?? b.bedrijf),
+      actief: b.actief !== false,
+      standaardPlanning: isPlanning(b.standaardPlanning) ? b.standaardPlanning : "uit",
+    },
   };
 }
 
@@ -480,7 +490,7 @@ export function looptijdLabel(start: string | null | undefined, eind: string | n
  */
 const PRIORITEITEN: readonly Prioriteit[] = ["hoog", "middel", "laag"];
 const OORDELEN: readonly TabOordeel[] = ["goed", "aandacht", "probleem", "geen-data"];
-const TAB_SLEUTELS = new Set<string>(ANALYSE_TABBLADEN.map((t) => t.sleutel));
+const TAB_SLEUTELS = new Set<string>([...ANALYSE_TABBLADEN, ...ANALYSE_TABBLADEN_V2].map((t) => t.sleutel));
 
 function lijst<T>(x: T[] | undefined | null): T[] {
   return Array.isArray(x) ? x : [];
@@ -505,7 +515,7 @@ function leesAanbevelingen(ruw: unknown): Aanbeveling[] {
 export function normaliseerResultaat(ruw: unknown): MaResultaat {
   const r = (ruw ?? {}) as Partial<MaResultaat>;
   return {
-    formaat: r.formaat === 2 ? 2 : 1,
+    formaat: r.formaat === 3 ? 3 : r.formaat === 2 ? 2 : 1,
     samenvatting: {
       kop: r.samenvatting?.kop ?? "",
       regels: lijst(r.samenvatting?.regels).filter((x) => typeof x === "string").slice(0, 5),
@@ -522,6 +532,14 @@ export function normaliseerResultaat(ruw: unknown): MaResultaat {
         oordeel: s.oordeel && OORDELEN.includes(s.oordeel) ? s.oordeel : undefined,
         bevindingen: lijst(s.bevindingen).filter((b) => typeof b === "string" && b.trim()).slice(0, 5),
         acties: leesAanbevelingen(s.acties),
+        kerncijfers: Array.isArray(s.kerncijfers)
+          ? s.kerncijfers.map((k) => {
+              if (!k || typeof k !== "object") return k;
+              const { benchmark, ...rest } = k;
+              const b = leesBenchmark(benchmark);
+              return b ? { ...rest, benchmark: b } : rest;
+            })
+          : s.kerncijfers,
       }))
       .sort((a, b) => a.stap - b.stap),
     inzichten: lijst(r.inzichten),
@@ -555,7 +573,7 @@ export interface AnalyseTab {
   reden: string | null;
 }
 
-/** Syntec-leads gelden alleen als de analyse uitsluitend over Van den Udenhout gaat. */
+/** Syntec-leads en -orders gelden alleen als de analyse uitsluitend over Van den Udenhout gaat. */
 export function syntecVanToepassing(bedrijven: readonly string[] | null | undefined): boolean {
   const lijst = (bedrijven ?? []).filter(Boolean);
   return lijst.length > 0 && lijst.every((b) => b === BEDRIJF_MET_SYNTEC);
@@ -576,10 +594,11 @@ function tabUitSecties(sleutel: string, naam: string, groep: string | null, sect
 }
 
 /**
- * De tabbladen van een analyse. Een campagne-analyse in formaat 2 krijgt altijd de vaste
- * tabbladen in vaste volgorde (een tabblad zonder sectie staat grijs met de reden), en daarachter
- * een eigen tabblad voor elke sectie zonder geldige `tab`. Een versie in formaat 1 en een
- * rapportage krijgen één tabblad per sectie, in de volgorde van de secties.
+ * De stappen van een analyse. Een campagne-analyse in formaat 3 krijgt altijd de vaste stappen
+ * van `ANALYSE_TABBLADEN`, in formaat 2 die van `ANALYSE_TABBLADEN_V2`, in vaste volgorde (een
+ * stap zonder sectie staat grijs met de reden), en daarachter een eigen stap voor elke sectie
+ * zonder geldige `tab`. Een versie in formaat 1 en een rapportage krijgen één stap per sectie, in
+ * de volgorde van de secties.
  */
 export function tabbladenVoor(
   resultaat: Pick<MaResultaat, "formaat" | "secties">,
@@ -587,17 +606,24 @@ export function tabbladenVoor(
 ): AnalyseTab[] {
   const losse = (secties: Sectie[]) =>
     secties.map((s, i) => tabUitSecties(`sectie-${i + 1}`, s.titel || `Onderdeel ${i + 1}`, null, [s], null));
-  if (resultaat.formaat !== 2 || opties.rapportage) return losse(resultaat.secties);
+  if (resultaat.formaat === 1 || opties.rapportage) return losse(resultaat.secties);
 
-  const vast = ANALYSE_TABBLADEN.map((t) => {
+  const lijst: readonly { sleutel: string; naam: string; groep: string }[] =
+    resultaat.formaat === 3 ? ANALYSE_TABBLADEN : ANALYSE_TABBLADEN_V2;
+  const sleutels = new Set(lijst.map((t) => t.sleutel));
+  const leadStap = resultaat.formaat === 3 ? "Conversies" : "Lead-events";
+  const vast = lijst.map((t) => {
     const secties = resultaat.secties.filter((s) => s.tab === t.sleutel);
+    const nvt = !syntecVanToepassing(opties.bedrijven);
     const reden =
-      t.sleutel === "syntec" && !syntecVanToepassing(opties.bedrijven)
-        ? `Niet van toepassing. Leads uit Syntec gelden alleen voor een analyse die uitsluitend over ${BEDRIJF_MET_SYNTEC} gaat; de leads staan bij Lead-events.`
-        : "Deze analyse heeft hier geen onderdeel voor.";
+      t.sleutel === "syntec" && nvt
+        ? `Niet van toepassing. Leads uit Syntec gelden alleen voor een analyse die uitsluitend over ${BEDRIJF_MET_SYNTEC} gaat; de leads staan bij ${leadStap}.`
+        : t.sleutel === "orders" && nvt
+          ? `Niet van toepassing. Orders uit Syntec gelden alleen voor een analyse die uitsluitend over ${BEDRIJF_MET_SYNTEC} gaat.`
+          : "Deze analyse heeft hier geen onderdeel voor.";
     return tabUitSecties(t.sleutel, t.naam, t.groep, secties, reden);
   });
-  const zonderPlek = resultaat.secties.filter((s) => !s.tab || !TAB_SLEUTELS.has(s.tab));
+  const zonderPlek = resultaat.secties.filter((s) => !s.tab || !sleutels.has(s.tab));
   return [...vast, ...losse(zonderPlek)];
 }
 
@@ -727,4 +753,155 @@ export function overzichtCijfers(
     doelLeads,
     gehaaldPct: leads !== null && doelLeads ? (leads / doelLeads) * 100 : null,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Analysepagina: voortgang in de samenvatting
+// ---------------------------------------------------------------------------
+
+function dagNummer(datum: string): number {
+  return Math.floor(Date.parse(`${datum.slice(0, 10)}T00:00:00Z`) / 86_400_000);
+}
+
+/** Budget tegen de verstreken looptijd: binnen 10 procentpunt is op schema. */
+export type BudgetTempo = "op-schema" | "te-snel" | "te-langzaam";
+
+export function budgetTempo(besteedPct: number | null, tijdPct: number | null): BudgetTempo | null {
+  if (besteedPct === null || tijdPct === null) return null;
+  const verschil = besteedPct - tijdPct;
+  if (Math.abs(verschil) <= 10) return "op-schema";
+  return verschil > 0 ? "te-snel" : "te-langzaam";
+}
+
+export interface AnalyseVoortgang {
+  /** Dag van de looptijd op de laatste dag van de analyseperiode (1 = de startdatum). */
+  dag: number | null;
+  dagen: number | null;
+  /** Verstreken deel van de looptijd, 0 t/m 100. */
+  tijdPct: number | null;
+  leads: number | null;
+  doelLeads: number | null;
+  gehaaldPct: number | null;
+  leadSoort: string | null;
+  kosten: number | null;
+  budget: number | null;
+  besteedPct: number | null;
+  tempo: BudgetTempo | null;
+}
+
+/**
+ * De voortgang bovenaan de samenvatting: hoeveel van de looptijd voorbij was op de laatste dag
+ * van de analyseperiode, en daartegen het leaddoel en het budget. Leads en kosten volgen
+ * dezelfde regels als het overzicht (`overzichtCijfers`).
+ */
+export function voortgangVanAnalyse(a: {
+  briefing: { bedrijven?: string[] | null; budget?: number | null; doel?: string | null; startdatum?: string | null; einddatum?: string | null };
+  periodeTot: string | null;
+  kerncijfers: MaKerncijfers | null | undefined;
+}): AnalyseVoortgang {
+  const b = a.briefing;
+  const cijfers = overzichtCijfers({ bedrijven: b.bedrijven ?? [], budget: b.budget ?? null, doel: b.doel ?? null }, a.kerncijfers);
+  let dag: number | null = null;
+  let dagen: number | null = null;
+  let tijdPct: number | null = null;
+  if (b.startdatum && b.einddatum && a.periodeTot) {
+    dagen = dagNummer(b.einddatum) - dagNummer(b.startdatum) + 1;
+    if (dagen > 0) {
+      dag = Math.min(dagen, Math.max(0, dagNummer(a.periodeTot) - dagNummer(b.startdatum) + 1));
+      tijdPct = (dag / dagen) * 100;
+    } else {
+      dagen = null;
+    }
+  }
+  return {
+    dag,
+    dagen,
+    tijdPct,
+    leads: cijfers.leads,
+    doelLeads: cijfers.doelLeads,
+    gehaaldPct: cijfers.gehaaldPct,
+    leadSoort: cijfers.leadSoort,
+    kosten: cijfers.kosten,
+    budget: cijfers.budget,
+    besteedPct: cijfers.besteedPct,
+    tempo: budgetTempo(cijfers.besteedPct, tijdPct),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Benchmark: een kerncijfer tegen soortgelijke campagnes of posts (plan §20)
+// ---------------------------------------------------------------------------
+
+/** Onder dit aantal vergelijkbare items zegt een verdeling te weinig: dan geen benchmark. */
+export const BENCHMARK_MIN_AANTAL = 5;
+
+function getal(x: unknown): number | null {
+  return typeof x === "number" && Number.isFinite(x) ? x : null;
+}
+
+/**
+ * Een benchmark uit de analyse, of null als hij niet bruikbaar is: te weinig items, ontbrekende
+ * of niet-oplopende kwartielen, of een min/max die buiten de kwartielen valt.
+ */
+export function leesBenchmark(ruw: unknown): KerncijferBenchmark | null {
+  if (!ruw || typeof ruw !== "object") return null;
+  const b = ruw as Record<string, unknown>;
+  const mediaan = getal(b.mediaan);
+  const p25 = getal(b.p25);
+  const p75 = getal(b.p75);
+  const aantal = getal(b.aantal);
+  const groep = typeof b.groep === "string" ? b.groep.trim() : "";
+  if (mediaan === null || p25 === null || p75 === null || aantal === null || !groep) return null;
+  if (aantal < BENCHMARK_MIN_AANTAL || p25 > mediaan || mediaan > p75) return null;
+  const min = getal(b.min);
+  const max = getal(b.max);
+  return {
+    groep,
+    aantal: Math.round(aantal),
+    mediaan,
+    p25,
+    p75,
+    ...(min !== null && min <= p25 ? { min } : {}),
+    ...(max !== null && max >= p75 ? { max } : {}),
+    hogerIsBeter: b.hogerIsBeter !== false,
+  };
+}
+
+export type BenchmarkOordeel = "beter" | "gemiddeld" | "slechter";
+
+/** Boven het derde kwart is beter, onder het eerste kwart slechter (omgekeerd als lager beter is). */
+export function benchmarkOordeel(waarde: number | string | null | undefined, b: KerncijferBenchmark): BenchmarkOordeel | null {
+  if (typeof waarde !== "number" || !Number.isFinite(waarde)) return null;
+  const hoger = b.hogerIsBeter !== false;
+  if (waarde > b.p75) return hoger ? "beter" : "slechter";
+  if (waarde < b.p25) return hoger ? "slechter" : "beter";
+  return "gemiddeld";
+}
+
+export interface BenchmarkSchaal {
+  /** Posities op de balk, 0 t/m 100. */
+  bandVan: number;
+  bandTot: number;
+  mediaan: number;
+  waarde: number;
+}
+
+/**
+ * Waar de middelste helft, de mediaan en het cijfer zelf op de balk staan. De balk loopt van
+ * het laagste tot het hoogste van groep en cijfer (zonder min/max: anderhalf keer de
+ * middelste helft naar weerszijden), en draait om als lager beter is, zodat rechts altijd beter is.
+ */
+export function benchmarkSchaal(waarde: number, b: KerncijferBenchmark): BenchmarkSchaal {
+  const breedte = Math.max(b.p75 - b.p25, Math.abs(b.mediaan) * 0.1, 1e-9);
+  const laag = Math.min(b.min ?? b.p25 - 1.5 * breedte, waarde, b.p25);
+  const hoog = Math.max(b.max ?? b.p75 + 1.5 * breedte, waarde, b.p75);
+  const bereik = hoog - laag || 1;
+  const hoger = b.hogerIsBeter !== false;
+  const pos = (x: number) => {
+    const p = ((x - laag) / bereik) * 100;
+    return Math.min(100, Math.max(0, hoger ? p : 100 - p));
+  };
+  const a = pos(b.p25);
+  const z = pos(b.p75);
+  return { bandVan: Math.min(a, z), bandTot: Math.max(a, z), mediaan: pos(b.mediaan), waarde: pos(waarde) };
 }

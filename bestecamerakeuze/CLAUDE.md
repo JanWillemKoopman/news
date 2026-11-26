@@ -1669,7 +1669,8 @@ lees dat eerst voordat je hier iets verandert.
 
 - **Harde regel voor de data** (besluit van de eigenaar, november 2026): een analyse gebruikt
   alleen Windsor **live** (Google, Meta en LinkedIn Ads, de organische kanalen en GA4), de
-  leads-kopie `marketing_analyse_leads` (alleen voor Van den Udenhout) en `lead_kanaalkosten`
+  leads-kopie `marketing_analyse_leads` en de orders-kopie `marketing_analyse_orders` (beide alleen
+  voor Van den Udenhout) en `lead_kanaalkosten`
   (die laatste **niet** bij een campagne-analyse: daar zijn de kosten alleen de mediakosten uit
   Google Ads, Meta Ads en LinkedIn Ads; besluit van de eigenaar, 24 november 2026).
   **Niet** de andere tabellen in Supabase, ook niet `windsor_*`, `leads_raw` of `v_leads`. Die
@@ -1681,6 +1682,22 @@ lees dat eerst voordat je hier iets verandert.
   365 dagen; zonder rijen met "FW:" in Onderwerp. Filterlogica in `lib/sync/analyseLeads.ts`
   (getest). Alleen van toepassing op Van den Udenhout (`BEDRIJF_MET_SYNTEC`); de andere bedrijven
   kijken voor leads alleen naar GA4.
+- **Orders-kopie, bron "Syntec orders"** (25 november 2026, migratie 0048, §16 van het plan):
+  `marketing_analyse_orders`, vijf kolommen 1-op-1 uit het tabblad "Data orders" (Ordersoort,
+  Klantgroep, Merk, Model, Orderdatum) plus `orderdatum_op`, de laatste 365 dagen, één rij per
+  verkochte auto. Gevuld door `/api/sync` (eigen regel `Marketing analyse orders` in `sync_runs`);
+  "Data orders" staat niet in `BRONNEN`, dus de sync leest het tabblad zelf (`ANALYSE_ORDERS_BRON`).
+  De leads- en orders-kopie delen `vervangKopie` in `app/api/sync/route.ts`. Tellen gaat in de view
+  `marketing_analyse_orders_klant` (alleen Nieuw en Gebruikt; Handel apart, `klantgroep_naam`), gelijk
+  aan `isKlantOrder` / `klantgroepNaam` in `lib/sync/analyseOrders.ts` (getest). **De uitsplitsing per
+  klantgroep staat altijd in de analyse**: semantic layer (Algemeen en blok Syntec orders,
+  `data_orders`), hoofdprompt en skill. Eigen tabblad **Orders in Syntec** (`orders`), grijs als de
+  analyse niet uitsluitend over Van den Udenhout gaat. Orders zijn nooit het leadcijfer.
+- **Altijd het totaal van leads en orders** (25 november 2026, migratie 0052, §22 van het plan). De
+  stap Leads in Syntec begint met alle leads (Internet en offline, Internet per soort, de websiteleads;
+  view `marketing_analyse_leads_soort`), de stap Orders in Syntec met alle orders per ordertype (ook
+  Handel en verhuur; view `marketing_analyse_orders_type`, gelijk aan `ordertypeVan`, getest). Context,
+  nooit het leadcijfer. Staat in semantic layer versie 5, de hoofdprompt en de skill.
 - **Leads: één bron, GA4 of Syntec** (besluit van de eigenaar, 25 november 2026, §15 van het plan).
   Bij een Campagne analyse komt het leadcijfer (`kerncijfers.leadsDoel`, met `leadBron` en
   `leadsDoelSoort`) **standaard uit Google Analytics**: de lead-events van de soort uit het doel
@@ -1699,7 +1716,7 @@ lees dat eerst voordat je hier iets verandert.
   in datums) en omschrijving, en **geen label**. Elke opzet heeft een eigen prompt (per opzet
   genummerd); een lege prompt laat de skill **weigeren**, nooit terugvallen. In het overzicht
   krijgen alleen campagnes doel, funnelcijfers en kosten op schema; een rapportage toont alleen
-  naam, Analyse ronde en Laatste analyse. Rechtsboven **Analyse prompts** (uitklapmenu per
+  planning, naam en Laatste analyse. Rechtsboven **Analyse prompts** (uitklapmenu per
   opzet; de eigenaar wijzigt daar ook naam, formulier, bedrijf en actief, en maakt met
   "Nieuwe opzet" zelf opzetten aan; verwijderen alleen zonder analyses, anders uitzetten).
   Route `opzetten`, `leesCampagneInvoer(body, opzet)` in `rekenen.ts` (getest).
@@ -1708,15 +1725,28 @@ lees dat eerst voordat je hier iets verandert.
   bedrijven laat de keuze aan de briefing. De oude kolom `bedrijf` blijft als leesbare kopie
   ("PGZ, VELOO"), bijgehouden door een trigger; lees en schrijf `bedrijven`. Syntec-leads
   alleen als de analyse **uitsluitend** over Van den Udenhout gaat én het doel Syntec noemt (`leadBron`).
-- **Overzicht campagne-analyses** (verzoek van de eigenaar, november 2026): kolommen Ronde
-  (klein schuifje vooraan), Campagne (met de laatste analyse eronder), Uitgaven (balkje
+- **Overzicht campagne-analyses** (verzoek van de eigenaar, november 2026): kolommen Planning
+  (uitklapmenu vooraan, zie hieronder), Campagne (met de laatste analyse eronder), Uitgaven (balkje
   tegen het budget, rood boven 100%), CTR (gezamenlijk over Google, Meta en LinkedIn Ads:
   `klikken` ÷ `vertoningenAds`, gewogen, nooit over de vertoningen inclusief organisch),
   Bezoekers (`sessies`: sessies die op de campagnepagina begonnen, uit elk kanaal), Leads (`leadsDoel` uit één bron:
   Google Analytics, of Syntec als het doel dat zegt; bron en soort eronder) en Doel leads (balkje, groen
   vanaf 100%). Het leaddoel komt uit `kerncijfers.doelLeads` (de analyse leest het uit het
   vrije doel), anders het eerste getal in het doel (`overzichtCijfers` in `rekenen.ts`,
-  getest). Rapportages hebben een eigen tabel eronder: Ronde, Rapportage, Laatste analyse.
+  getest). Rapportages hebben een eigen tabel eronder: Planning, Rapportage, Laatste analyse.
+- **Planning van de analyseronde** (25 november 2026, migratie 0049, besluiten in §17 van het plan).
+  Het schuifje Ronde is een uitklapmenu **Planning** geworden (`PlanningKeuze.tsx`, in een portal
+  omdat de tabel horizontaal scrolt): Uit, Wekelijks, Maandelijks (eerste vrijdag van de maand) en
+  Per kwartaal (eerste vrijdag van jan, apr, jul, okt). Achter elke keuze staat de volgende datum,
+  onder het knopje die van de gekozen stand (blauw = staat klaar, oranje = eindevaluatie). Uit = geen
+  updates, ook geen eindevaluatie. Boven het overzicht de balk **Volgende analyseronde**
+  (`RondeBalk.tsx`): de eerstvolgende vrijdag met de namen. Een ronde hoort bij een week (ma t/m
+  zo), een gemiste week wordt ingehaald, een geplande rapportage gaat over de vorige volle maand of
+  het vorige volle kwartaal. De rekenregel staat twee keer, gelijk gehouden: `planning.ts` (getest)
+  voor het dashboard en `dataloket.marketing_analyse_ronde(datum)` voor de skill. De kolom
+  `analyse_ronde` loopt via een trigger mee met `planning`, zodat de bestaande SQL-functies niet
+  veranderden; lees en schrijf `planning`. Elke opzet heeft een standaardplanning (instelbaar bij de
+  opzet onder Analyse prompts).
 - **Vier kennislagen.** De *briefing* (opzet, naam, **Bedrijven** = welke van onze bedrijven, **Merk** =
   automerk, modellen, looptijd, doel als vrije tekst, totaalbudget, omschrijving; bij een
   rapportage naam, bedrijf, periode en omschrijving); de
@@ -1741,6 +1771,14 @@ lees dat eerst voordat je hier iets verandert.
   bestaande, nog niet verstuurde versie van hoogstens zeven dagen oud. Mislukt het, dan blijft
   de fout in `notificatie_fout` staan en probeert `/api/sync` het 's nachts opnieuw. De
   trigger-URL staat vast in de migratie (productie, `news-ten-chi.vercel.app`).
+- **Verzonden e-mails** (25 november 2026, migratie 0050, op verzoek van de eigenaar). Elke mail wordt
+  per adres gelogd in `marketing_analyse_mail_log` (campagnenaam, versie, label, adres, tijdstip,
+  gelukt of fout; `logMail` in `notificatie.ts`, een logfout stopt het mailen nooit). Achter het
+  schildje Beheer staat voor de eigenaar de knop **Verzonden e-mails** (`MailLogZijbalk.tsx`, route
+  `mails`, alleen `isBeheerder`, leest via de dienstverbinding: de tabel heeft geen leesrecht voor
+  ingelogde collega's). Per regel wie wanneer welke analyse kreeg, nieuwste eerst, zoekbaar op adres
+  of campagne. Versies zonder logregel staan er ook in (`mailOverzicht` in `mailLog.ts`, getest): van
+  vóór het logboek met alleen het aantal, zonder volgers ("Geen mail") of niet verstuurd met de fout.
 - **E-mail settings: adressen per merk** (25 november 2026, migratie 0047, op verzoek). Per automerk
   de adressen die standaard volger worden van elke nieuwe analyse voor dat merk, zodat niemand ze per
   analyse opnieuw hoeft op te geven (`MerkMailZijbalk.tsx`, route `merk-mail`, tabel
@@ -1757,7 +1795,7 @@ lees dat eerst voordat je hier iets verandert.
   `laatste_versie` op de campagne (een verwijderde versie wordt nooit hergebruikt), bepaalt het
   label (**Eindevaluatie** als de einddatum vóór vandaag ligt, anders **Tussentijdse
   evaluatie**; bij een rapportage geen label), legt briefing (met opzet en periode) en Data
-  correctie van dat moment vast en zet de **Analyse ronde**
+  correctie van dat moment vast en zet de **planning** (via `analyse_ronde`)
   uit na een eindevaluatie. Elke versie onthoudt met welke hoofdprompt en semantic layer hij is
   gemaakt. Alleen de eigenaar kan een versie verwijderen.
 - **Het formaat** (`lib/marketingAnalyse/types.ts`, `MaResultaat`) is generiek: samenvatting
@@ -1768,26 +1806,61 @@ lees dat eerst voordat je hier iets verandert.
   kanttekeningen) en voorstellen voor de semantic layer. `normaliseerResultaat` zorgt dat een
   ontbrekend veld de pagina niet breekt. **Verander je het formaat, pas dan de skill in dezelfde
   wijziging aan.**
-- **De analysepagina in tabbladen** (24 november 2026, formaat 2, op verzoek; besluiten in §14
-  van het plan). Bovenaan altijd de samenvatting in drie kolommen (`SamenvattingBlok.tsx`):
-  samenvatting met doeloordeel, de aanbevolen acties (eerst voor de campagne als geheel, dan
-  alle acties uit de tabbladen op prioriteit) en de briefing als ingeklapte verticale strook.
-  Daaronder tien tabbladen in funnelvolgorde (`ANALYSE_TABBLADEN` in `types.ts`, indeling in
-  `tabbladenVoor` in `rekenen.ts`, getest), in groepen, met onder elke naam het hoofdgetal en
-  een stipje met het oordeel; los achteraan Verantwoording. Elk tabblad: links 3/4 de cijfers
-  (`SectieBlok.tsx`), rechts 1/4 de bevindingen en acties, die blijven staan bij scrollen
-  (`AnalyseTabbladen.tsx`). Een tabblad zonder data staat grijs met de reden. Het open tabblad
-  staat in de URL (`mtab`). Dit is een derde uitzondering op "geen dubbele navigatie"; maak er
-  geen precedent van. Versies in formaat 1 en rapportages krijgen een tabblad per sectie.
+- **De analysepagina: de funnel als navigatie** (25 november 2026, opzet A, op verzoek; besluiten
+  in §19 van het plan, eerdere opzet met tabbladen in §14). Links een vaste navigatie
+  (`StapNavigatie.tsx`): bovenaan **Samenvatting**, dan de stappen van de funnel in hun groepen
+  (`ANALYSE_TABBLADEN` in `types.ts`, indeling in `tabbladenVoor` in `rekenen.ts`, getest), elk
+  met nummer, hoofdgetal en stipje met het oordeel, en onderaan **Verantwoording**.
+  - **De stappen (formaat 3, 25 november 2026, plan §21)**: Media: **Advertenties** (met bereik
+    en investering), **Organische social**, **E-mail**; Website: **Campagnepagina** (verkeer en
+    gedrag op de pagina), **Conversies** (lead-events en andere conversies, op de pagina of
+    elders), **Vervolg op de website** (waar bezoekers daarna heen gaan); Resultaat: **Leads in
+    Syntec**, **Orders in Syntec**. Versies in formaat 2 houden hun tien tabbladen van toen
+    (`ANALYSE_TABBLADEN_V2`): `tabbladenVoor` kiest de lijst op `formaat`. Verander je de stappen,
+    dan samen met de standaard-hoofdprompt en de skill, en met een nieuw formaatnummer. Rechts de open stap; de pagina opent op de samenvatting en de
+  open stap staat in de URL (`mtab`, leeg = samenvatting). Dit vervangt de horizontale tabbalk en
+  is daarmee nog steeds de derde uitzondering op "geen dubbele navigatie"; maak er geen precedent van.
+  - **Samenvatting** (`SamenvattingPagina.tsx`): de conclusie (kop, regels, toelichting
+    inklapbaar) met rechts de voortgang: dag x van y en twee balken, doel en budget, met een streep
+    voor het verstreken deel van de looptijd (`voortgangVanAnalyse` en `budgetTempo` in
+    `rekenen.ts`, getest; leads en kosten volgen `overzichtCijfers`). Daaronder een rode melding
+    per stap met oordeel probleem, **Wat nu te doen** (de acties voor de campagne als geheel, op
+    prioriteit, met knoppen naar hun stappen) en **De funnel in één oogopslag** (elke stap met
+    hoofdgetal, oordeel en kopzin, klikbaar).
+  - **Acties afvinken** is gedeeld voor het hele team (migratie 0051,
+    `marketing_analyse_acties_klaar`, route `acties`): één rij per afgevinkte actie van een versie,
+    met wie en wanneer. De actie heet naar haar plek in `aanbevelingen` (`geheel-0` …), want een
+    versie verandert nooit; een nieuwe versie begint met een lege lijst. Iedereen mag afvinken en
+    uitvinken.
+  - **Elke stap** (`StapPagina.tsx`) heeft dezelfde opbouw: "Stap n van N · groep", naam met
+    oordeel, de kopzin en de kerncijfers; dan **Wat we zien** (bevindingen) naast **Wat nu te
+    doen** (acties van de stap); dan grafieken en tabellen (`AnalyseGrafiek`, `AnalyseTabel` uit
+    `SectieBlok.tsx`); ingeklapt **Hoe is dit gemeten?** (de `tekst` van de sectie); onderaan
+    naar de vorige en volgende stap. Een stap zonder data toont de reden.
+  - **Briefing** en **Volgers** zijn knoppen in de kop en openen een zijbalk (`Briefing.tsx`,
+    `VolgersZijbalk.tsx`). Analysedatum, periode, prompt- en semantic-layerversie en "Versie
+    verwijderen" staan onderaan de rechterkolom.
+  - Versies in formaat 1 en rapportages krijgen een stap per sectie, zonder groepen; daar vallen
+    Wat we zien en Wat nu te doen per stap weg (die velden bestaan daar niet).
+  - **Benchmark onder een kerncijfer** (25 november 2026, op verzoek; plan §20). Een kerncijfer kan
+    een `benchmark` dragen (`KerncijferBenchmark` in `types.ts`): de verdeling van hetzelfde cijfer
+    bij soortgelijke campagnes, posts of campagnepagina's uit **onze eigen historie** (12 maanden
+    vóór de start, zelfde accounts; geen branchecijfers, keuze van de eigenaar). Claude rekent hem
+    uit (skill, "Benchmarks"); het dashboard bepaalt het oordeel zelf (`benchmarkOordeel`: boven het
+    derde kwart beter, onder het eerste slechter, omgekeerd bij `hogerIsBeter: false`) en tekent
+    onder het cijfer een label met een dunne balk (`BenchmarkRegel` in `SectieBlok.tsx`,
+    `benchmarkSchaal`): grijs vlak = middelste helft, streepje = mediaan, stip = het cijfer, rechts
+    is altijd beter. `leesBenchmark` (in `normaliseerResultaat`) laat een benchmark met minder dan 5
+    items of niet-oplopende kwartielen weg. Getest in `rekenen.test.ts`.
 - **Het overzicht**: lopende campagnes bovenaan op startdatum, afgelopen in een inklapbaar blok
   Afgelopen (rapportages hebben geen einddatum en staan altijd bij lopend); per regel de
-  schakelaar Analyse ronde en bij campagnes de kerncijfers uit de laatste analyse.
+  planning (uitklapmenu) en bij campagnes de kerncijfers uit de laatste analyse.
   Rechtsboven (25 november 2026, op verzoek) een schildje **Beheer**, dan **E-mail settings** en Nieuwe
-  analyse. Analyse prompts en Semantic layer staan achter het schildje (vooral voor beheerders, maar
+  analyse. Analyse prompts, Semantic layer en (alleen voor de eigenaar) Verzonden e-mails staan achter het schildje (vooral voor beheerders, maar
   iedereen kan ze openen); open of dicht wordt per browser onthouden. De open analyse staat in de URL
   (`?analyse=<campagne-id>`).
-- **Filterbalk op soort analyse** (25 november 2026, op verzoek; `OpzetFilterBalk.tsx`). Tussen de
-  voorgestelde analyses en het blok Lopende analyses een rij knoppen: **Alle** en één per opzet met
+- **Filterbalk op soort analyse** (25 november 2026, op verzoek; `OpzetFilterBalk.tsx`). Tussen de planningsbalk van de
+  analyseronde (`RondeBalk`) en het blok Lopende analyses een rij knoppen: **Alle** en één per opzet met
   het aantal analyses (`opzetFilterKnoppen` en `filterOpOpzet` in `rekenen.ts`, getest). De knoppen
   komen uit de opzetten, dus een nieuwe opzet uit Analyse prompts krijgt vanzelf een knop, ook met 0
   analyses; een uitgezette opzet alleen zolang er analyses van zijn. Eén keuze tegelijk, nog eens
@@ -1810,7 +1883,7 @@ lees dat eerst voordat je hier iets verandert.
   ingeklapt**, gesorteerd op Live sinds van nieuw naar oud (`sorteerVoorstellen`); een klik op een regel toont **Gevonden datapunten** (advertentiecampagnes,
   campagnepagina, social media posts, met aantallen, en de kanttekeningen eronder). Toevoegen
   opent **altijd eerst de ingevulde briefing** (`CampagneZijbalk` met `voorstel`); opslaan doet
-  `marketing_analyse_voorstel_toevoegen` in één transactie (Campagne analyse, **Analyse ronde aan**,
+  `marketing_analyse_voorstel_toevoegen` in één transactie (Campagne analyse, **planning Wekelijks**,
   `herkenning` = het bewijs). Negeren en terugzetten mag iedereen. De briefing kreeg het veld
   **Campagnepagina('s)** (`campagnepaginas`); de skill `marketing-analyse` gebruikt pagina's en
   herkenning als startpunt.

@@ -35,7 +35,7 @@ import {
   vandaagNL,
   versieLabel,
 } from "@/lib/marketingAnalyse/rekenen";
-import { ANALYSE_TABBLADEN, SEMANTIEK_BLOKKEN } from "@/lib/marketingAnalyse/types";
+import { ANALYSE_TABBLADEN, ANALYSE_TABBLADEN_V2, SEMANTIEK_BLOKKEN } from "@/lib/marketingAnalyse/types";
 
 
 const CAMPAGNE = { id: "c", formulier: "campagne" as const, bedrijven: [] as string[] };
@@ -213,6 +213,12 @@ test("opzetten: naam, sortering en invoer", () => {
   assert.ok(o.ok && o.invoer.bedrijven.length === 0 && o.invoer.actief);
   const m = leesOpzetInvoer({ naam: "PGZ + VELOO", formulier: "rapportage", bedrijven: ["PGZ", "VELOO", "pgz"] });
   assert.ok(m.ok && m.invoer.bedrijven.join("|") === "PGZ|VELOO");
+  // Standaardplanning: alleen de vier standen, anders Uit.
+  assert.ok(o.ok && o.invoer.standaardPlanning === "uit");
+  const p = leesOpzetInvoer({ naam: "VDU maand", formulier: "rapportage", standaardPlanning: "maand" });
+  assert.ok(p.ok && p.invoer.standaardPlanning === "maand");
+  const q = leesOpzetInvoer({ naam: "VDU jaar", formulier: "rapportage", standaardPlanning: "jaar" });
+  assert.ok(q.ok && q.invoer.standaardPlanning === "uit");
 });
 
 test("doel als getal uit vrije tekst", () => {
@@ -334,7 +340,7 @@ test("tabbladen: vaste volgorde bij formaat 2, leeg met reden, losse sectie acht
   const tabs = tabbladenVoor(resultaat, { rapportage: false, bedrijven: ["Van den Udenhout"] });
   assert.deepEqual(
     tabs.map((t) => t.sleutel),
-    [...ANALYSE_TABBLADEN.map((t) => t.sleutel), "sectie-1"],
+    [...ANALYSE_TABBLADEN_V2.map((t) => t.sleutel), "sectie-1"],
   );
   const per = Object.fromEntries(tabs.map((t) => [t.sleutel, t]));
   assert.equal(per.investering.hoofdcijfer?.waarde, 1989);
@@ -345,11 +351,14 @@ test("tabbladen: vaste volgorde bij formaat 2, leeg met reden, losse sectie acht
   assert.equal(per.email.leeg, true);
   assert.match(per.email.reden ?? "", /geen onderdeel/);
   assert.match(per.syntec.reden ?? "", /geen onderdeel/);
+  assert.match(per.orders.reden ?? "", /geen onderdeel/);
+  assert.equal(per.orders.groep, "Resultaat");
   assert.equal(per["sectie-1"].naam, "Iets anders");
   assert.equal(per["sectie-1"].groep, null);
 
   const pgz = tabbladenVoor(resultaat, { rapportage: false, bedrijven: ["PGZ"] });
   assert.match(pgz.find((t) => t.sleutel === "syntec")?.reden ?? "", /Niet van toepassing/);
+  assert.match(pgz.find((t) => t.sleutel === "orders")?.reden ?? "", /Niet van toepassing. Orders uit Syntec/);
 });
 
 test("tabbladen: formaat 1 en rapportage krijgen een tabblad per sectie", () => {
@@ -470,4 +479,117 @@ test("filterOpOpzet: null is alles, anders alleen die opzet", () => {
   assert.deepEqual(filterOpOpzet(analyses, null).map((x) => x.id), [1, 2, 3]);
   assert.deepEqual(filterOpOpzet(analyses, "a").map((x) => x.id), [1, 3]);
   assert.deepEqual(filterOpOpzet(analyses, "c"), []);
+});
+
+test("voortgangVanAnalyse: dag 68 van 105 bij de A2, doel en budget tegen de looptijd", async () => {
+  const { voortgangVanAnalyse } = await import("./rekenen");
+  const v = voortgangVanAnalyse({
+    briefing: { bedrijven: ["Van den Udenhout"], budget: 3150, doel: "20 proefritten", startdatum: "2026-09-18", einddatum: "2026-12-31" },
+    periodeTot: "2026-11-24",
+    kerncijfers: { kosten: 2016.82, leadsDoel: 20, leadBron: "ga4", doelLeads: 20, leadsDoelSoort: "proefritten" },
+  });
+  assert.equal(v.dag, 68);
+  assert.equal(v.dagen, 105);
+  assert.ok(Math.abs((v.tijdPct ?? 0) - 64.76) < 0.01);
+  assert.equal(v.leads, 20);
+  assert.equal(v.gehaaldPct, 100);
+  assert.equal(v.leadSoort, "proefritten");
+  assert.equal(v.tempo, "op-schema");
+});
+
+test("voortgangVanAnalyse: zonder looptijd of na de einddatum", async () => {
+  const { voortgangVanAnalyse } = await import("./rekenen");
+  const zonder = voortgangVanAnalyse({ briefing: { budget: null, doel: null }, periodeTot: null, kerncijfers: null });
+  assert.equal(zonder.tijdPct, null);
+  assert.equal(zonder.tempo, null);
+  const erna = voortgangVanAnalyse({
+    briefing: { startdatum: "2026-01-01", einddatum: "2026-01-10", budget: 100 },
+    periodeTot: "2026-02-01",
+    kerncijfers: { kosten: 50 },
+  });
+  assert.equal(erna.dag, 10);
+  assert.equal(erna.tijdPct, 100);
+  assert.equal(erna.tempo, "te-langzaam");
+});
+
+test("budgetTempo: binnen 10 procentpunt op schema", async () => {
+  const { budgetTempo } = await import("./rekenen");
+  assert.equal(budgetTempo(64, 65), "op-schema");
+  assert.equal(budgetTempo(80, 65), "te-snel");
+  assert.equal(budgetTempo(40, 65), "te-langzaam");
+  assert.equal(budgetTempo(null, 65), null);
+});
+
+test("leesBenchmark: alleen bruikbare verdelingen", async () => {
+  const { leesBenchmark } = await import("./rekenen");
+  const goed = { groep: "18 posts van dezelfde accounts", aantal: 18, mediaan: 900, p25: 600, p75: 1400, min: 200, max: 3300 };
+  assert.deepEqual(leesBenchmark(goed), { ...goed, hogerIsBeter: true });
+  assert.equal(leesBenchmark({ ...goed, aantal: 4 }), null, "te weinig items");
+  assert.equal(leesBenchmark({ ...goed, p25: 1000 }), null, "kwartielen lopen niet op");
+  assert.equal(leesBenchmark({ ...goed, groep: "" }), null, "zonder groep");
+  assert.equal(leesBenchmark("x"), null);
+  const zonderMin = leesBenchmark({ ...goed, min: 700, hogerIsBeter: false });
+  assert.equal(zonderMin?.min, undefined, "min boven het eerste kwart vervalt");
+  assert.equal(zonderMin?.hogerIsBeter, false);
+});
+
+test("benchmarkOordeel: kwartielen, en omgekeerd bij kosten", async () => {
+  const { benchmarkOordeel } = await import("./rekenen");
+  const b = { groep: "g", aantal: 10, mediaan: 2, p25: 1.5, p75: 3 };
+  assert.equal(benchmarkOordeel(3.5, b), "beter");
+  assert.equal(benchmarkOordeel(2.2, b), "gemiddeld");
+  assert.equal(benchmarkOordeel(1, b), "slechter");
+  assert.equal(benchmarkOordeel(3.5, { ...b, hogerIsBeter: false }), "slechter");
+  assert.equal(benchmarkOordeel(1, { ...b, hogerIsBeter: false }), "beter");
+  assert.equal(benchmarkOordeel("n.v.t.", b), null);
+});
+
+test("benchmarkSchaal: rechts is altijd beter", async () => {
+  const { benchmarkSchaal } = await import("./rekenen");
+  const b = { groep: "g", aantal: 10, mediaan: 50, p25: 25, p75: 75, min: 0, max: 100 };
+  assert.deepEqual(benchmarkSchaal(90, b), { bandVan: 25, bandTot: 75, mediaan: 50, waarde: 90 });
+  const kosten = benchmarkSchaal(90, { ...b, hogerIsBeter: false });
+  assert.equal(kosten.waarde, 10);
+  assert.equal(kosten.bandVan, 25);
+  // Een cijfer buiten de groep rekt de schaal op in plaats van van de balk te vallen.
+  assert.equal(benchmarkSchaal(200, b).waarde, 100);
+});
+
+test("normaliseerResultaat: een onbruikbare benchmark valt weg, de rest blijft", async () => {
+  const { normaliseerResultaat } = await import("./rekenen");
+  const r = normaliseerResultaat({
+    formaat: 2,
+    secties: [{ stap: 1, titel: "Organisch", kerncijfers: [
+      { label: "Vertoningen per post", waarde: 1100, eenheid: "aantal", benchmark: { groep: "posts", aantal: 3, mediaan: 1, p25: 0, p75: 2 } },
+      { label: "Engagement", waarde: 2.1, eenheid: "procent", benchmark: { groep: "posts", aantal: 20, mediaan: 1.4, p25: 0.9, p75: 2 } },
+    ] }],
+  });
+  const k = r.secties[0].kerncijfers ?? [];
+  assert.equal(k[0].benchmark, undefined);
+  assert.equal(k[0].waarde, 1100);
+  assert.equal(k[1].benchmark?.aantal, 20);
+});
+
+test("tabbladen formaat 3: de funnel van opzet A, oude sleutels worden losse stappen", () => {
+  const resultaat = normaliseerResultaat({
+    formaat: 3,
+    secties: [
+      { stap: 1, titel: "Advertenties", tab: "advertenties", kerncijfers: [{ label: "Besteed", waarde: 2017, eenheid: "euro" }] },
+      { stap: 4, titel: "Campagnepagina", tab: "campagnepagina", oordeel: "aandacht" },
+      { stap: 6, titel: "Vervolg", tab: "vervolg" },
+      { stap: 9, titel: "Oud tabblad", tab: "verkeer" },
+    ],
+  });
+  assert.equal(resultaat.formaat, 3);
+  const tabs = tabbladenVoor(resultaat, { rapportage: false, bedrijven: ["PGZ"] });
+  assert.deepEqual(tabs.map((t) => t.sleutel), [...ANALYSE_TABBLADEN.map((t) => t.sleutel), "sectie-1"]);
+  const per = Object.fromEntries(tabs.map((t) => [t.sleutel, t]));
+  assert.equal(per.advertenties.hoofdcijfer?.waarde, 2017);
+  assert.equal(per.campagnepagina.groep, "Website");
+  assert.equal(per.conversies.leeg, true);
+  assert.match(per.syntec.reden ?? "", /bij Conversies/);
+  assert.equal(per["sectie-1"].naam, "Oud tabblad");
+  // Een overkoepelende actie mag naar de nieuwe stappen verwijzen.
+  const metActie = normaliseerResultaat({ formaat: 3, aanbevelingen: [{ titel: "a", prioriteit: "hoog", tabs: ["vervolg", "onzin"] }] });
+  assert.deepEqual(metActie.aanbevelingen?.[0].tabs, ["vervolg"]);
 });

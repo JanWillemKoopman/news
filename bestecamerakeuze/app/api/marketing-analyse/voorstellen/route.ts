@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
  *
  * GET                                       → open en genegeerde voorstellen + laatste zoekronde
  * POST ?id=… { actie: "toevoegen", …briefing } → de nagelopen briefing wordt een campagne
- *                                              (Campagne analyse, Analyse ronde aan)
+ *                                              (Campagne analyse, planning Wekelijks)
  * POST ?id=… { actie: "negeren" }            → open → genegeerd
  * POST ?id=… { actie: "terugzetten" }        → genegeerd → open
  *

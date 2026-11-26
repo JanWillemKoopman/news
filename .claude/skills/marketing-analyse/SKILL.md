@@ -39,9 +39,18 @@ analyses; jij maakt ze. Het plan en alle besluiten van de eigenaar staan in
 2. **`dataloket.marketing_analyse_leads`**: de leads-kopie van "Data leads" (zeven kolommen,
    met Kanaal), en de view **`dataloket.marketing_analyse_leads_website`** daarop (alleen
    Kanaalgroep "Internet" én "udenhout.nl" in Kanaal of Onderwerp, met een kolom `soort`).
+   Voor het overzicht van alle leads de view **`dataloket.marketing_analyse_leads_soort`** (alle
+   leads met `soort`, `internet`, `website`, `kanaalgroep_naam`).
    **Alleen voor Van den Udenhout**; voor elk ander bedrijf niet gebruiken. `leadsSyntec` alleen
    invullen als de analyse uitsluitend over Van den Udenhout gaat, anders null.
-3. **`dataloket.lead_kanaalkosten`**: extra maandkosten per GA4-bron/medium. **Niet bij een
+3. **`dataloket.marketing_analyse_orders`** (bron **Syntec orders**): de orders-kopie van
+   "Data orders" (vijf kolommen: Ordersoort, Klantgroep, Merk, Model, Orderdatum, plus
+   `orderdatum_op`; één rij is één verkochte auto), en de view
+   **`dataloket.marketing_analyse_orders_klant`** daarop (alleen Nieuw en Gebruikt, met
+   `klantgroep_naam`), en voor het totaal van alle orders de view
+   **`dataloket.marketing_analyse_orders_type`** (alle orders met `ordertype` en `klantorder`).
+   **Alleen voor Van den Udenhout**, net als de leads.
+4. **`dataloket.lead_kanaalkosten`**: extra maandkosten per GA4-bron/medium. **Niet bij een
    campagne-analyse** (besluit van de eigenaar): daar zijn de kosten alleen de mediakosten uit
    Google Ads, Meta Ads en LinkedIn Ads. Alleen een rapportage mag deze tabel gebruiken, als de
    prompt erom vraagt, en noemt ze dan apart.
@@ -65,23 +74,87 @@ Besluit van de eigenaar, 25 november 2026; ook in de semantic layer (Algemeen, G
   group by soort;   -- de view eist al Kanaalgroep = 'Internet' en udenhout.nl in Kanaal of Onderwerp
   ```
   Noemt het doel Syntec bij een ander bedrijf: tel in GA4 en meld het in `datakwaliteit`.
-- Nooit opgeteld, nooit gemengd. De andere bron mag als context in zijn eigen tabblad, maar niet
+- Nooit opgeteld, nooit gemengd. De andere bron mag als context in zijn eigen stap, maar niet
   in `leadsDoel` en niet in het doeloordeel. Het dashboard rekent de bron zelf ook na
   (`leadBron` in `rekenen.ts`: het woord Syntec in het doel én alleen Van den Udenhout) en toont
   niets als `kerncijfers.leadBron` daarvan afwijkt.
+
+## Harde regel: orders altijd per klantgroep (Syntec orders)
+Verzoek van de eigenaar, 25 november 2026; ook in de semantic layer (Algemeen, Syntec orders) en
+in de hoofdprompt.
+- Alleen als de analyse **uitsluitend over Van den Udenhout** gaat; anders geen orders en geen
+  sectie `orders`.
+- Tel in de view, voor merk, modellen en periode, en **splits altijd uit per klantgroep**:
+  ```sql
+  select klantgroep_naam, ordersoort, count(*) as orders
+  from dataloket.marketing_analyse_orders_klant
+  where orderdatum_op between '<start>' and '<eind>'
+    and merk ilike '%<merk>%' and model ilike '%<model>%'
+  group by klantgroep_naam, ordersoort order by orders desc;
+  -- Handel apart (geen verkoop aan klanten):
+  -- select count(*) from dataloket.marketing_analyse_orders where ordersoort = 'Handel' and …
+  select max(orderdatum_op) from dataloket.marketing_analyse_orders;  -- tot wanneer de orders lopen
+  ```
+- De uitsplitsing per klantgroep (aantal, aandeel, totaalregel) en Nieuw tegen Gebruikt staan
+  **altijd** in de sectie `orders`; noem de grootste klantgroepen ook in de bevindingen.
+- Orders zijn nooit het leadcijfer (`leadsDoel`). Gaat het doel over verkochte auto's, dan
+  beoordeel je het doel op de orders. Er is geen koppeling lead → order: schrijf "orders voor
+  <model> in de periode", niet "orders uit de campagne".
+
+## Harde regel: altijd het overzicht van alle leads en orders (Van den Udenhout)
+Verzoek van de eigenaar, 25 november 2026; ook in de semantic layer (versie 5: Algemeen, Data
+leads, Syntec orders) en in de hoofdprompt. Bij elke analyse die uitsluitend over Van den
+Udenhout gaat staan in de sectie `syntec` en `orders` wat het merk en de modellen **in totaal**
+deden. Dit is context: het telt nooit mee in `leadsDoel`.
+```sql
+-- Leads: alles, Internet tegen offline, Internet per soort, en de websiteleads
+select kanaalgroep_naam, internet, soort, count(*) as leads, count(*) filter (where website) as website
+from dataloket.marketing_analyse_leads_soort
+where aangelegd_op >= '<start>' and aangelegd_op < '<eind + 1 dag>'
+  and merk ilike '%<merk>%' and model ilike '%<model>%'
+group by 1, 2, 3 order by leads desc;
+-- Orders: alles (ook Handel en verhuur), per ordertype
+select ordertype, klantorder, count(*) as orders
+from dataloket.marketing_analyse_orders_type
+where orderdatum_op between '<start>' and '<eind>'
+  and merk ilike '%<merk>%' and model ilike '%<model>%'
+group by 1, 2 order by orders desc;
+```
+- Sectie `syntec`: tabel **Alle leads** (Internet, offline per kanaalgroep, totaalregel) en tabel
+  **Internet per soort lead** (proefrit, offerte, private lease, inruil, overig; aantal, aandeel,
+  websiteleads; totaalregel). Kerncijfers: alle leads, waarvan Internet, websiteleads.
+- Sectie `orders`: tabel **Per ordertype** (totaalregel = alle orders) vóór de tabel per
+  klantgroep. Kerncijfers: alle orders en de verkoop aan klanten. Verhuur (Rent) altijd apart
+  noemen. Het ordertype staat ook in `ordertypeVan` (`lib/sync/analyseOrders.ts`, getest).
+- Model kan in orders anders heten dan in leads (Audi A2 e-tron = "A2 e-tron (A1)" in de
+  orders): zoek breed en noem de modelwaarden.
 
 ## Stap 0 — Welke campagne(s) of rapportage(s)
 ```sql
 select c.id, c.naam, c.bedrijven, c.merk, c.modellen, c.startdatum, c.einddatum, c.periode_tekst,
        c.doel, c.budget, c.omschrijving, c.campagnepaginas, c.herkenning, c.data_correctie,
-       c.analyse_ronde, c.laatste_versie,
+       c.planning, c.laatste_versie,
        o.id as opzet_id, o.naam as opzet, o.formulier
 from dataloket.marketing_analyse_campagnes c
 join dataloket.marketing_analyse_opzetten o on o.id = c.opzet_id
-where c.naam ilike '%<deel van de naam>%';   -- "voer de analyseronde uit": where c.analyse_ronde
+where c.naam ilike '%<deel van de naam>%';
 ```
-- **Analyseronde**: alle regels met `analyse_ronde = true`, één voor één. Sla een campagne
-  over waarvan de startdatum nog niet bereikt is, en meld dat.
+- **Analyseronde** ("voer de analyseronde uit", meestal op vrijdag; migratie 0049, plan §17).
+  Vraag de ronde op; die bepaalt wat er aan de beurt is, niet jij:
+  ```sql
+  select * from dataloket.marketing_analyse_ronde();   -- standaard vandaag, Nederlandse kalender
+  ```
+  Maak een analyse van elke regel met `aan_de_beurt = true`, één voor één, met de periode uit
+  `periode_van`/`periode_tot` (zie stap 2). De planning per regel staat in het overzicht
+  (uitklapmenu vooraan): **Uit** (nooit, ook geen eindevaluatie), **Wekelijks** (elke week),
+  **Maandelijks** (vanaf de eerste vrijdag van de maand), **Per kwartaal** (vanaf de eerste vrijdag
+  van januari, april, juli en oktober). Een ronde hoort bij een week (maandag t/m zondag): op
+  donderdag draaien is de ronde van die vrijdag. Een gemiste week wordt ingehaald (`reden =
+  'ingehaald'`); twee keer draaien maakt niets dubbel, want een versie uit de geplande week telt.
+  Een campagne na haar einddatum krijgt de eindevaluatie (`reden = 'eindevaluatie'`), een
+  campagne die nog niet begonnen is wacht (`'nog niet gestart'`). Doe niets met regels die niet
+  aan de beurt zijn, en draai nooit een regel op Uit mee. Een losse vraag ("maak een marketing
+  analyse van …") mag altijd, ook bij Uit.
 - Bestaat hij niet en geeft de gebruiker de gegevens in de chat: maak hem aan met
   `insert into dataloket.marketing_analyse_campagnes (opzet_id, naam, bedrijven, merk, modellen, startdatum, einddatum, periode_tekst, doel, budget, omschrijving) values (…) returning id;`
   Naam en minstens één bedrijf (`bedrijven`, een lijst) zijn verplicht; een opzet met vaste
@@ -119,7 +192,14 @@ select id, versie, inhoud from dataloket.marketing_analyse_semantiek order by ve
   (of is hij leeg): t/m **gisteren**. Niets daarbuiten. Label (bepaalt de functie bij het
   opslaan, jij past het hoofdstuk toe): einddatum vóór vandaag = **Eindevaluatie**; anders
   **Tussentijdse evaluatie**.
-- **Rapportage** — de periode is vrije tekst (`periode_tekst`). Zet hem om in een begin- en
+- **Rapportage met planning Maandelijks of Per kwartaal** (besluit van de eigenaar, plan §17):
+  de periode volgt uit de planning, niet uit `periode_tekst`. Neem `periode_van` en `periode_tot`
+  uit `marketing_analyse_ronde()`: de vorige volle maand of het vorige volle kwartaal, nooit later
+  dan gisteren. Kapt de functie de periode af op gisteren (een ronde op de eerste van de maand),
+  meld dat in `datakwaliteit`. Loopt een bron niet tot het einde van de periode (de orders-kopie
+  loopt soms meer dan een week achter), maak de analyse toch en meld tot wanneer de bron loopt in
+  `datakwaliteit` (besluit van de eigenaar: altijd op de eerste vrijdag, niet wachten).
+- **Rapportage met planning Wekelijks of Uit** — de periode is vrije tekst (`periode_tekst`). Zet hem om in een begin- en
   einddatum, gerekend vanaf vandaag (Nederlandse kalender): "Afgelopen 3 maanden" = de drie
   volle kalendermaanden vóór de lopende maand, "Q4 2026" = 1 okt t/m 31 dec 2026, "november
   2026" = de hele maand, "1 januari t/m 10 februari 2026" letterlijk. Nooit later dan
@@ -138,16 +218,30 @@ select id, versie, inhoud from dataloket.marketing_analyse_semantiek order by ve
     `sessions`/`engaged_sessions`/`user_engagement_duration`, en `landing_page` × `event_name`
     × `event_count` (landing page hoort bij de sessie: events in sessies die op de
     campagnepagina begonnen). E-mail en lead-events volgens de semantic layer.
+  - GA4 voor de stap **Vervolg op de website**: `landing_page` × `page_path` (of
+    `page_path_plus_query_string`) × `sessions`/`screen_page_views` voor de pagina's die bekeken
+    worden in sessies die op de campagnepagina begonnen; deel ze in paginagroepen in (modellen,
+    occasions en voorraad, configurator, acties, contact en vestigingen, overig). Daarnaast
+    `landing_page` × `page_path` × `event_name` × `event_count` voor de belangrijke events en of ze
+    op de campagnepagina zelf of elders vielen (dat laatste ook voor de stap Conversies). Het
+    aandeel sessies dat na de campagnepagina nog een andere pagina bekeek = sessies met meer dan
+    één paginaweergave ÷ alle sessies op de campagnepagina (`screen_page_views_per_session` of de
+    paginaweergaven per sessie); zeg in de `tekst` hoe je het hebt berekend.
 - **Rapportage**: alle accounts en properties van het bedrijf over de hele periode (geen
   campagnefilter). Leads bij Van den Udenhout: alle leads van de periode, uitgesplitst naar
   merk en kanaalgroep. PGZ en andere bedrijven: alleen GA4.
 - **Leads in Syntec bij een campagne** (alleen Van den Udenhout): uit
   `marketing_analyse_leads_website` per soort, zoals in de harde regel hierboven. Dat is het
-  leadcijfer als het doel Syntec noemt, anders context voor het tabblad Leads in Syntec. Soort
+  leadcijfer als het doel Syntec noemt, anders context voor de stap Leads in Syntec. Soort
   lead volgens de view (kolom `soort`). Controleer `max(aangelegd_op)` en meld tot wanneer de
   kopie loopt.
 - **Leads in Syntec bij een rapportage**: alle leads van de periode uit `marketing_analyse_leads`,
   uitgesplitst naar merk en kanaalgroep, tenzij de prompt van de opzet iets anders vraagt.
+- **Orders bij een campagne** (alleen Van den Udenhout): uit `marketing_analyse_orders_klant`,
+  per klantgroep en ordersoort, zoals in de harde regel hierboven. Controleer
+  `max(orderdatum_op)`: de sheet loopt soms meer dan een week achter.
+- **Orders bij een rapportage** (Van den Udenhout): alle orders van de periode, per klantgroep,
+  merk en ordersoort, tenzij de prompt van de opzet iets anders vraagt; Handel apart.
 - **Kosten bij een campagne-analyse**: alleen de mediakosten uit de advertentieplatformen.
   `kerncijfers.kosten` en de sectie Investering tellen geen `lead_kanaalkosten` mee.
 - **Extra kanaalkosten (alleen rapportages)**: `select bron_medium, maand, bedrag from
@@ -155,23 +249,61 @@ select id, versie, inhoud from dataloket.marketing_analyse_semantiek order by ve
   semantic layer zegt; altijd apart van de mediakosten.
 - Reken verhoudingen uit totalen. Bereik niet optellen over dagen of platforms.
 
-## Stap 4 — Het resultaat (`MaResultaat`, `formaat: 2`)
-De pagina toont bovenaan de samenvatting met de acties en daaronder **vaste tabbladen** in
-funnelvolgorde (`ANALYSE_TABBLADEN` in `types.ts`). Elke sectie hoort bij één tabblad via
-`tab`. Links (3/4) staan de kerncijfers, grafieken en tabellen; het **eerste kerncijfer is het
-hoofdgetal in de tabbalk**. Rechts (1/4) staan `kop`, `oordeel`, `bevindingen` en `acties`.
-Wat er per tabblad in hoort, staat in de prompt.
+### Benchmarks: hoe goed is goed? (plan §20)
+Bij een **campagne-analyse** zet je naast de belangrijkste kerncijfers hoe ze zich verhouden tot
+soortgelijke campagnes of posts uit **onze eigen historie** (besluit van de eigenaar, 25 november
+2026; geen branchecijfers). Dezelfde harde dataregel geldt: Windsor live en, bij Van den Udenhout,
+de leads-kopie.
+- **Vergelijkingsgroep**: dezelfde accounts en properties als de campagne, de **12 maanden vóór
+  de startdatum**, zonder de campagne zelf. Per item (een campagne, een post, een campagnepagina)
+  reken je het cijfer uit zijn eigen totalen uit; van die waarden geef je de verdeling mee.
+- **Welke cijfers, met welke groep** (alleen waar het zinvol is; niet elk kerncijfer):
+  - Advertenties: CTR, kosten per klik en kosten per sessie, **per platform** tegen andere
+    actiecampagnes op hetzelfde platform en account (campagnes met minstens € 100 uitgaven;
+    Google per campagnetype, dus Demand Gen tegen Demand Gen). Bereik: frequentie en kosten per
+    1.000 vertoningen bij Meta.
+  - Organische posts: vertoningen per post, interacties per vertoning en klikken per post, per
+    kanaal, tegen alle posts van dezelfde accounts (lifetime-cijfers, posts van minstens 14 dagen oud).
+  - Campagnepagina en e-mail: betrokken sessies (%), betrokkenheidstijd per sessie en video- of
+    scroll-events per 100 sessies, tegen andere campagnepagina's op dezelfde property
+    (bijvoorbeeld `/acties/…`, minstens 200 sessies). Bij e-mail alleen het e-mailverkeer naar die pagina's.
+  - Conversies: conversies van dezelfde soort per 100 sessies, tegen andere campagnepagina's.
+  - Vervolg op de website: het aandeel sessies met nog een andere pagina, tegen andere campagnepagina's.
+  - Niet bij de mediakosten tegen het budget (tempo is geen vergelijking), niet bij orders en niet bij
+    Syntec-leads, tenzij de prompt van de opzet erom vraagt.
+- **Minstens 5 items** in de groep, anders geen benchmark (het dashboard toont hem dan ook niet);
+  zeg in `datakwaliteit` waar een benchmark ontbrak en waarom.
+- **Veld** `benchmark` op het kerncijfer: `groep` (in gewone taal, met aantal, soort en periode:
+  "142 organische posts van dezelfde accounts, 12 maanden voor de start"), `aantal`, `mediaan`,
+  `p25`, `p75`, `min`, `max`, en `hogerIsBeter: false` bij kosten. Zelfde eenheid als het
+  kerncijfer (procent als 3.2). Het dashboard bepaalt zelf of het beter, gemiddeld of slechter is
+  (boven het derde of onder het eerste kwart); jij noemt de vergelijking in de bevindingen
+  ("1.108 vertoningen per post, rond de mediaan van 940") en laat haar meewegen in `oordeel`.
+- Zet in `bronnen` welke data je voor de vergelijking hebt opgehaald.
 
-Tabbladsleutels, in deze volgorde: `bereik`, `investering`, `advertenties`, `organisch`,
-`email`, `verkeer`, `gedrag`, `lead-events`, `syntec` (alleen als de analyse uitsluitend over
-Van den Udenhout gaat; anders weglaten). Een tabblad zonder data krijgt toch een sectie met
-`oordeel: "geen-data"` en de reden in `kop`. Een sectie zonder geldige `tab` wordt een los
-tabblad achteraan; doe dat alleen als de prompt van de opzet er echt om vraagt. Een
-**rapportage** toont elke sectie als eigen tabblad in de volgorde van `stap`; `tab` mag daar weg.
+## Stap 4 — Het resultaat (`MaResultaat`, `formaat: 3`)
+De pagina opent op de samenvatting (conclusie, voortgang, wat nu te doen) en heeft links een
+navigatie met de **vaste stappen van de funnel** (`ANALYSE_TABBLADEN` in `types.ts`, formaat 3
+sinds 25 november 2026; plan §21). Elke sectie hoort bij één stap via `tab`. Per stap staan
+eerst `kop`, `oordeel` en de kerncijfers (het **eerste kerncijfer is het hoofdgetal in de
+navigatie**), dan `bevindingen` naast `acties`, dan grafieken en tabellen, en ingeklapt de
+`tekst` (hoe gemeten). Wat er per stap in hoort, staat in de prompt.
+
+Stapsleutels, in deze volgorde: `advertenties` (met bereik en investering), `organisch`,
+`email`, `campagnepagina` (verkeer en gedrag op de pagina), `conversies` (lead-events en andere
+conversies, op de pagina of elders), `vervolg` (waar bezoekers daarna heen gaan op de website),
+`syntec` en `orders` (die laatste twee alleen als de analyse uitsluitend over Van den Udenhout
+gaat; anders weglaten). De oude sleutels van formaat 2 (`bereik`, `investering`, `verkeer`,
+`gedrag`, `lead-events`) gebruik je niet meer: in formaat 3 worden ze een losse stap achteraan.
+Noemt de semantic layer nog een oud tabblad, lees dan: Bereik en Investering → Advertenties,
+Verkeer en Gedrag → Campagnepagina, Lead-events → Conversies. Een stap zonder data krijgt toch
+een sectie met `oordeel: "geen-data"` en de reden in `kop`. Een sectie zonder geldige `tab` wordt
+een losse stap achteraan; doe dat alleen als de prompt van de opzet er echt om vraagt. Een
+**rapportage** toont elke sectie als eigen stap in de volgorde van `stap`; `tab` mag daar weg.
 
 ```jsonc
 {
-  "formaat": 2,
+  "formaat": 3,
   "samenvatting": {
     "kop": "Eén zin met het oordeel",
     "regels": ["hoogstens vijf korte regels, ook voor het management"],
@@ -180,9 +312,13 @@ tabblad achteraan; doe dat alleen als de prompt van de opzet er echt om vraagt. 
   "doel": { "status": "voor|op-koers|achter|onbekend", "toelichting": "…" },
   "funnel": [],
   "secties": [ {
-    "stap": 2, "tab": "investering", "titel": "Investering", "ondertitel": "…",
+    "stap": 1, "tab": "advertenties", "titel": "Advertenties", "ondertitel": "…",
     "kerncijfers": [ { "label": "Besteed", "waarde": 1960.8, "eenheid": "euro",
-                       "toelichting": "62% van het budget", "vergelijking": { "label": "Budget", "waarde": 3150 } } ],
+                       "toelichting": "62% van het budget", "vergelijking": { "label": "Budget", "waarde": 3150 } },
+                     { "label": "Kosten per sessie Meta", "waarde": 0.33, "eenheid": "euro",
+                       "benchmark": { "groep": "11 Meta-actiecampagnes van hetzelfde account, 12 maanden voor de start",
+                                      "aantal": 11, "mediaan": 0.41, "p25": 0.30, "p75": 0.62, "min": 0.18, "max": 1.10,
+                                      "hogerIsBeter": false } } ],
     "tekst": "Hoogstens drie zinnen: hoe je de cijfers leest. Geen oordelen.",
     "tabellen": [ { "titel": "Per platform en campagne",
                     "kolommen": [ { "label": "Campagne", "eenheid": "tekst" }, { "label": "Platform", "eenheid": "tekst" },
@@ -202,7 +338,7 @@ tabblad achteraan; doe dat alleen als de prompt van de opzet er echt om vraagt. 
   "aanbevelingen": [ { "titel": "…", "toelichting": "…", "prioriteit": "hoog|middel|laag",
                        "tabs": ["advertenties", "email"] } ],
   "herkenning": [ { "bron": "Meta Ads", "soort": "campagne", "naam": "…", "reden": "…", "zekerheid": "zeker|waarschijnlijk|twijfel" } ],
-  "bronnen": [ "Windsor · Meta Ads · Van den Udenhout (69324444)", "Supabase · marketing_analyse_leads t/m 22 nov" ],
+  "bronnen": [ "Windsor · Meta Ads · Van den Udenhout (69324444)", "Supabase · marketing_analyse_leads t/m 22 nov", "Supabase · Syntec orders (marketing_analyse_orders) t/m 14 nov" ],
   "correcties": [ { "correctie": "regel uit de Data correctie", "verwerking": "wat je ermee deed" } ],
   "semantiekVoorstellen": [ { "blok": "Google Analytics 4", "voorstel": "…", "reden": "…" } ],
   "datakwaliteit": [ "…" ]
@@ -210,11 +346,11 @@ tabblad achteraan; doe dat alleen als de prompt van de opzet er echt om vraagt. 
 ```
 Eenheden: `aantal | euro | procent | seconden | tekst` (procent als 3.2). Grafieken: hoogstens
 zes reeksen, één eenheid, datums `JJJJ-MM-DD`. Getallen als getal; wat een platform niet
-levert als tekst `"n.v.t."`, nooit als 0. `aanbevelingen` zijn in formaat 2 de **acties voor de
-campagne als geheel** (drie tot zes, met in `tabs` waar de onderbouwing staat); de pagina zet
-ze bovenaan, samen met alle `acties` uit de tabbladen op prioriteit. `inzichten` vervallen in
-formaat 2 (de bevindingen per tabblad nemen ze over). `funnel` wordt niet meer getoond (de
-hoofdgetallen staan in de tabbalk); `[]` mag. Bij een tussentijdse evaluatie zijn de acties
+levert als tekst `"n.v.t."`, nooit als 0. `aanbevelingen` zijn de **acties voor de
+campagne als geheel** (drie tot zes, met in `tabs` de stapsleutels waar de onderbouwing staat);
+de pagina zet ze in Wat nu te doen op de samenvatting, af te vinken door het team. `inzichten`
+vervallen (de bevindingen per stap nemen ze over). `funnel` wordt niet meer getoond (de
+hoofdgetallen staan in de navigatie); `[]` mag. Bij een tussentijdse evaluatie zijn de acties
 "nu bijsturen", bij een eindevaluatie "lessen". `semantiekVoorstellen` alleen voor bevindingen
 die voor álle campagnes gelden; je past de semantic layer nooit zelf aan.
 
@@ -243,12 +379,15 @@ vanzelf meekomt), laat `doel` weg en geef `funnel: []` mee.
 
 ## Stap 5 — Wegschrijven
 Schrijf de JSON eerst naar een bestand in je scratchpad en controleer hem (`node -e` met
-`JSON.parse`): `formaat` is 2; elke sectie heeft `stap`, `titel` en (bij een campagne) een
-geldige `tab`; elk tabblad hoogstens één keer; hoogstens vijf `regels` en vijf `bevindingen`;
-elke actie en aanbeveling heeft een `prioriteit`; bij een campagne staan `leadBron`, `leadsDoel`
+`JSON.parse`): `formaat` is 3; elke sectie heeft `stap`, `titel` en (bij een campagne) een
+geldige `tab` uit de stapsleutels hierboven; elke stap hoogstens één keer; hoogstens vijf `regels` en vijf `bevindingen`;
+elke actie en aanbeveling heeft een `prioriteit`; staat er een sectie `orders`, dan heeft die
+een tabel per klantgroep met een totaalregel; bij een campagne staan `leadBron`, `leadsDoel`
 en `leadsDoelSoort` in de kerncijfers en is `leadBron` alleen `"syntec"` als het doel Syntec noemt
 en de analyse uitsluitend over Van den Udenhout gaat; geen tegel, regel of kolom met extra
-kanaalkosten bij een campagne-analyse. Sla op met
+kanaalkosten bij een campagne-analyse; elke `benchmark` heeft `groep`, `aantal` (minstens 5),
+`mediaan`, `p25` en `p75` met p25 ≤ mediaan ≤ p75 (een onbruikbare benchmark laat het dashboard
+weg). Sla op met
 dollar-quoting:
 ```sql
 select * from dataloket.marketing_analyse_bewaar(
@@ -264,7 +403,8 @@ select * from dataloket.marketing_analyse_bewaar(
 );
 ```
 De functie kent het versienummer toe (nooit hergebruikt), bepaalt het label, legt de briefing
-en de Data correctie van dat moment vast, en zet de Analyse ronde uit na een eindevaluatie. Te
+en de Data correctie van dat moment vast, en zet de planning op Uit na een eindevaluatie
+(via `analyse_ronde`, die met de planning meeloopt; migratie 0049). Te
 groot (> ~2 MB)? Maak het resultaat compacter, niet in stukken.
 
 Na het bewaren mailt het dashboard vanzelf de volgers van de campagne (trigger in migratie
@@ -273,7 +413,10 @@ adressen uit E-mail settings voor haar merk vanzelf als volgers (trigger in migr
 de vijf regels en het doeloordeel, dus schrijf die zo dat ze zonder de rest te begrijpen zijn.
 
 ## Stap 6 — Terugmelden
-Per campagne: versie, label, periode, de kop en de vijf regels, het doeloordeel, wat er met de
+Na een analyseronde eerst een overzicht: wat er gemaakt is, wat er is overgeslagen en waarom
+(geen prompt, nog niet gestart, een fout), en per ingeplande regel wanneer hij weer aan de beurt
+is (`volgende` uit `marketing_analyse_ronde()`, opnieuw opgevraagd na het bewaren). Daarna
+per campagne: versie, label, periode, de kop en de vijf regels, het doeloordeel, wat er met de
 Data correctie is gedaan, eventuele voorstellen voor de semantic layer en kanttekeningen. De
 analyse staat in het dashboard onder Campagnes → Marketing analyse
 (`?tab=marketing-analyse&analyse=<campagne-id>`). Meld ook of de volgers gemaild zijn: kijk

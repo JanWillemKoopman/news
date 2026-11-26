@@ -16,7 +16,7 @@
  * Verander je hier iets, pas dan de skill in dezelfde wijziging aan.
  */
 
-/** Het enige bedrijf waarvoor de leads uit Syntec ("Data leads") van toepassing zijn. */
+/** Het enige bedrijf waarvoor de leads en orders uit Syntec ("Data leads", "Data orders") van toepassing zijn. */
 export const BEDRIJF_MET_SYNTEC = "Van den Udenhout";
 
 export type Label = "tussentijds" | "eind";
@@ -40,6 +40,25 @@ export const FORMULIER_NAAM: Record<Formulier, string> = {
   rapportage: "Rapportage (naam, periode en omschrijving)",
 };
 
+/**
+ * Hoe vaak de analyseronde een analyse maakt (migratie 0049, plan §17). Uit = nooit, ook geen
+ * eindevaluatie; een losse analyse kan nog wel. De rekenregel staat in `planning.ts`.
+ */
+export type Planning = "uit" | "week" | "maand" | "kwartaal";
+
+export const PLANNINGEN: readonly Planning[] = ["uit", "week", "maand", "kwartaal"];
+
+export const PLANNING_NAAM: Record<Planning, string> = {
+  uit: "Uit",
+  week: "Wekelijks",
+  maand: "Maandelijks",
+  kwartaal: "Per kwartaal",
+};
+
+export function isPlanning(x: unknown): x is Planning {
+  return typeof x === "string" && (PLANNINGEN as readonly string[]).includes(x);
+}
+
 /** Een analyse opzet (analysetype), elk met een eigen prompt. */
 export interface MaOpzet {
   id: string;
@@ -50,6 +69,8 @@ export interface MaOpzet {
   volgorde: number;
   actief: boolean;
   standaard: boolean;
+  /** De planning die een nieuwe analyse met deze opzet krijgt. */
+  standaardPlanning: Planning;
   /** Er staat een prompt voor deze opzet (Campagne analyse heeft altijd de standaardtekst). */
   heeftPrompt: boolean;
   aantalCampagnes: number;
@@ -75,6 +96,9 @@ export interface MaCampagne {
   campagnePaginas: string[];
   dataCorrectie: string | null;
   dataCorrectieBijgewerktOp: string | null;
+  /** Hoe vaak de analyseronde deze analyse maakt. */
+  planning: Planning;
+  /** Loopt mee met de planning (planning ≠ uit); lees `planning`. */
   analyseRonde: boolean;
   /** Uit welk voorstel de campagne kwam (migratie 0046); null als hij met de hand is aangemaakt. */
   voorstelId: string | null;
@@ -169,12 +193,35 @@ export interface MaKerncijfers {
 
 export type Eenheid = "aantal" | "euro" | "procent" | "seconden" | "tekst";
 
+/**
+ * Hoe een kerncijfer zich verhoudt tot soortgelijke campagnes of posts uit onze eigen historie
+ * (besluit van de eigenaar, 25 november 2026; plan §20). De analyse rekent het cijfer per
+ * vergelijkbaar item uit en geeft de verdeling mee; het dashboard bepaalt zelf het oordeel
+ * (`benchmarkOordeel`): onder het eerste kwart is slechter, boven het derde kwart beter.
+ */
+export interface KerncijferBenchmark {
+  /** Waarmee vergeleken is, in gewone taal: "18 organische posts van dezelfde accounts, afgelopen 12 maanden". */
+  groep: string;
+  /** Hoeveel campagnes of posts in de vergelijking zitten; onder de 5 wordt hij niet getoond. */
+  aantal: number;
+  mediaan: number;
+  /** Eerste en derde kwartiel: de middelste helft van de vergelijkingsgroep. */
+  p25: number;
+  p75: number;
+  /** Laagste en hoogste waarde in de groep, voor de schaal van de balk. */
+  min?: number;
+  max?: number;
+  /** False bij kosten (kosten per klik, per sessie, per lead): dan is lager beter. Standaard true. */
+  hogerIsBeter?: boolean;
+}
+
 export interface Kerncijfer {
   label: string;
   waarde: number | string | null;
   eenheid: Eenheid;
   toelichting?: string;
   vergelijking?: { label: string; waarde: number | null };
+  benchmark?: KerncijferBenchmark;
 }
 
 export interface TabelKolom {
@@ -201,14 +248,31 @@ export interface Grafiek {
 }
 
 /**
- * De vaste tabbladen van een campagne-analyse (formaat 2), in funnelvolgorde en in groepen. Een
- * sectie hoort bij een tabblad via `tab`. De volgorde en de groepen zijn een besluit van de
- * eigenaar (november 2026); verander ze samen met de prompt en de skill.
+ * De vaste stappen van een campagne-analyse, in funnelvolgorde en in groepen. Een sectie hoort bij
+ * een stap via `tab`. De volgorde en de groepen zijn een besluit van de eigenaar; verander ze samen
+ * met de prompt en de skill.
+ *
+ * Formaat 3 (25 november 2026, opzet A, plan §21): de funnel zoals de eigenaar hem beschreef.
+ * Advertenties (met bereik en investering), organische social en e-mail brengen verkeer naar de
+ * campagnepagina; daar kijken we wat bezoekers doen, welke conversies ze doen en waar ze daarna
+ * heen gaan op de website; daarna leads en orders in Syntec.
  */
 export const TAB_GROEPEN = ["Media", "Content", "Website", "Resultaat"] as const;
 export type TabGroep = (typeof TAB_GROEPEN)[number];
 
 export const ANALYSE_TABBLADEN = [
+  { sleutel: "advertenties", naam: "Advertenties", groep: "Media" },
+  { sleutel: "organisch", naam: "Organische social", groep: "Media" },
+  { sleutel: "email", naam: "E-mail", groep: "Media" },
+  { sleutel: "campagnepagina", naam: "Campagnepagina", groep: "Website" },
+  { sleutel: "conversies", naam: "Conversies", groep: "Website" },
+  { sleutel: "vervolg", naam: "Vervolg op de website", groep: "Website" },
+  { sleutel: "syntec", naam: "Leads in Syntec", groep: "Resultaat" },
+  { sleutel: "orders", naam: "Orders in Syntec", groep: "Resultaat" },
+] as const satisfies readonly { sleutel: string; naam: string; groep: TabGroep }[];
+
+/** Formaat 2 (24 november 2026, plan §14): de tabbladen van de versies van vóór formaat 3. */
+export const ANALYSE_TABBLADEN_V2 = [
   { sleutel: "bereik", naam: "Bereik", groep: "Media" },
   { sleutel: "investering", naam: "Investering", groep: "Media" },
   { sleutel: "advertenties", naam: "Advertenties", groep: "Media" },
@@ -218,9 +282,10 @@ export const ANALYSE_TABBLADEN = [
   { sleutel: "gedrag", naam: "Gedrag op de pagina", groep: "Website" },
   { sleutel: "lead-events", naam: "Lead-events", groep: "Resultaat" },
   { sleutel: "syntec", naam: "Leads in Syntec", groep: "Resultaat" },
+  { sleutel: "orders", naam: "Orders in Syntec", groep: "Resultaat" },
 ] as const satisfies readonly { sleutel: string; naam: string; groep: TabGroep }[];
 
-export type TabSleutel = (typeof ANALYSE_TABBLADEN)[number]["sleutel"];
+export type TabSleutel = (typeof ANALYSE_TABBLADEN)[number]["sleutel"] | (typeof ANALYSE_TABBLADEN_V2)[number]["sleutel"];
 
 /** Het oordeel over één tabblad: het stipje in de tabbalk. */
 export type TabOordeel = "goed" | "aandacht" | "probleem" | "geen-data";
@@ -306,10 +371,11 @@ export interface SemantiekVoorstel {
 export interface MaResultaat {
   /**
    * 1: secties onder elkaar, inzichten en aanbevelingen onderaan (versies tot 24 november 2026).
-   * 2: secties per tabblad met bevindingen en acties rechts; `aanbevelingen` zijn de acties
-   * voor de campagne als geheel en `inzichten` vervallen.
+   * 2: secties per tabblad met bevindingen en acties; `aanbevelingen` zijn de acties voor de
+   * campagne als geheel en `inzichten` vervallen (`ANALYSE_TABBLADEN_V2`).
+   * 3: hetzelfde, met de stappen van `ANALYSE_TABBLADEN` (vanaf 25 november 2026, plan §21).
    */
-  formaat: 1 | 2;
+  formaat: 1 | 2 | 3;
   samenvatting: {
     /** Eén zin: het oordeel. */
     kop: string;
@@ -324,7 +390,7 @@ export interface MaResultaat {
   secties: Sectie[];
   /** Alleen formaat 1. */
   inzichten?: Inzicht[];
-  /** Formaat 1: alle aanbevelingen. Formaat 2: de acties voor de campagne als geheel. */
+  /** Formaat 1: alle aanbevelingen. Formaat 2 en 3: de acties voor de campagne als geheel. */
   aanbevelingen?: Aanbeveling[];
   herkenning: Herkenning[];
   /** Welke bronnen er gebruikt zijn (bijv. "Windsor · Meta Ads · Van den Udenhout"). */
@@ -417,6 +483,7 @@ export const SEMANTIEK_BLOKKEN = [
   { sleutel: "linkedin_organisch", naam: "LinkedIn (organisch)" },
   { sleutel: "ga4", naam: "Google Analytics 4" },
   { sleutel: "data_leads", naam: "Data leads (Syntec)" },
+  { sleutel: "data_orders", naam: "Syntec orders" },
   { sleutel: "kanaalkosten", naam: "Extra kanaalkosten" },
 ] as const;
 
@@ -503,4 +570,13 @@ export interface MaZoekronde {
   aantalBijgewerkt: number;
   aantalOvergeslagen: number;
   aantalVerlopen: number;
+}
+
+/** Een afgevinkte actie uit "Wat nu te doen" van een versie (migratie 0051). */
+export interface MaActieKlaar {
+  /** `geheel-<plek in MaResultaat.aanbevelingen>` */
+  actie: string;
+  afgevinktOp: string;
+  /** Naam uit het profiel van wie afvinkte; null als die geen naam heeft. */
+  door: string | null;
 }

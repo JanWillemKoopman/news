@@ -73,3 +73,21 @@ export function OordeelStip({ oordeel, className = "" }: { oordeel: TabOordeel |
     />
   );
 }
+
+const OORDEEL_BADGE: Record<TabOordeel, string> = {
+  goed: "bg-positive/10 text-positive",
+  aandacht: "bg-orange/15 text-ink",
+  probleem: "bg-negative/10 text-negative",
+  "geen-data": "bg-surface text-ink-muted",
+};
+
+/** Het oordeel als label met tekst, voor de kop van een stap en de funnellijst. */
+export function OordeelBadge({ oordeel }: { oordeel: TabOordeel | null | undefined }) {
+  if (!oordeel) return null;
+  return (
+    <span className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-pill px-2.5 py-0.5 text-meta font-semibold ${OORDEEL_BADGE[oordeel]}`}>
+      <OordeelStip oordeel={oordeel} />
+      {TAB_OORDEEL_NAAM[oordeel]}
+    </span>
+  );
+}

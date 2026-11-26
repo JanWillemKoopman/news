@@ -10,11 +10,11 @@ import {
   maakCampagne,
   verwijderCampagne,
   werkCampagneBij,
-  zetAnalyseRonde,
   zetDataCorrectie,
+  zetPlanning,
 } from "@/lib/marketingAnalyse/opslag";
 import { createClient } from "@/lib/supabase/server";
-import { STANDAARD_OPZET_ID } from "@/lib/marketingAnalyse/types";
+import { isPlanning, STANDAARD_OPZET_ID } from "@/lib/marketingAnalyse/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
@@ -26,7 +26,7 @@ export const dynamic = "force-dynamic";
  *                                     plus de analyse opzetten
  * POST { opzetId, naam, bedrijven, … } → nieuwe campagne of rapportage (iedereen die ingelogd is)
  * PATCH ?id=… { opzetId, naam, … }  → briefing bijwerken (de opzet mag veranderen)
- * PATCH ?id=… { analyseRonde }      → schakelaar Analyse ronde
+ * PATCH ?id=… { planning }          → planning: uit, week, maand of kwartaal (iedereen)
  * PATCH ?id=… { dataCorrectie }     → alleen de Data correctie (vanaf de analysepagina)
  * DELETE ?id=…                      → campagne met al zijn analyses weg (alleen de eigenaar)
  *
@@ -83,8 +83,9 @@ export async function PATCH(request: Request) {
   try {
     const supabase = await createClient();
     let campagne;
-    if (typeof body.analyseRonde === "boolean" && Object.keys(body).length === 1) {
-      campagne = await zetAnalyseRonde(supabase, id, body.analyseRonde);
+    if ("planning" in body && Object.keys(body).length === 1) {
+      if (!isPlanning(body.planning)) return NextResponse.json({ fout: "Onbekende planning." }, { status: 400 });
+      campagne = await zetPlanning(supabase, id, body.planning);
     } else if ("dataCorrectie" in body && Object.keys(body).length === 1) {
       const tekst = typeof body.dataCorrectie === "string" ? body.dataCorrectie.trim().slice(0, MAX_CORRECTIE) : "";
       campagne = await zetDataCorrectie(supabase, id, tekst || null);
