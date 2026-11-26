@@ -14,7 +14,7 @@ import type { SemantiekInhoud } from "./types";
  * orders (views marketing_analyse_leads_soort en _orders_type) staat in Algemeen, Data leads en
  * Syntec orders, en de benchmarkgroep van campagnepagina's in GA4 (versie 5, plan §22). Het blok
  * Werving hoort bij de opzet HRM analyse (versie 7, 26 november 2026; hrm-analyse-onderzoek.md). Het blok
- * Google Analytics 4 is gelijk aan versie 10 (26 november 2026): tellen in Windsor, en e-mail als één
+ * Google Analytics 4 is gelijk aan versie 11 (26 november 2026): tellen in Windsor, en e-mail als één
  * kanaal dat nooit per deel of per mailing wordt uitgesplitst.
  */
 export const STANDAARD_SEMANTIEK: SemantiekInhoud = {
@@ -151,7 +151,7 @@ Aanvullingen van de eigenaar voor de zoekronde naar live actiecampagnes (skill c
 
 ## Tellen in Windsor (gecontroleerd november 2026)
 - **Welke filters GA4 zelf toepast** (gecontroleerd 26 november 2026): Windsor stuurt alleen gelijk aan en niet gelijk aan (eq, neq, ook op is_conversion_event) door naar GA4, en alleen zolang er geen ander soort filter in de opvraging staat. Bevat, in en een of-filter (ook op hostname en landing_page_plus_query_string) past Windsor achteraf toe: dan haalt hij dat veld als verborgen dimensie op en krijg je een rij per waarde. Tel die rijen op; voor sessies per hostname, per URL of per landingspagina klopt dat (oktober 2026: 2.457 opgeteld tegen 2.456 in één keer).
-- **Unieke sessies met minstens één lead-event**: vraag sessions op met is_conversion_event = "true" en de uitsluitingen als neq (bijv. event_name neq generate_lead_vacature), zonder event_name als dimensie: dan telt GA4 elke sessie één keer. Een filter op event_name met bevat, in of of splitst per event, en dan telt een sessie met twee lead-events dubbel. Staat er ook een filter in dat Windsor achteraf toepast (hostname, M_BT), dan splitst ook de neq-opvraging per event; het verschil was in oktober 2026 1,8% (5.652 tegen 5.551 op de hele site) en valt binnen de controle hieronder.
+- **Unieke sessies met minstens één lead-event**: vraag sessions op met is_conversion_event = "true" en de uitsluitingen als neq (generate_lead_vacature, _HMODH, _nieuwsbrief, _snelsolliciteren, _meeloopdagen, generate_lead, snelsolliciteren_verzonden, sollicitatie_verzonden), zonder event_name als dimensie: dan telt GA4 elke sessie één keer. Een filter op event_name met bevat, in of of splitst per event, en dan telt een sessie met twee lead-events dubbel. Staat er ook een filter in dat Windsor achteraf toepast (hostname, M_BT), dan splitst ook de neq-opvraging per event; het verschil was in oktober 2026 1,8% (5.652 tegen 5.551 op de hele site) en valt binnen de controle hieronder.
 - **event_name × sessions** geeft per event het aantal sessies waarin dat event viel. Eén sessie kan bij meerdere events meetellen, dus tel deze sessies nooit op tot een totaal.
 - **Key events**: is_conversion_event = "true".
 - **Gebruik session_conversion_rate niet.** Windsor levert daar het aantal key events ÷ het aantal sessies, geen percentage sessies: 0,3444 = 250 events ÷ 726 sessies, terwijl 238 sessies een key event hadden.
@@ -167,9 +167,10 @@ Aanvullingen van de eigenaar voor de zoekronde naar live actiecampagnes (skill c
 
 ## Welke events tellen als lead (Van den Udenhout)
 - Alle events met "lead" in de naam, waaronder: generate_lead_proefrit, generate_lead_offerte, generate_lead_onderhoudsofferte, generate_lead_verhuur, generate_lead_privatelease, generate_lead_private_lease, generate_lead_zakelijk_lease, generate_lead_zakelijk_offerte, generate_lead_leasecontact, generate_lead_werkplaats.
-- Ook deze vuren (november 2026) en tellen als autolead: generate_lead_contact, generate_lead, generate_lead_overige, generate_lead_inruilwaarde, generate_lead_financiering (controleren). generate_lead_werkplaats vuurde in oktober–november 2026 niet.
+- Ook deze vuren (november 2026) en tellen als autolead: generate_lead_contact, generate_lead_overige, generate_lead_inruilwaarde, generate_lead_financiering (controleren). generate_lead_werkplaats vuurde in oktober–november 2026 niet.
 - Alle lead-events en bedanktpagina_werkplaatsplanner zijn in GA4 als key event gemarkeerd (gecontroleerd november 2026).
 - **Vóór april 2026 (de oude tracking) heetten de lead-events anders** (gecontroleerd juni 2025 t/m maart 2026). Met "lead" in de naam: generate_lead_proefrit_aanvraag, generate_lead_offerte_aanvraag, generate_lead_contactformulier, generate_lead_inruilen, generate_lead_bel_me_terug, generate_lead_financieringsaanvraag, generate_lead_private_lease. Zonder "lead" in de naam, maar wel autolead: offerte_onderhoud, verhuur_aanvraag, verhuuractie_verzonden, verhuur_losse_formulieren, private_groeilease. Sollicitaties (geen autolead): snelsolliciteren_verzonden, sollicitatie_verzonden. Tel over de wissel heen op **eventnaam**, niet op de key-eventvlag: de nieuwe namen waren vóór april nog geen key event.
+- **generate_lead (zonder achtervoegsel) is een algemeen formulier, geen autolead** (gecontroleerd 26 november 2026, juni 2025 t/m november 2026): het vuurt op /vacatures (sollicitaties), /broodjes (een bestelformulier) en /sinterklaasfeest (aanmelding voor het feest), en één keer op een actiepagina. Sluit hem uit van de autoleads (event_name neq generate_lead) en noem een aanmelding apart.
 - generate_lead_HMODH is de knop **"Houd me op de hoogte"**: een aanmelding om op de hoogte te blijven, geen proefrit- of offerteaanvraag. Telt als lead-event, maar noem hem apart als "Houd me op de hoogte".
 - generate_lead_nieuwsbrief is een aanmelding voor de nieuwsbrief, geen autolead: apart noemen.
 - generate_lead_vacature is een sollicitatie, geen autolead: apart noemen. Ook werving en geen autolead: generate_lead_snelsolliciteren en generate_lead_meeloopdagen.
