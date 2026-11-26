@@ -1672,6 +1672,11 @@ lees dat eerst voordat je hier iets verandert.
   week, leads via social media en sollicitaties op de website. Prompt versie 1 bij de opzet, het blok
   **Werving** in de semantic layer (`werving` in `standaardSemantiek.ts`, gelijk aan semantic layer
   versie 7) en een eigen paragraaf in de skill. Onderzoek en besluiten: `hrm-analyse-onderzoek.md`.
+- **E-mail VDU** (26 november 2026, verzoek van de eigenaar, §23 van het plan): een opzet `rapportage`
+  voor de e-mailmarketeers, maandelijks, met drie stappen in de groepen E-mail, Website en Resultaat
+  (`Sectie.groep` zet bij een rapportage kopjes in de navigatie). **E-mail is altijd één kanaal**: het
+  e-mailkanaal en de Selligent-klikken met M_BT= worden opgeteld en nergens in een analyse
+  uitgesplitst of uitgelegd (semantic layer versie 8 en 9, `standaardSemantiek.ts`, skill).
 - **Harde regel voor de data** (besluit van de eigenaar, november 2026): een analyse gebruikt
   alleen Windsor **live** (Google, Meta en LinkedIn Ads, de organische kanalen en GA4), de
   leads-kopie `marketing_analyse_leads` en de orders-kopie `marketing_analyse_orders` (beide alleen

@@ -611,3 +611,28 @@ goed beeld heb wat deze auto's in totaal hebben gedaan wat betreft leads en orde
   /acties/-pagina's op udenhout.nl met minstens 200 sessies, zonder after sales en service).
 - Staat in de standaard-hoofdprompt, de semantic layer (`standaardSemantiek.ts` en versie 5 in de
   database) en de skill.
+
+## 23. Opzet E-mail VDU: wat doet e-mailverkeer op udenhout.nl (verzoek van de eigenaar, 26 november 2026)
+
+Een rapportage voor de e-mailmarketeers: waar e-mailbezoekers landen, of ze blijven en of ze in
+dezelfde sessie een aanvraag doen. Opzet `d2f7f48d-…` (formulier `rapportage`, Van den Udenhout,
+planning Maandelijks), prompt versie 2.
+
+- **E-mail is één kanaal.** Het e-mailkanaal van GA4 en de Selligent-klikken die door een
+  trackingfout als direct binnenkomen (M_BT= in de URL) worden altijd opgeteld. De lezer hoort het
+  verschil niet te kennen: geen woord erover in het resultaat, ook niet in de verantwoording, en geen
+  actie over tagging. De regels staan alleen in de semantic layer (versie 8).
+- **Niet per mailing.** M_BT is een code per ontvanger; alleen het e-mailkanaal heeft een
+  campagnenaam. De stap Per mailing is daarom vervallen; de landingspagina laat zien waar een
+  mailing naartoe linkt.
+- **Drie stappen in drie groepen**: E-mail (E-mailverkeer), Website (Landingspagina's), Resultaat
+  (Gebeurtenissen). Een sectie van een rapportage kan daarvoor een `groep` hebben (`Sectie.groep`,
+  `tabbladenVoor`, getest).
+- **Het grote plaatje en de focusmaand**: elke maand vanaf 1 juni 2025, en de nadruk op de laatste
+  volle maand met de maand ervoor ter vergelijking. Bij een geplande ronde is de focusmaand de maand
+  uit de planning; de periode van de versie begint altijd op 1 juni 2025.
+- **Concrete lead** = autolead of werkplaatsafspraak, altijd ook apart. Over de trackingwissel van
+  april 2026 heen telt de analyse op eventnaam (oude namen in semantic layer versie 9), niet op de
+  key-eventvlag.
+- Staat in prompt versie 2, de semantic layer (versie 9, gelijk aan `standaardSemantiek.ts`) en de
+  skill (paragraaf E-mail VDU).

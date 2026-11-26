@@ -160,6 +160,39 @@ Wat hier staat geldt alleen voor deze opzet en gaat vóór de algemene rapportag
   leads per bedrijf tellen op tot het totaal; een Meta-lead staat nergens opgeteld bij de
   sollicitaties op de website.
 
+## E-mail VDU (e-mailverkeer op udenhout.nl)
+Opzet **E-mail VDU** (id `d2f7f48d-482c-4296-a284-f3b570c65c43`, formulier `rapportage`, planning
+Maandelijks; besluiten van de eigenaar van 26 november 2026). Wat hier staat geldt alleen voor deze
+opzet en gaat vóór de algemene rapportageregels in stap 3. De prompt zegt wat er per stap in hoort;
+het blok Google Analytics 4 van de semantic layer zegt hoe je e-mail en lead-events telt.
+- **Bronnen**: alleen Windsor live, GA4-property 255949462. Geen Syntec, geen advertentieplatformen.
+- **Periode**: elke maand vanaf 1 juni 2025 t/m de focusmaand (zie stap 2). Eenmalig t/m gisteren
+  mag; de lopende maand heet dan "t/m <dag>" en telt niet mee in oordelen.
+- **E-mail is één kanaal** (besluit van de eigenaar): vraag deel A (`session_default_channel_group`
+  = "Email") en deel B (`session_source_medium` = "(direct) / (none)" en
+  `landing_page_plus_query_string` bevat "M_BT=") apart op, beide met de hostnamefilter
+  (`hostname` is udenhout.nl of www.udenhout.nl), en tel ze op. Nergens in het resultaat, ook niet
+  in `bronnen`, `datakwaliteit`, `herkenning` of de acties, staat dat e-mail uit delen bestaat:
+  geen M_BT, geen Selligent, geen "direct". Schrijf in `bronnen` alleen
+  "Windsor · Google Analytics 4 · GA4_https://udenhout.nl (255949462)".
+- **Ophalen**, per deel A en B, met `year_month` (of per maand een opvraging) als korrel:
+  - sessies, `engaged_sessions` per maand, en per `landing_page` (voor de focusmaand, de maand
+    ervoor en de hele periode);
+  - sessies met een concrete lead, met een werkplaatsafspraak en met een autolead: dezelfde
+    opvragingen met een **filter** op de eventnamen en zonder `event_name` als dimensie (elke
+    sessie één keer). Autolead = de namen uit de semantic layer, ook de oude van vóór april 2026;
+    tel op eventnaam, niet op `is_conversion_event`;
+  - `landing_page` × `event_name` × `sessions`/`event_count` met een filter op de lead-events, voor
+    de focusmaand en de maand ervoor;
+  - de hele site (zonder e-mailfilter): sessies en sessies met een concrete lead per maand, en per
+    landingspagina uit de tabel van de focusmaand.
+- **Formaat**: rapportage met drie secties (`stap` 1 t/m 3) en `groep` "E-mail", "Website",
+  "Resultaat", zonder `tab`. Kerncijfers van de focusmaand met de vorige maand in `vergelijking`.
+  Kerncijfers voor het overzicht: `{}`.
+- **Controle vóór het opslaan**: per maand tellen deel A en B op tot het e-mailtotaal; de som van
+  de landingspagina's (met de regel "Overige") is het totaal van de maand; zoek in de JSON op
+  "M_BT", "Selligent" en "direct" en haal elke treffer weg.
+
 ## Stap 0 — Welke campagne(s) of rapportage(s)
 ```sql
 select c.id, c.naam, c.bedrijven, c.merk, c.modellen, c.startdatum, c.einddatum, c.periode_tekst,
@@ -230,6 +263,9 @@ select id, versie, inhoud from dataloket.marketing_analyse_semantiek order by ve
   meld dat in `datakwaliteit`. Loopt een bron niet tot het einde van de periode (de orders-kopie
   loopt soms meer dan een week achter), maak de analyse toch en meld tot wanneer de bron loopt in
   `datakwaliteit` (besluit van de eigenaar: altijd op de eerste vrijdag, niet wachten).
+  Vraagt de prompt van de opzet om een vaste aanloop (E-mail VDU: elke maand vanaf 1 juni 2025),
+  dan is de maand uit de ronde de **focusmaand** en `p_periode_van` de startdatum van de aanloop;
+  `p_periode_tot` blijft die uit de ronde.
 - **Rapportage met planning Wekelijks of Uit** — de periode is vrije tekst (`periode_tekst`). Zet hem om in een begin- en
   einddatum, gerekend vanaf vandaag (Nederlandse kalender): "Afgelopen 3 maanden" = de drie
   volle kalendermaanden vóór de lopende maand, "Q4 2026" = 1 okt t/m 31 dec 2026, "november
@@ -248,7 +284,9 @@ select id, versie, inhoud from dataloket.marketing_analyse_semantiek order by ve
   - GA4: `landing_page` × `session_default_channel_group` × `session_source_medium` ×
     `sessions`/`engaged_sessions`/`user_engagement_duration`, en `landing_page` × `event_name`
     × `event_count` (landing page hoort bij de sessie: events in sessies die op de
-    campagnepagina begonnen). E-mail en lead-events volgens de semantic layer.
+    campagnepagina begonnen). E-mail en lead-events volgens de semantic layer. E-mail is altijd
+    één kanaal: tel de delen op en noem nooit hoe e-mail is opgebouwd (ook niet in de
+    verantwoording), en splits e-mail niet per mailing.
   - GA4 voor de stap **Vervolg op de website**: `landing_page` × `page_path` (of
     `page_path_plus_query_string`) × `sessions`/`screen_page_views` voor de pagina's die bekeken
     worden in sessies die op de campagnepagina begonnen; deel ze in paginagroepen in (modellen,
@@ -331,6 +369,9 @@ Verkeer en Gedrag → Campagnepagina, Lead-events → Conversies. Een stap zonde
 een sectie met `oordeel: "geen-data"` en de reden in `kop`. Een sectie zonder geldige `tab` wordt
 een losse stap achteraan; doe dat alleen als de prompt van de opzet er echt om vraagt. Een
 **rapportage** toont elke sectie als eigen stap in de volgorde van `stap`; `tab` mag daar weg.
+Een sectie van een rapportage mag een `groep` hebben (bijv. "E-mail", "Website", "Resultaat"):
+opeenvolgende stappen met dezelfde groep staan in de navigatie links onder één kopje, net als bij
+een campagne (`tabbladenVoor` in `rekenen.ts`, getest). Zonder `groep` geen kopje.
 
 ```jsonc
 {

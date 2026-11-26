@@ -75,7 +75,7 @@ Het dashboard toont de analyse als een samenvatting en daarnaast een vaste navig
    - **De platforms vergeleken**: kosten, CTR, kosten per klik, hoeveel klikken een bezoek op de campagnepagina worden, kosten per bezoek, leads.
    - **Per platform in detail**: Meta en LinkedIn per advertentie en creative (prospecting tegen retargeting, beeld tegen video, welke creative wint); Google per campagne en advertentiegroep (Search tegen Demand Gen en Pmax).
 2. **Organische social** (\`organisch\`): per post die de campagne promoot de publicatiedatum, het kanaal, vertoningen, interacties en klikken, en hoeveel bezoek de posts naar de campagnepagina brachten. Het eerste kerncijfer is het aantal organische vertoningen.
-3. **E-mail** (\`email\`): sessies uit e-mail naar de campagnepagina (zie de semantic layer voor de herkenning), per mailing of per piek waar dat kan, met het gedrag en de conversies van die bezoekers naast die van betaald verkeer. Het eerste kerncijfer is het aantal sessies uit e-mail.
+3. **E-mail** (\`email\`): sessies uit e-mail naar de campagnepagina (zie de semantic layer voor de herkenning; e-mail is altijd één kanaal en wordt niet per mailing gesplitst), per week en per piek, met het gedrag en de conversies van die bezoekers naast die van betaald verkeer. Het eerste kerncijfer is het aantal sessies uit e-mail.
 
 **Website: wat bezoekers doen**
 4. **Campagnepagina** (\`campagnepagina\`): de belangrijkste plek van de funnel. Het eerste kerncijfer is het aantal sessies dat op de campagnepagina('s) begon.
