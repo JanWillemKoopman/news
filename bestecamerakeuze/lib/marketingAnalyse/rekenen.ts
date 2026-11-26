@@ -375,6 +375,35 @@ export function opzetFilterKnoppen<O extends { id: string; naam: string; volgord
     .map((g) => ({ ...g.knop, startOpzetId: g.actief.length === 1 ? g.actief[0] : null }));
 }
 
+/**
+ * De knoppen van het filter op bedrijf: eerst de bedrijven uit de lijst (semantic layer), dan
+ * bedrijven die alleen in analyses voorkomen; per bedrijf het aantal analyses (een analyse over
+ * meer bedrijven telt bij elk). Hoofdletters en spaties aan de rand tellen niet.
+ */
+export function bedrijfFilterKnoppen(
+  lijst: readonly string[],
+  analyses: readonly { bedrijven: readonly string[] }[],
+): { naam: string; aantal: number }[] {
+  const sleutel = (b: string) => b.trim().toLowerCase();
+  const knoppen = new Map<string, { naam: string; aantal: number }>();
+  for (const b of lijst) if (b.trim() && !knoppen.has(sleutel(b))) knoppen.set(sleutel(b), { naam: b.trim(), aantal: 0 });
+  for (const a of analyses) {
+    for (const b of new Set(a.bedrijven.filter((x) => x.trim()).map(sleutel))) {
+      const k = knoppen.get(b);
+      if (k) k.aantal += 1;
+      else knoppen.set(b, { naam: a.bedrijven.find((x) => sleutel(x) === b)!.trim(), aantal: 1 });
+    }
+  }
+  return [...knoppen.values()];
+}
+
+/** Alleen de analyses voor één bedrijf; `null` = alle. */
+export function filterOpBedrijf<T extends { bedrijven: readonly string[] }>(analyses: readonly T[], bedrijf: string | null): T[] {
+  if (bedrijf === null) return [...analyses];
+  const b = bedrijf.trim().toLowerCase();
+  return analyses.filter((a) => a.bedrijven.some((x) => x.trim().toLowerCase() === b));
+}
+
 /** Alleen de analyses van de opzetten van één soort; `null` = alle. */
 export function filterOpOpzet<T extends { opzetId: string }>(analyses: readonly T[], opzetIds: readonly string[] | null): T[] {
   return opzetIds === null ? [...analyses] : analyses.filter((a) => opzetIds.includes(a.opzetId));
@@ -413,20 +442,37 @@ export function isAfgelopen(einddatum: string | null | undefined, vandaag: strin
 }
 
 /**
- * Lopend bovenaan op startdatum (nieuwste eerst, zonder startdatum achteraan); afgelopen
- * apart, op einddatum (meest recent eerst).
+ * Live = vandaag ligt tussen start- en einddatum (grenzen inbegrepen). Zonder startdatum telt hij
+ * als begonnen, zonder einddatum als niet afgelopen; een rapportage zonder datums is dus live.
  */
-export function deelOpInLopendEnAfgelopen<T extends { startdatum: string | null; einddatum: string | null }>(
+export function isLive(c: { startdatum: string | null; einddatum: string | null }, vandaag: string): boolean {
+  return (!c.startdatum || c.startdatum <= vandaag) && !isAfgelopen(c.einddatum, vandaag);
+}
+
+export type StatusFilter = "live" | "niet-live";
+
+/**
+ * Filter op status (`null` = alles) en sorteer: live bovenaan op startdatum (nieuwste eerst,
+ * zonder startdatum achteraan), dan wat nog moet beginnen (eerstvolgende eerst), dan wat
+ * afgelopen is (meest recent eerst).
+ */
+export function sorteerOpStatus<T extends { startdatum: string | null; einddatum: string | null }>(
   campagnes: readonly T[],
   vandaag: string,
-): { lopend: T[]; afgelopen: T[] } {
-  const lopend = campagnes
-    .filter((c) => !isAfgelopen(c.einddatum, vandaag))
+  status: StatusFilter | null = null,
+): T[] {
+  const live = campagnes
+    .filter((c) => isLive(c, vandaag))
     .sort((a, b) => (b.startdatum ?? "").localeCompare(a.startdatum ?? ""));
+  const komend = campagnes
+    .filter((c) => !isLive(c, vandaag) && !isAfgelopen(c.einddatum, vandaag))
+    .sort((a, b) => (a.startdatum ?? "").localeCompare(b.startdatum ?? ""));
   const afgelopen = campagnes
     .filter((c) => isAfgelopen(c.einddatum, vandaag))
     .sort((a, b) => (b.einddatum ?? "").localeCompare(a.einddatum ?? ""));
-  return { lopend, afgelopen };
+  if (status === "live") return live;
+  if (status === "niet-live") return [...komend, ...afgelopen];
+  return [...live, ...komend, ...afgelopen];
 }
 
 // ---------------------------------------------------------------------------

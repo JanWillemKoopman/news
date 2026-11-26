@@ -484,7 +484,7 @@ een planning, en bepaalt de database welke regels aan de beurt zijn.
 | 6 | Data die achterloopt | **Altijd op de eerste vrijdag**, niet wachten. Loopt een bron (orders, leads) niet tot het einde van de periode, dan staat dat in de datakwaliteit van het rapport. |
 | 7 | Periode van een rapportage | **Volgt uit de planning**: Maandelijks = de vorige volle maand, Per kwartaal = het vorige volle kwartaal, nooit later dan gisteren. De vrije periode uit de briefing geldt alleen bij Wekelijks en Uit. |
 | 8 | Campagnes | Kunnen alle vier de standen krijgen. De **eindevaluatie komt in de eerste ronde na de einddatum**, welke stand ook (behalve Uit); daarna springt de planning op Uit. Een campagne die nog niet begonnen is, wacht tot de eerste ronde na de startdatum. |
-| 9 | Balk boven het overzicht | **Volgende analyseronde**: de eerstvolgende vrijdag, het aantal analyses en hun namen (een klik opent de analyse). Dezelfde lijst als die van de skill. |
+| 9 | Balk boven het overzicht | **Volgende analyseronde**: de eerstvolgende vrijdag, het aantal analyses en hun namen (een klik opent de analyse). Dezelfde lijst als die van de skill. *(26 november 2026 op verzoek verwijderd.)* |
 | 10 | Standaard per opzet | Elke opzet heeft een **standaardplanning** (Campagne analyse Wekelijks, maandrapportages Maandelijks, kwartaalrapportages Per kwartaal, een nieuwe opzet Uit), in te stellen bij de opzet onder Analyse prompts. Een nieuwe analyse krijgt die stand; een toegevoegd voorstel ook (Wekelijks). |
 
 **Hoe het rekent** (keuzes van Claude, ter controle door de eigenaar):

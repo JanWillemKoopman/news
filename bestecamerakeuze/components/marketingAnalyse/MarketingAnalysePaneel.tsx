@@ -12,24 +12,26 @@ import VolgersZijbalk from "@/components/marketingAnalyse/VolgersZijbalk";
 import MerkMailZijbalk from "@/components/marketingAnalyse/MerkMailZijbalk";
 import MailLogZijbalk from "@/components/marketingAnalyse/MailLogZijbalk";
 import VoorstellenBalk from "@/components/marketingAnalyse/VoorstellenBalk";
-import OpzetFilterBalk from "@/components/marketingAnalyse/OpzetFilterBalk";
+import OpzetFilterBalk, { BedrijfFilterBalk } from "@/components/marketingAnalyse/OpzetFilterBalk";
 import PlanningKeuze from "@/components/marketingAnalyse/PlanningKeuze";
-import RondeBalk from "@/components/marketingAnalyse/RondeBalk";
 import { dagNL, type PlanningInvoer } from "@/lib/marketingAnalyse/planning";
 import { getBrandLogo } from "@/components/brandLogos";
 import { IconBook, IconBrain, IconChevronDown, IconMail, IconNotes, IconPencil, IconPlus, IconShield } from "@/components/icons";
 import {
+  bedrijfFilterKnoppen,
   bedrijvenLabel,
-  deelOpInLopendEnAfgelopen,
+  filterOpBedrijf,
   filterOpOpzet,
-  isAfgelopen,
+  isLive,
   formatWaarde,
   looptijdLabel,
   opzetFilterKnoppen,
   overzichtCijfers,
+  sorteerOpStatus,
   vandaagNL,
   versieLabel,
   type LeadBron,
+  type StatusFilter,
 } from "@/lib/marketingAnalyse/rekenen";
 import { STANDAARD_SEMANTIEK } from "@/lib/marketingAnalyse/standaardSemantiek";
 import type { MaCampagne, MaOpzet, MaOverzichtRegel, MaVoorstel, MaZoekronde, Planning } from "@/lib/marketingAnalyse/types";
@@ -39,6 +41,10 @@ type Voorstellen = { open: MaVoorstel[]; genegeerd: MaVoorstel[]; laatsteZoekron
 const URL_PARAM = "analyse";
 /** Het filter op soort analyse (opzet-id) staat ook in de URL: overleeft een refresh, is te delen. */
 const FILTER_PARAM = "soort";
+/** Het statusfilter (live / niet-live) staat ook in de URL. */
+const STATUS_PARAM = "status";
+/** Het filter op bedrijf staat ook in de URL. */
+const BEDRIJF_PARAM = "bedrijf";
 
 const BEHEER_SLEUTEL = "marketing-analyse-beheer";
 
@@ -183,6 +189,26 @@ const KOP = "label-theme whitespace-nowrap px-3 py-2.5 font-normal";
 const RIJ =
   "cursor-pointer align-top transition-colors duration-[var(--duur-snel)] hover:bg-surface [&>td]:border-t [&>td]:border-line-soft";
 
+/** Groen ademend stipje als de analyse live is (vandaag tussen start en eind), anders grijs. */
+function StatusStip({ c, vandaag }: { c: MaOverzichtRegel; vandaag: string }) {
+  const live = isLive(c, vandaag);
+  const titel = live ? "Live: vandaag valt binnen de looptijd" : "Niet live: vandaag valt buiten de looptijd";
+  return (
+    <span
+      role="img"
+      aria-label={titel}
+      title={titel}
+      className={`mt-1.5 block h-2 w-2 rounded-full ${live ? "live-stip bg-open" : "bg-closed opacity-70"}`}
+    />
+  );
+}
+
+const STIP_KOP = (
+  <th className="w-4 py-2.5 pl-6 pr-0">
+    <span className="sr-only">Status</span>
+  </th>
+);
+
 /** De laatste analyse als korte regel onder de naam. */
 function LaatsteAnalyse({ c, opzet }: { c: MaOverzichtRegel; opzet: MaOpzet | undefined }) {
   if (c.laatsteAnalyse) {
@@ -279,9 +305,9 @@ function leadOnderschrift(o: { bron: LeadBron; leadSoort: string | null; oudeTel
 }
 
 /**
- * Campagne-analyses: planning, campagne, uitgaven tegen budget, gezamenlijke CTR van de
+ * Campagne-analyses: status, campagne, uitgaven tegen budget, gezamenlijke CTR van de
  * advertentiekanalen, bezoekers op de campagnepagina, leads (met bron) en het leaddoel met
- * hoeveel er gehaald is. De cijfers komen uit de laatste analyse.
+ * hoeveel er gehaald is, en rechts de planning. De cijfers komen uit de laatste analyse.
  */
 function CampagneAnalyseTabel({ campagnes, opzetten, vandaag, planningBezig, onOpen, onBewerk, onPlanning, onVolgers }: TabelProps) {
   return (
@@ -289,9 +315,7 @@ function CampagneAnalyseTabel({ campagnes, opzetten, vandaag, planningBezig, onO
       <table className="w-full border-separate border-spacing-0 text-sm">
         <thead>
           <tr className="text-left text-label text-ink-faint">
-            <th className="w-48 py-2.5 pl-6 pr-1" title="Hoe vaak “voer de analyseronde uit” deze campagne maakt">
-              <span className="label-theme font-normal">Planning</span>
-            </th>
+            {STIP_KOP}
             <th className={`${KOP} pl-3`}>Campagne</th>
             <th className={KOP} title="Mediakosten uit Google Ads, Meta Ads en LinkedIn Ads, tegen het totaalbudget">
               Uitgaven
@@ -308,6 +332,9 @@ function CampagneAnalyseTabel({ campagnes, opzetten, vandaag, planningBezig, onO
             <th className={KOP} title="Het aantal leads uit het doel van de briefing, en hoeveel daarvan gehaald is">
               Doel leads
             </th>
+            <th className="w-48 px-3 py-2.5" title="Hoe vaak “voer de analyseronde uit” deze campagne maakt">
+              <span className="label-theme font-normal">Planning</span>
+            </th>
             <th className="w-24 px-4 py-2.5">
               <span className="sr-only">Briefing en mail</span>
             </th>
@@ -321,14 +348,8 @@ function CampagneAnalyseTabel({ campagnes, opzetten, vandaag, planningBezig, onO
             const geanalyseerd = Boolean(c.laatsteAnalyse);
             return (
               <tr key={c.id} onClick={() => onOpen(c.id)} className={RIJ}>
-                <td className="py-3 pl-6 pr-1">
-                  <PlanningKeuze
-                    regel={planningInvoer(c, opzet)}
-                    naam={c.naam}
-                    vandaag={vandaag}
-                    bezig={planningBezig.has(c.id)}
-                    onKies={(p) => onPlanning(c, p)}
-                  />
+                <td className="py-3 pl-6 pr-0">
+                  <StatusStip c={c} vandaag={vandaag} />
                 </td>
                 <td className="max-w-[340px] px-3 py-3">
                   <div className="flex items-center gap-2">
@@ -402,6 +423,15 @@ function CampagneAnalyseTabel({ campagnes, opzetten, vandaag, planningBezig, onO
                     }
                   />
                 </td>
+                <td className="px-3 py-3">
+                  <PlanningKeuze
+                    regel={planningInvoer(c, opzet)}
+                    naam={c.naam}
+                    vandaag={vandaag}
+                    bezig={planningBezig.has(c.id)}
+                    onKies={(p) => onPlanning(c, p)}
+                  />
+                </td>
                 <td className="whitespace-nowrap px-4 py-3 text-right">
                   <BewerkKnop c={c} onBewerk={onBewerk} />
                   <MailKnop c={c} onVolgers={onVolgers} />
@@ -415,18 +445,19 @@ function CampagneAnalyseTabel({ campagnes, opzetten, vandaag, planningBezig, onO
   );
 }
 
-/** Rapportages en andere opzetten zonder funnel: alleen planning, naam en laatste analyse. */
+/** Rapportages en andere opzetten zonder funnel: alleen naam, laatste analyse en planning. */
 function RapportageTabel({ campagnes, opzetten, vandaag, planningBezig, onOpen, onBewerk, onPlanning, onVolgers }: TabelProps) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-separate border-spacing-0 text-sm">
         <thead>
           <tr className="text-left text-label text-ink-faint">
-            <th className="w-48 py-2.5 pl-6 pr-1" title="Hoe vaak “voer de analyseronde uit” deze rapportage maakt">
-              <span className="label-theme font-normal">Planning</span>
-            </th>
+            {STIP_KOP}
             <th className={`${KOP} pl-3`}>Rapportage</th>
             <th className={KOP}>Laatste analyse</th>
+            <th className="w-48 px-3 py-2.5" title="Hoe vaak “voer de analyseronde uit” deze rapportage maakt">
+              <span className="label-theme font-normal">Planning</span>
+            </th>
             <th className="w-24 px-4 py-2.5">
               <span className="sr-only">Briefing en mail</span>
             </th>
@@ -437,14 +468,8 @@ function RapportageTabel({ campagnes, opzetten, vandaag, planningBezig, onOpen, 
             const opzet = opzetten.get(c.opzetId);
             return (
               <tr key={c.id} onClick={() => onOpen(c.id)} className={RIJ}>
-                <td className="py-3 pl-6 pr-1">
-                  <PlanningKeuze
-                    regel={planningInvoer(c, opzet)}
-                    naam={c.naam}
-                    vandaag={vandaag}
-                    bezig={planningBezig.has(c.id)}
-                    onKies={(p) => onPlanning(c, p)}
-                  />
+                <td className="py-3 pl-6 pr-0">
+                  <StatusStip c={c} vandaag={vandaag} />
                 </td>
                 <td className="max-w-[420px] px-3 py-3">
                   <p className="truncate font-semibold text-ink" title={c.naam}>
@@ -457,6 +482,15 @@ function RapportageTabel({ campagnes, opzetten, vandaag, planningBezig, onOpen, 
                 </td>
                 <td className="px-3 py-3 text-ink">
                   <LaatsteAnalyse c={c} opzet={opzet} />
+                </td>
+                <td className="px-3 py-3">
+                  <PlanningKeuze
+                    regel={planningInvoer(c, opzet)}
+                    naam={c.naam}
+                    vandaag={vandaag}
+                    bezig={planningBezig.has(c.id)}
+                    onKies={(p) => onPlanning(c, p)}
+                  />
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 text-right">
                   <BewerkKnop c={c} onBewerk={onBewerk} />
@@ -504,7 +538,8 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
   >(null);
   // Analyse prompts en Semantic layer staan achter het schildje: ze zijn vooral voor beheerders.
   const [beheerOpen, setBeheerOpen] = useState(false);
-  const [afgelopenOpen, setAfgelopenOpen] = useState(false);
+  const [status, setStatus] = useState<StatusFilter | null>(null);
+  const [bedrijfFilter, setBedrijfFilter] = useState<string | null>(null);
   const [planningBezig, setPlanningBezig] = useState<Set<string>>(new Set());
   const [volgersVan, setVolgersVan] = useState<MaOverzichtRegel | null>(null);
 
@@ -567,6 +602,10 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
     if (gevraagd) setOpenId(gevraagd);
     const soort = params.get(FILTER_PARAM);
     if (soort) setFilter(soort);
+    const st = params.get(STATUS_PARAM);
+    if (st === "live" || st === "niet-live") setStatus(st);
+    const bf = params.get(BEDRIJF_PARAM);
+    if (bf) setBedrijfFilter(bf);
   }, [ingelogd, laad]);
 
   function open(id: string | null) {
@@ -578,6 +617,16 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
   function kiesFilter(soort: string | null) {
     setFilter(soort);
     zetUrl(soort, FILTER_PARAM);
+  }
+
+  function kiesBedrijf(b: string | null) {
+    setBedrijfFilter(b);
+    zetUrl(b, BEDRIJF_PARAM);
+  }
+
+  function kiesStatus(st: StatusFilter | null) {
+    setStatus(st);
+    zetUrl(st, STATUS_PARAM);
   }
 
   function bijgewerkt(c: MaCampagne) {
@@ -652,17 +701,31 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
   const opzetPerId = new Map(opzetten.map((o) => [o.id, o]));
   const promptOpzet = paneel?.soort === "prompt" && paneel.opzetId ? (opzetPerId.get(paneel.opzetId) ?? null) : null;
   const vandaag = vandaagNL();
+  // De aantallen op de soortknoppen tellen binnen het statusfilter.
+  const binnenStatus = (c: MaOverzichtRegel) => status === null || isLive(c, vandaag) === (status === "live");
+  const alle = campagnes ?? [];
+  const bedrijfKnoppen = bedrijfFilterKnoppen(bedrijven, alle);
+  // Een bedrijf uit de URL dat er niet (meer) is, telt als Alle.
+  const actiefBedrijf = bedrijfKnoppen.find((b) => b.naam.toLowerCase() === bedrijfFilter?.trim().toLowerCase())?.naam ?? null;
+  const vanBedrijf = filterOpBedrijf(alle, actiefBedrijf);
   const filterKnoppen = opzetFilterKnoppen(
     opzetten,
-    (campagnes ?? []).map((c) => ({ opzetId: c.opzetId, lopend: !isAfgelopen(c.einddatum, vandaag) })),
+    vanBedrijf.map((c) => ({ opzetId: c.opzetId, lopend: binnenStatus(c) })),
   );
   // Een filter uit de URL op een soort die er niet (meer) is, telt als Alle.
   const filterKnop = filter !== null ? (filterKnoppen.find((k) => k.id === filter) ?? null) : null;
   const actiefFilter = filterKnop?.id ?? null;
   const filterHeeftActieve = Boolean(filterKnop?.opzetIds.some((id) => opzetPerId.get(id)?.actief));
-  const gefilterd = filterOpOpzet(campagnes ?? [], filterKnop?.opzetIds ?? null);
-  const { lopend, afgelopen } = deelOpInLopendEnAfgelopen(gefilterd, vandaag);
-  const ingepland = gefilterd.filter((c) => c.planning !== "uit").length;
+  const gefilterd = filterOpOpzet(vanBedrijf, filterKnop?.opzetIds ?? null);
+  // De aantallen op de bedrijfsknoppen tellen binnen het statusfilter en het filter op soort.
+  const bedrijfKnoppenGeteld = bedrijfFilterKnoppen(
+    bedrijven,
+    filterOpOpzet(alle, filterKnop?.opzetIds ?? null).filter(binnenStatus),
+  ).filter((k) => bedrijfKnoppen.some((b) => b.naam === k.naam));
+  const zichtbaar = sorteerOpStatus(gefilterd, vandaag, status);
+  const aantalLive = gefilterd.filter((c) => isLive(c, vandaag)).length;
+  const ingepland = zichtbaar.filter((c) => c.planning !== "uit").length;
+  const statusNaam = status === "live" ? "Live" : status === "niet-live" ? "Niet live" : null;
 
   const knoppen = (
     <div className="flex items-center gap-2">
@@ -771,24 +834,33 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
               onTerugzetten={(v) => zetVoorstel(v, "terugzetten")}
             />
           )}
-          {campagnes && campagnes.length > 0 && (
-            <RondeBalk
-              regels={campagnes.map((c) => ({ ...planningInvoer(c, opzetPerId.get(c.opzetId)), id: c.id, naam: c.naam }))}
-              vandaag={vandaag}
-              onOpen={(id) => open(id)}
+          {campagnes && bedrijfKnoppenGeteld.length > 0 && (
+            <BedrijfFilterBalk
+              bedrijven={bedrijfKnoppenGeteld}
+              totaal={filterOpOpzet(alle, filterKnop?.opzetIds ?? null).filter(binnenStatus).length}
+              gekozen={actiefBedrijf}
+              onKies={kiesBedrijf}
             />
           )}
           {campagnes && filterKnoppen.length > 0 && (
             <OpzetFilterBalk
               knoppen={filterKnoppen}
-              totaal={campagnes.filter((c) => !isAfgelopen(c.einddatum, vandaag)).length}
-              gekozen={actiefFilter} onKies={kiesFilter} />
+              totaal={vanBedrijf.filter(binnenStatus).length}
+              aantalLive={aantalLive}
+              aantalNietLive={gefilterd.length - aantalLive}
+              status={status}
+              onStatus={kiesStatus}
+              gekozen={actiefFilter}
+              onKies={kiesFilter}
+            />
           )}
           <section className="kaart-accent overflow-hidden rounded-panel border border-line bg-card shadow-card">
             <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line-soft px-6 py-4">
               <div>
                 <h2 className="label-theme text-label text-ink-muted">
-                  Lopende analyses{filterKnop && <span className="text-ink"> · {filterKnop.naam}</span>}
+                  {statusNaam ? `${statusNaam} analyses` : "Analyses"}
+                  {actiefBedrijf && <span className="text-ink"> · {actiefBedrijf}</span>}
+                  {filterKnop && <span className="text-ink"> · {filterKnop.naam}</span>}
                 </h2>
                 <p className="mt-0.5 text-meta text-ink-faint">
                   Cijfers uit de laatste analyse. Klik op een regel voor de volledige analyse.
@@ -800,53 +872,40 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
             {fout && <p className="px-6 py-3 text-sm text-negative">{fout}</p>}
             {!campagnes ? (
               !fout && <p className="px-6 py-5 text-sm text-ink-muted">Laden…</p>
-            ) : lopend.length === 0 && filterKnop ? (
+            ) : zichtbaar.length === 0 && (filterKnop || status || actiefBedrijf) ? (
               <div className="px-6 py-10 text-center">
-                <p className="font-semibold text-ink">Geen lopende analyses van het soort {filterKnop.naam}</p>
+                <p className="font-semibold text-ink">
+                  Geen {statusNaam ? `${statusNaam.toLowerCase()} ` : ""}analyses{actiefBedrijf ? ` voor ${actiefBedrijf}` : ""}
+                  {filterKnop ? ` van het soort ${filterKnop.naam}` : ""}
+                </p>
                 <p className="mx-auto mt-1 max-w-lg text-sm text-ink-muted">
-                  {afgelopen.length > 0
-                    ? `Er ${afgelopen.length === 1 ? "staat er één" : `staan er ${afgelopen.length}`} onder Afgelopen. `
-                    : ""}
-                  {filterHeeftActieve ? "Maak er een aan met Nieuwe analyse, of " : ""}
-                  <button type="button" onClick={() => kiesFilter(null)} className="text-ink underline underline-offset-2 hover:text-primary">
-                    {filterHeeftActieve ? "toon alle analyses" : "Toon alle analyses"}
+                  {filterKnop && filterHeeftActieve ? "Maak er een aan met Nieuwe analyse, of " : ""}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      kiesFilter(null);
+                      kiesStatus(null);
+                      kiesBedrijf(null);
+                    }}
+                    className="text-ink underline underline-offset-2 hover:text-primary"
+                  >
+                    {filterKnop && filterHeeftActieve ? "toon alle analyses" : "Toon alle analyses"}
                   </button>
                   .
                 </p>
               </div>
-            ) : lopend.length === 0 ? (
+            ) : zichtbaar.length === 0 ? (
               <div className="px-6 py-10 text-center">
-                <p className="font-semibold text-ink">Geen lopende analyses</p>
+                <p className="font-semibold text-ink">Nog geen analyses</p>
                 <p className="mx-auto mt-1 max-w-lg text-sm text-ink-muted">
                   Maak met Nieuwe analyse een campagne-analyse of een rapportage aan. Zeg daarna in Claude Code dat hij de analyse moet
                   maken; het resultaat verschijnt hier.
                 </p>
               </div>
             ) : (
-              <OverzichtTabellen campagnes={lopend} {...tabelProps} />
+              <OverzichtTabellen campagnes={zichtbaar} {...tabelProps} />
             )}
           </section>
-
-          {afgelopen.length > 0 && (
-            <section className="overflow-hidden rounded-panel border border-line bg-card shadow-subtle">
-              <button
-                type="button"
-                onClick={() => setAfgelopenOpen((o) => !o)}
-                aria-expanded={afgelopenOpen}
-                className="flex w-full items-center justify-between px-6 py-4 text-left"
-              >
-                <span className="label-theme text-label text-ink-muted">Afgelopen ({afgelopen.length})</span>
-                <IconChevronDown
-                  className={`h-4 w-4 text-ink-faint transition-transform duration-[var(--duur-snel)] ${afgelopenOpen ? "rotate-180" : ""}`}
-                />
-              </button>
-              {afgelopenOpen && (
-                <div className="border-t border-line-soft">
-                  <OverzichtTabellen campagnes={afgelopen} {...tabelProps} />
-                </div>
-              )}
-            </section>
-          )}
         </>
       )}
 

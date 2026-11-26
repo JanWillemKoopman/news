@@ -1735,22 +1735,37 @@ lees dat eerst voordat je hier iets verandert.
   bedrijven laat de keuze aan de briefing. De oude kolom `bedrijf` blijft als leesbare kopie
   ("PGZ, VELOO"), bijgehouden door een trigger; lees en schrijf `bedrijven`. Syntec-leads
   alleen als de analyse **uitsluitend** over Van den Udenhout gaat én het doel Syntec noemt (`leadBron`).
-- **Overzicht campagne-analyses** (verzoek van de eigenaar, november 2026): kolommen Planning
-  (uitklapmenu vooraan, zie hieronder), Campagne (met de laatste analyse eronder), Uitgaven (balkje
+- **Overzicht campagne-analyses** (verzoek van de eigenaar, november 2026): kolommen status-stipje
+  (vooraan), Campagne (met de laatste analyse eronder), Uitgaven (balkje
   tegen het budget, rood boven 100%), CTR (gezamenlijk over Google, Meta en LinkedIn Ads:
   `klikken` ÷ `vertoningenAds`, gewogen, nooit over de vertoningen inclusief organisch),
   Bezoekers (`sessies`: sessies die op de campagnepagina begonnen, uit elk kanaal), Leads (`leadsDoel` uit één bron:
   Google Analytics, of Syntec als het doel dat zegt; bron en soort eronder) en Doel leads (balkje, groen
   vanaf 100%). Het leaddoel komt uit `kerncijfers.doelLeads` (de analyse leest het uit het
   vrije doel), anders het eerste getal in het doel (`overzichtCijfers` in `rekenen.ts`,
-  getest). Rapportages hebben een eigen tabel eronder: Planning, Rapportage, Laatste analyse.
+  getest) en helemaal rechts Planning (uitklapmenu, zie hieronder; 26 november 2026 op verzoek van
+  vooraan naar rechts verplaatst). Rapportages hebben een eigen tabel eronder: stipje, Rapportage,
+  Laatste analyse, Planning.
+- **Live-stipje en statusfilter** (26 november 2026, op verzoek). Vooraan elke regel een **groen**
+  stipje als de analyse live is (vandaag tussen start- en einddatum, grenzen inbegrepen; zonder
+  startdatum = begonnen, zonder einddatum = niet afgelopen, dus een rapportage is live), anders
+  **grijs** (`isLive` in `rekenen.ts`, getest). Het groene stipje ademt heel subtiel (`.live-stip` in
+  globals.css: iets feller met een zachte gloed en weer terug, op `--duur-adem`; uit bij
+  `prefers-reduced-motion`). Links van de soortknoppen staan **Live** en **Niet live** (nog eens
+  klikken = beide; in de URL als `?status=`). Het inklapbare blok Afgelopen is daarmee vervallen: het
+  overzicht toont alles in één tabel, live bovenaan, dan wat nog moet beginnen, dan afgelopen
+  (`sorteerOpStatus`, getest).
+- **Filterbalk op bedrijf** (26 november 2026, op verzoek): een rij knoppen bóven de andere filters,
+  **Alle** (standaard) en één per bedrijf uit de semantic layer, aangevuld met bedrijven die alleen in
+  analyses voorkomen (`bedrijfFilterKnoppen`, `filterOpBedrijf`, getest). Een analyse over meer
+  bedrijven telt bij elk. Aantallen tellen binnen de andere filters; in de URL als `?bedrijf=`.
 - **Planning van de analyseronde** (25 november 2026, migratie 0049, besluiten in §17 van het plan).
   Het schuifje Ronde is een uitklapmenu **Planning** geworden (`PlanningKeuze.tsx`, in een portal
   omdat de tabel horizontaal scrolt): Uit, Wekelijks, Maandelijks (eerste vrijdag van de maand) en
   Per kwartaal (eerste vrijdag van jan, apr, jul, okt). Achter elke keuze staat de volgende datum,
   onder het knopje die van de gekozen stand (blauw = staat klaar, oranje = eindevaluatie). Uit = geen
-  updates, ook geen eindevaluatie. Boven het overzicht de balk **Volgende analyseronde**
-  (`RondeBalk.tsx`): de eerstvolgende vrijdag met de namen. Een ronde hoort bij een week (ma t/m
+  updates, ook geen eindevaluatie. De balk **Volgende analyseronde** boven het overzicht is er op
+  26 november 2026 op verzoek uit gehaald (`RondeBalk.tsx` verwijderd). Een ronde hoort bij een week (ma t/m
   zo), een gemiste week wordt ingehaald, een geplande rapportage gaat over de vorige volle maand of
   het vorige volle kwartaal. De rekenregel staat twee keer, gelijk gehouden: `planning.ts` (getest)
   voor het dashboard en `dataloket.marketing_analyse_ronde(datum)` voor de skill. De kolom
@@ -1862,24 +1877,22 @@ lees dat eerst voordat je hier iets verandert.
     `benchmarkSchaal`): grijs vlak = middelste helft, streepje = mediaan, stip = het cijfer, rechts
     is altijd beter. `leesBenchmark` (in `normaliseerResultaat`) laat een benchmark met minder dan 5
     items of niet-oplopende kwartielen weg. Getest in `rekenen.test.ts`.
-- **Het overzicht**: lopende campagnes bovenaan op startdatum, afgelopen in een inklapbaar blok
-  Afgelopen (rapportages hebben geen einddatum en staan altijd bij lopend); per regel de
-  planning (uitklapmenu) en bij campagnes de kerncijfers uit de laatste analyse.
+- **Het overzicht**: één tabel, live bovenaan op startdatum, dan nog te beginnen, dan afgelopen
+  (zie "Live-stipje en statusfilter"); per regel de planning (uitklapmenu) en bij campagnes de kerncijfers uit de laatste analyse.
   Rechtsboven (25 november 2026, op verzoek) een schildje **Beheer**, dan **E-mail settings** en Nieuwe
   analyse. Analyse prompts, Semantic layer en (alleen voor de eigenaar) Verzonden e-mails staan achter het schildje (vooral voor beheerders, maar
   iedereen kan ze openen); open of dicht wordt per browser onthouden. De open analyse staat in de URL
   (`?analyse=<campagne-id>`).
 - **Filterbalk op soort analyse** (25–26 november 2026, op verzoek; `OpzetFilterBalk.tsx`). Tussen de
-  planningsbalk van de analyseronde (`RondeBalk`) en het blok Lopende analyses een rij knoppen:
-  **Alle** en één per **soort**, met het aantal **lopende** analyses. Een soort is de naam van de opzet
+  filter op bedrijf en het blok met analyses een rij knoppen, met links het statusfilter (Live / Niet
+  live): **Alle** en één per **soort**, met het aantal analyses binnen de andere filters. Een soort is de naam van de opzet
   zonder afkortingen in hoofdletters (`opzetSoort` in `rekenen.ts`, getest): VDU en PGZ
   maandrapportage vallen samen onder **Maandrapportage**, kwartaal onder **Kwartaalrapportage**,
   "E-mail VDU" wordt **E-mail** (besluit van de eigenaar: over de bedrijven heen, niet per bedrijf).
   De knoppen komen uit de opzetten (`opzetFilterKnoppen`, `filterOpOpzet`), dus een nieuwe opzet krijgt
   vanzelf een knop of valt in een bestaande soort; een soort met alleen uitgezette opzetten staat er
-  alleen zolang er analyses van zijn. Een soort zonder lopende analyses staat **grijs** maar is
-  klikbaar. Eén keuze tegelijk, nog eens klikken = terug naar Alle. Het filter geldt voor Lopend én
-  Afgelopen (de planningsbalk filtert niet mee), staat in de URL (`?soort=maandrapportage`), en Nieuwe
+  alleen zolang er analyses van zijn. Een soort zonder analyses (binnen de andere filters) staat
+  **grijs** maar is klikbaar. Eén keuze tegelijk, nog eens klikken = terug naar Alle. Het filter staat in de URL (`?soort=maandrapportage`), en Nieuwe
   analyse begint met de opzet van de soort als daar precies één actieve opzet onder valt.
 - **Voorgestelde campagne analyses** (25 november 2026, migratie 0046, plan en besluiten in
   `campagne-voorstellen-plan.md`). Claude Code zoekt met de skill `campagne-voorstellen` op

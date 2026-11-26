@@ -430,6 +430,25 @@ body {
   animation: status-dot-ademen var(--duur-adem) ease-in-out infinite;
 }
 
+/* Live-stip in het overzicht van Marketing analyse: wordt heel langzaam iets feller, met een
+   zachte gloed eromheen, en dimt weer. Lange cyclus en een zachte curve, zodat het organisch
+   voelt (ademen, niet knipperen). */
+@keyframes live-stip-ademen {
+  0%,
+  100% {
+    background-color: var(--color-open);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-open-bright) 0%, transparent);
+  }
+  50% {
+    background-color: var(--color-open-bright);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-open-bright) 22%, transparent);
+  }
+}
+
+.live-stip {
+  animation: live-stip-ademen calc(var(--duur-adem) * 0.75) cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
 /* Landingspagina-rapport: secties en regels schuiven één voor één omhoog in beeld
    (vertraging via --i), en de kans die het meest oplevert krijgt een pulserende ring. */
 @keyframes rapport-in {
@@ -488,6 +507,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .status-dot-ademen,
+  .live-stip,
   .laadvlak,
   .rapport-in,
   .puls-ring {

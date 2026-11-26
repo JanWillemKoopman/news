@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
-  deelOpInLopendEnAfgelopen,
   doorstroom,
   formatWaarde,
   isAfgelopen,
@@ -20,6 +19,10 @@ import {
   rapportageNaam,
   sorteerOpzetten,
   opzetFilterKnoppen,
+  sorteerOpStatus,
+  bedrijfFilterKnoppen,
+  filterOpBedrijf,
+  isLive,
   opzetSoort,
   filterOpOpzet,
   leesModellen,
@@ -105,22 +108,26 @@ test("vandaag in Nederland, ook rond middernacht UTC", () => {
   assert.equal(vandaagNL(new Date("2026-07-01T21:59:00Z")), "2026-07-01");
 });
 
-test("afgelopen pas na de einddatum; lopend bovenaan op startdatum", () => {
+test("afgelopen pas na de einddatum; live tussen start en eind; live bovenaan", () => {
   assert.equal(isAfgelopen("2026-11-24", "2026-11-24"), false);
   assert.equal(isAfgelopen("2026-11-23", "2026-11-24"), true);
   assert.equal(isAfgelopen(null, "2026-11-24"), false);
-  const { lopend, afgelopen } = deelOpInLopendEnAfgelopen(
-    [
-      { naam: "oud", startdatum: "2026-01-01", einddatum: "2026-02-01" },
-      { naam: "nieuw", startdatum: "2026-11-01", einddatum: null },
-      { naam: "a2", startdatum: "2026-09-18", einddatum: "2026-12-31" },
-      { naam: "zonder", startdatum: null, einddatum: null },
-      { naam: "net-af", startdatum: "2026-06-01", einddatum: "2026-11-23" },
-    ],
-    "2026-11-24",
-  );
-  assert.deepEqual(lopend.map((c) => c.naam), ["nieuw", "a2", "zonder"]);
-  assert.deepEqual(afgelopen.map((c) => c.naam), ["net-af", "oud"]);
+  assert.equal(isLive({ startdatum: "2026-11-24", einddatum: "2026-11-24" }, "2026-11-24"), true);
+  assert.equal(isLive({ startdatum: "2026-11-25", einddatum: null }, "2026-11-24"), false);
+  assert.equal(isLive({ startdatum: null, einddatum: null }, "2026-11-24"), true);
+  const lijst = [
+    { naam: "oud", startdatum: "2026-01-01", einddatum: "2026-02-01" },
+    { naam: "nieuw", startdatum: "2026-11-01", einddatum: null },
+    { naam: "a2", startdatum: "2026-09-18", einddatum: "2026-12-31" },
+    { naam: "zonder", startdatum: null, einddatum: null },
+    { naam: "net-af", startdatum: "2026-06-01", einddatum: "2026-11-23" },
+    { naam: "later", startdatum: "2027-01-10", einddatum: "2027-02-01" },
+    { naam: "straks", startdatum: "2026-12-01", einddatum: null },
+  ];
+  const namen = (s: "live" | "niet-live" | null) => sorteerOpStatus(lijst, "2026-11-24", s).map((c) => c.naam);
+  assert.deepEqual(namen("live"), ["nieuw", "a2", "zonder"]);
+  assert.deepEqual(namen("niet-live"), ["straks", "later", "net-af", "oud"]);
+  assert.deepEqual(namen(null), ["nieuw", "a2", "zonder", "straks", "later", "net-af", "oud"]);
 });
 
 test("semantic layer: alle blokken aanwezig, terugval voor wat ontbreekt", () => {
@@ -627,4 +634,22 @@ test("tabbladen formaat 3: de funnel van opzet A, oude sleutels worden losse sta
   // Een overkoepelende actie mag naar de nieuwe stappen verwijzen.
   const metActie = normaliseerResultaat({ formaat: 3, aanbevelingen: [{ titel: "a", prioriteit: "hoog", tabs: ["vervolg", "onzin"] }] });
   assert.deepEqual(metActie.aanbevelingen?.[0].tabs, ["vervolg"]);
+});
+
+test("bedrijfFilterKnoppen en filterOpBedrijf: lijst eerst, extra uit analyses, meer bedrijven telt bij elk", () => {
+  const analyses = [
+    { bedrijven: ["Van den Udenhout"] },
+    { bedrijven: ["PGZ", "VELOO"] },
+    { bedrijven: ["pgz "] },
+    { bedrijven: ["Instra"] },
+  ];
+  assert.deepEqual(bedrijfFilterKnoppen(["Van den Udenhout", "PGZ", "Bentley Maastricht"], analyses), [
+    { naam: "Van den Udenhout", aantal: 1 },
+    { naam: "PGZ", aantal: 2 },
+    { naam: "Bentley Maastricht", aantal: 0 },
+    { naam: "VELOO", aantal: 1 },
+    { naam: "Instra", aantal: 1 },
+  ]);
+  assert.equal(filterOpBedrijf(analyses, "PGZ").length, 2);
+  assert.equal(filterOpBedrijf(analyses, null).length, 4);
 });
