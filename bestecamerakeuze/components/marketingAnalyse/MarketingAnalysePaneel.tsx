@@ -41,6 +41,8 @@ type Voorstellen = { open: MaVoorstel[]; genegeerd: MaVoorstel[]; laatsteZoekron
 const URL_PARAM = "analyse";
 /** Het filter op soort analyse (opzet-id) staat ook in de URL: overleeft een refresh, is te delen. */
 const FILTER_PARAM = "soort";
+/** De soort die standaard aan staat in de filterbalk (sleutel uit `opzetSoort`). */
+const STANDAARD_SOORT = "campagne analyse";
 /** Het statusfilter (live / niet-live) staat ook in de URL. */
 const STATUS_PARAM = "status";
 /** Het filter op bedrijf staat ook in de URL. */
@@ -614,7 +616,7 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
     window.scrollTo({ top: 0 });
   }
 
-  function kiesFilter(soort: string | null) {
+  function kiesFilter(soort: string) {
     setFilter(soort);
     zetUrl(soort, FILTER_PARAM);
   }
@@ -712,8 +714,14 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
     opzetten,
     vanBedrijf.map((c) => ({ opzetId: c.opzetId, lopend: binnenStatus(c) })),
   );
-  // Een filter uit de URL op een soort die er niet (meer) is, telt als Alle.
-  const filterKnop = filter !== null ? (filterKnoppen.find((k) => k.id === filter) ?? null) : null;
+  // Er staat altijd precies één soort aan: soorten met andere kolommen komen nooit in één lijst.
+  // Standaard (en bij een soort uit de URL die er niet meer is) is dat Campagne analyse, of anders
+  // de eerste soort.
+  const filterKnop =
+    (filter !== null ? filterKnoppen.find((k) => k.id === filter) : undefined) ??
+    filterKnoppen.find((k) => k.id === STANDAARD_SOORT) ??
+    filterKnoppen[0] ??
+    null;
   const actiefFilter = filterKnop?.id ?? null;
   const filterHeeftActieve = Boolean(filterKnop?.opzetIds.some((id) => opzetPerId.get(id)?.actief));
   const gefilterd = filterOpOpzet(vanBedrijf, filterKnop?.opzetIds ?? null);
@@ -845,7 +853,6 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
           {campagnes && filterKnoppen.length > 0 && (
             <OpzetFilterBalk
               knoppen={filterKnoppen}
-              totaal={vanBedrijf.filter(binnenStatus).length}
               aantalLive={aantalLive}
               aantalNietLive={gefilterd.length - aantalLive}
               status={status}
@@ -879,18 +886,23 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
                   {filterKnop ? ` van het soort ${filterKnop.naam}` : ""}
                 </p>
                 <p className="mx-auto mt-1 max-w-lg text-sm text-ink-muted">
-                  {filterKnop && filterHeeftActieve ? "Maak er een aan met Nieuwe analyse, of " : ""}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      kiesFilter(null);
-                      kiesStatus(null);
-                      kiesBedrijf(null);
-                    }}
-                    className="text-ink underline underline-offset-2 hover:text-primary"
-                  >
-                    {filterKnop && filterHeeftActieve ? "toon alle analyses" : "Toon alle analyses"}
-                  </button>
+                  {filterKnop && filterHeeftActieve ? "Maak er een aan met Nieuwe analyse" : ""}
+                  {(status || actiefBedrijf) && (
+                    <>
+                      {filterKnop && filterHeeftActieve ? ", of " : ""}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          kiesStatus(null);
+                          kiesBedrijf(null);
+                        }}
+                        className="text-ink underline underline-offset-2 hover:text-primary"
+                      >
+                        {filterKnop && filterHeeftActieve ? "toon alle" : "Toon alle"}
+                        {filterKnop ? ` ${filterKnop.naam.toLowerCase()}s` : " analyses"}
+                      </button>
+                    </>
+                  )}
                   .
                 </p>
               </div>

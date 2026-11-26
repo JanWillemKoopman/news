@@ -4,17 +4,15 @@ import type { OpzetFilterKnop, StatusFilter } from "@/lib/marketingAnalyse/reken
 
 type Props = {
   knoppen: OpzetFilterKnop[];
-  /** Aantal analyses binnen het statusfilter, voor de knop Alle. */
-  totaal: number;
   /** Aantal live en niet-live analyses (binnen het filter op soort). */
   aantalLive: number;
   aantalNietLive: number;
   /** Het gekozen statusfilter; `null` = beide. */
   status: StatusFilter | null;
   onStatus: (status: StatusFilter | null) => void;
-  /** De gekozen soort (sleutel); `null` = Alle. */
+  /** De gekozen soort (sleutel). Er staat altijd één soort aan. */
   gekozen: string | null;
-  onKies: (soort: string | null) => void;
+  onKies: (soort: string) => void;
 };
 
 export function FilterKnop({
@@ -55,12 +53,13 @@ export function FilterKnop({
 
 /**
  * Filterbalk boven het overzicht: één knop per soort analyse (Campagne analyse, Maandrapportage,
- * Kwartaalrapportage, … over de bedrijven heen) plus Alle, met het aantal analyses. Links daarvan
+ * Kwartaalrapportage, … over de bedrijven heen) met het aantal analyses. Links daarvan
  * het statusfilter: Live (vandaag tussen start- en einddatum) of Niet live. De
  * knoppen komen uit de opzetten, dus een nieuwe opzet uit Analyse prompts staat er vanzelf bij.
- * Eén keuze tegelijk; nog een klik op de gekozen knop zet het filter terug op Alle.
+ * Er staat altijd precies één soort aan (standaard Campagne analyse): elke soort heeft zijn eigen
+ * kolommen, dus soorten komen nooit samen in één lijst. Een klik op de gekozen knop doet niets.
  */
-export default function OpzetFilterBalk({ knoppen, totaal, aantalLive, aantalNietLive, status, onStatus, gekozen, onKies }: Props) {
+export default function OpzetFilterBalk({ knoppen, aantalLive, aantalNietLive, status, onStatus, gekozen, onKies }: Props) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <div role="group" aria-label="Filter op status" className="flex items-center gap-2">
@@ -75,10 +74,8 @@ export default function OpzetFilterBalk({ knoppen, totaal, aantalLive, aantalNie
       </div>
       <span aria-hidden className="mx-1 h-5 w-px bg-line" />
       <div role="group" aria-label="Filter op soort analyse" className="flex flex-wrap items-center gap-2">
-        <FilterKnop naam="Alle" aantal={totaal} aan={gekozen === null} onClick={() => onKies(null)} />
-        <span aria-hidden className="mx-1 h-5 w-px bg-line" />
         {knoppen.map((k) => (
-          <FilterKnop key={k.id} naam={k.naam} aantal={k.aantal} aan={gekozen === k.id} onClick={() => onKies(gekozen === k.id ? null : k.id)} />
+          <FilterKnop key={k.id} naam={k.naam} aantal={k.aantal} aan={gekozen === k.id} onClick={() => onKies(k.id)} />
         ))}
       </div>
     </div>
