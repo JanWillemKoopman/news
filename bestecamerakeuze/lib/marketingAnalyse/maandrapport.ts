@@ -143,8 +143,8 @@ function bedrijf(ruw: unknown): MrBedrijf | null {
     ...(tekst(r.socialReden) ? { socialReden: tekst(r.socialReden) } : {}),
     mailPunten: lijst(r.mailPunten as string[] | undefined)
       .filter((x) => typeof x === "string" && x.trim())
-      .map((x) => x.trim().slice(0, 400))
-      .slice(0, 4),
+      .map((x) => x.trim().slice(0, 600))
+      .slice(0, 7),
   };
 }
 

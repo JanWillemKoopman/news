@@ -508,9 +508,9 @@ export interface MrBedrijf {
   /** Waarom er geen socialkanalen zijn ("geen organisch account gekoppeld"). */
   socialReden?: string;
   /**
-   * Drie tot vier korte zinnen met de belangrijkste uitkomsten van dit tabblad, alleen voor de mail bij
-   * een nieuw rapport (`mailMaandrapport.ts`). Het dashboard toont ze niet: het rapport zelf blijft puur
-   * resultaten. Feiten met cijfers, geen advies.
+   * De analyse van dit tabblad voor de mail bij een nieuw rapport (`mailMaandrapport.ts`): vijf tot zeven
+   * zinnen, hoogstens zeven punten, die verklaren wat de cijfers doen (welk soort lead, uit welke kanalen,
+   * welke campagnes). Alleen in de mail; het dashboard toont ze niet en blijft puur beschrijvend.
    */
   mailPunten?: string[];
 }

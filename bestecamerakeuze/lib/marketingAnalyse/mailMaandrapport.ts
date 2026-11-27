@@ -121,7 +121,8 @@ function bedrijfBlok(b: MrBedrijf, vorigeMaand: string, volgende: string, laatst
 <span style="display:inline-block;width:4px;height:18px;background:${KLEUR.accent};vertical-align:-2px;margin-right:10px;border-radius:2px;"></span>${ontsnap(b.naam)}</td></tr>
 <tr><td style="padding:0 0 ${forecast ? "12px" : "18px"} 0;">${statsRij(hoofdcijfers(b, vorigeMaand))}</td></tr>
 ${forecast ? `<tr><td style="padding:0 0 18px 0;"><span style="display:inline-block;background:${KLEUR.vlak};border:1px solid ${KLEUR.lijn};border-radius:999px;padding:4px 12px;${LETTERS}font-size:12px;line-height:16px;color:${KLEUR.gedempt};">${ontsnap(forecast)} <span style="color:${KLEUR.zacht};">· trend doorgezet</span></span></td></tr>` : ""}
-${lijst ? `<tr><td><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">${lijst}</table></td></tr>` : ""}
+${lijst ? `<tr><td style="padding:4px 0 10px 0;border-top:1px solid ${KLEUR.lijn};"><div style="padding-top:16px;${LETTERS}font-size:10px;line-height:14px;letter-spacing:.14em;text-transform:uppercase;color:${KLEUR.accent};font-weight:700;">Analyse</div></td></tr>
+<tr><td><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">${lijst}</table></td></tr>` : ""}
 </table>
 </td></tr>`;
 }

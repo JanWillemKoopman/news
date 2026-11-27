@@ -77,9 +77,9 @@ test("een nieuwe versie staat in het onderwerp", () => {
   assert.equal(bouwMaandrapportMail({ ...invoer, versie: 3 }).onderwerp, "Maandrapport Jana: oktober 2026 (v3)");
 });
 
-test("mailPunten: hoogstens vier, lege weggelaten, ingekort", () => {
-  const r = leesMaandrapport({ bedrijven: [{ naam: "A", mailPunten: ["a", " ", "b", "c", "d", "e", 5, "x".repeat(500)] }] })!;
-  assert.deepEqual(r.bedrijven[0].mailPunten, ["a", "b", "c", "d"]);
-  const lang = leesMaandrapport({ bedrijven: [{ naam: "A", mailPunten: ["x".repeat(500)] }] })!;
-  assert.equal(lang.bedrijven[0].mailPunten?.[0].length, 400);
+test("mailPunten: hoogstens zeven, lege weggelaten, ingekort", () => {
+  const r = leesMaandrapport({ bedrijven: [{ naam: "A", mailPunten: ["a", " ", "b", "c", "d", "e", "f", "g", "h", 5] }] })!;
+  assert.deepEqual(r.bedrijven[0].mailPunten, ["a", "b", "c", "d", "e", "f", "g"]);
+  const lang = leesMaandrapport({ bedrijven: [{ naam: "A", mailPunten: ["x".repeat(900)] }] })!;
+  assert.equal(lang.bedrijven[0].mailPunten?.[0].length, 600);
 });

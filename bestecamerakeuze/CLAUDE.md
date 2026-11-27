@@ -1707,8 +1707,10 @@ lees dat eerst voordat je hier iets verandert.
   LinkedIn organisch zonder bereik, top content alleen Instagram) staan in het blok Maandrapport Jana en in de skill.
   **De mail bij een nieuw Maandrapport** (27 november 2026, `mailMaandrapport.ts`, getest) is een eigen, verzorgde
   HTML-mail in plaats van de standaardmail: een navy kop met de maand, per bedrijf de vier hoofdcijfers naast die van
-  de maand ervoor, de forecast en drie of vier zinnen (`maandrapport.bedrijven[].mailPunten`, geschreven door de
-  analyse, prompt versie 2, migratie 0058; het dashboard toont ze niet), en een knop naar het rapport. Alleen
+  de maand ervoor, de forecast, een kopje Analyse met vijf tot zeven zinnen (`maandrapport.bedrijven[].mailPunten`,
+  geschreven door de analyse, prompt versie 3, migratie 0058 en 0059) en een knop naar het rapport. **Het dashboard
+  blijft puur beschrijvend** (geen interpretatie of advies); alleen de mail verklaart: welk soort lead stijgt of daalt,
+  uit welke kanalen een verschil in bezoek komt, wat uitgaven en bereik verklaart. Alleen
   tabellen en inline stijlen, geen afbeeldingen. `notificatie.ts` kiest hem bij `resultaat.formaat === 4`.
 - **E-mail VDU** (26 november 2026, verzoek van de eigenaar, §23 van het plan): een opzet `rapportage`
   voor de e-mailmarketeers, maandelijks, met drie stappen in de groepen E-mail, Website en Resultaat
