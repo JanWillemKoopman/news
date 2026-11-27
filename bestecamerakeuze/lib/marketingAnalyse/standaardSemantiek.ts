@@ -15,7 +15,10 @@ import type { SemantiekInhoud } from "./types";
  * Syntec orders, en de benchmarkgroep van campagnepagina's in GA4 (versie 5, plan §22). Het blok
  * Werving hoort bij de opzet HRM campagne (eerst HRM analyse; versie 7, 26 november 2026; hrm-analyse-onderzoek.md). Het blok
  * Google Analytics 4 is gelijk aan versie 11 (26 november 2026): tellen in Windsor, en e-mail als één
- * kanaal dat nooit per deel of per mailing wordt uitgesplitst.
+ * kanaal dat nooit per deel of per mailing wordt uitgesplitst. Versie 12 (27 november 2026, migratie
+ * 0056): de leadkolom van het overzicht (GA4, Syntec internet, Syntec orders) in Algemeen; welke orders
+ * tellen bepaalt de briefing, met de verdeling van alle klantgroepen per ordertype in Syntec orders; de
+ * internetleads in Data leads; Syntec ook bij Van den Udenhout naast een ander bedrijf ("alleen VDU").
  */
 export const STANDAARD_SEMANTIEK: SemantiekInhoud = {
   bedrijven: [
@@ -31,6 +34,7 @@ export const STANDAARD_SEMANTIEK: SemantiekInhoud = {
     algemeen: `## Bronnen per bedrijf
 - **Van den Udenhout**: advertentieaccounts, organische social media en GA4 via Windsor, én uit Syntec de leads (tabel marketing_analyse_leads, de kopie van "Data leads") en de orders (bron **Syntec orders**: tabel marketing_analyse_orders, de kopie van "Data orders"). Het leadcijfer van een Campagne analyse komt uit precies één van GA4 en Syntec-leads: zie "Leads bij een Campagne analyse" hieronder. Voor de orders: zie "Orders bij een Campagne analyse".
 - **Alle andere bedrijven** (Porsche Centrum Brabant, Porsche Centrum Maastricht, PGZ, Bentley Maastricht, VELOO, Instra): de Syntec-leads en Syntec-orders zijn **niet van toepassing**. Voor leads kijk je **alleen naar GA4**; orders zijn er niet. Zeg dat in de analyse in plaats van een nul te tonen.
+- **Van den Udenhout samen met een ander bedrijf**: de Syntec-leads en -orders gelden dan alleen voor het deel Van den Udenhout. Tel ze wel en zeg overal "alleen Van den Udenhout" (besluit van de eigenaar, 27 november 2026). Het leadcijfer tegen het doel komt dan altijd uit GA4 (zie hieronder).
 
 ## Leads bij een Campagne analyse (harde regel)
 Besluit van de eigenaar, 25 november 2026. Het leadcijfer van een Campagne analyse (het getal dat tegen het doel staat, in de kerncijfers leadsDoel) komt altijd uit **precies één bron: Google Analytics óf Syntec**. Nooit opgeteld, nooit gemengd.
@@ -47,15 +51,22 @@ Besluit van de eigenaar, 25 november 2026. Het leadcijfer van een Campagne analy
 
 ## Orders bij een Campagne analyse (harde regel)
 Verzoek van de eigenaar, 25 november 2026. De bron **Syntec orders** (marketing_analyse_orders) telt de verkochte auto's. Eén rij is één auto, geteld op de orderdatum.
-1. Alleen bij een analyse die **uitsluitend over Van den Udenhout** gaat. Bij een ander bedrijf laat je de orders weg.
-2. Tel in de view **marketing_analyse_orders_klant**: de verkoop aan klanten (Ordersoort Nieuw of Gebruikt). **Handel** telt daar niet in mee; noem het aantal Handel-orders hoogstens apart, uit marketing_analyse_orders.
+1. Alleen als **Van den Udenhout** in de briefing staat (bij meer bedrijven alleen dat deel; zeg dan "alleen Van den Udenhout"), en alleen als de briefing een **merk en minstens één model** heeft: daarop zoek je de orders op. Ontbreekt merk of model, laat de orders dan weg (ordersSyntec null) en zeg in de datakwaliteit dat merk of model in de briefing ontbreekt. Bij een ander bedrijf laat je de orders weg.
+2. **Welke orders tellen, zegt de briefing** (besluit van de eigenaar, 27 november 2026). Zegt de briefing (doel of omschrijving) er niets over, dan tellen **alle klantgroepen** van Ordersoort **Nieuw én Gebruikt**: de hele view **marketing_analyse_orders_klant**. Zegt de briefing dat alleen een deel telt ("alleen koop particulier", "alleen nieuw", "zonder lease"), dan tel je alleen dat deel; welke klantgroepen bij welk ordertype horen staat in het blok Syntec orders ("Welke orders tellen: de verdeling"). **Handel** (Ordersoort Handel) telt alleen als de briefing erom vraagt; noem het aantal anders hoogstens apart, uit marketing_analyse_orders. Zeg in de kerncijfers (ordersSoort) en in de stap Orders in Syntec in gewone taal wat je telde, en welke zin uit de briefing dat bepaalde.
 3. Filter op het merk en de modellen uit de briefing en op de periode (orderdatum_op). Noem welke modelwaarden je meetelt.
 4. **Splits de orders altijd uit per klantgroep** (kolom klantgroep_naam; een lege klantgroep heet "Geen klantgroep", zodat de uitsplitsing optelt tot het totaal), en daarnaast in Nieuw en Gebruikt. Die uitsplitsing staat in elke analyse waarin orders voorkomen: in de stap Orders in Syntec, en noem de grootste klantgroepen ook in de bevindingen.
-5. Orders zijn **niet** het leadcijfer en tellen nooit mee in leadsDoel. Gaat het doel over verkochte auto's of orders ("30 verkochte auto's"), dan beoordeel je het doel op de orders en zeg je dat in de toelichting bij het doel.
+5. Orders zijn **niet** het leadcijfer en tellen nooit mee in leadsDoel. Het doel van een Campagne analyse gaat **altijd over leads**, nooit over orders (besluit van de eigenaar, 27 november 2026): de orders zijn context naast de leads.
 6. Er is **geen koppeling tussen een lead en een order**. Een order voor merk en model in de periode is dus niet per se door de campagne gekomen: schrijf "orders voor <model> in de periode", niet "orders uit de campagne". Een verhouding orders/leads is hoogstens een indicatie, en een order volgt vaak weken na de lead.
 
+## Leads en orders in het overzicht (kerncijfers)
+Besluit van de eigenaar, 27 november 2026. De regel van een Campagne analyse in het overzicht toont onder elkaar:
+1. **Google Analytics** (leadsGa4): de lead-events van de soort uit het doel, in sessies die op de campagnepagina('s) begonnen. Altijd, bij elk bedrijf, ook als het leadcijfer tegen het doel uit Syntec komt.
+2. **Syntec internet** (leadsInternet, leadsInternetSoort): leads met **Kanaalgroep "Internet"** (alle kanalen daarbinnen: udenhout.nl, merksites en portals) voor het merk en de modellen uit de briefing, in de periode. De soort volgt de briefing: noemt het doel of de omschrijving een soort ("20 proefritten"), dan die soort; anders alle soorten. Zie het blok Data leads.
+3. **Syntec orders** (ordersSyntec, ordersSoort): zie "Orders bij een Campagne analyse" hierboven.
+Punt 2 en 3 alleen als Van den Udenhout in de briefing staat én de briefing een merk en minstens één model heeft; anders null (het dashboard vraagt dan zelf om merk en model, of meldt dat er bij dat bedrijf geen Syntec-data is). Bij meer bedrijven alleen het deel Van den Udenhout.
+
 ## Overzicht van alle leads en orders (altijd, Van den Udenhout)
-Verzoek van de eigenaar, 25 november 2026. Naast het leadcijfer tegen het doel wil hij bij elke analyse die uitsluitend over Van den Udenhout gaat zien wat het merk en de modellen **in totaal** deden in Syntec, in de periode van de analyse:
+Verzoek van de eigenaar, 25 november 2026. Naast het leadcijfer tegen het doel wil hij bij elke analyse met Van den Udenhout (bij meer bedrijven alleen dat deel) zien wat het merk en de modellen **in totaal** deden in Syntec, in de periode van de analyse:
 1. **Leads in Syntec** (view marketing_analyse_leads_soort): het totaal van **alle leads** voor merk en modellen (alle kanaalgroepen), daarvan hoeveel uit **Internet** (Kanaalgroep "Internet") en hoeveel offline (per kanaalgroep), en van de Internet-leads de verdeling per **soort lead** (proefrit, offerte, private lease, inruil, overig). Daarnaast hoeveel daarvan websiteleads van udenhout.nl zijn (kolom website). Bij veel Internet-leads met soort overig: noem de grootste kanalen (portals zeggen vaak niet wat voor aanvraag het is).
 2. **Orders in Syntec** (view marketing_analyse_orders_type): het totaal van **alle orders** voor merk en modellen, ook Handel en verhuur, met de uitsplitsing per **ordertype** (koop particulier, koop zakelijk, private lease, zakelijke lease, verhuur (Rent), demo, handel, overig). Daaronder blijft de tabel per klantgroep van de verkoop aan klanten staan (zie hierboven).
 3. Dit overzicht is **context**. Het leadcijfer tegen het doel blijft uit één bron komen (zie "Leads bij een Campagne analyse"); het totaal van alle leads of orders telt daar nooit in mee.
@@ -208,6 +219,11 @@ Passen de parameters customevent_car_brand en customevent_car_model niet bij het
 - Ter vergelijking (laatste 365 dagen, 25 november 2026): 31.079 leads, waarvan 14.581 Internet (7.217 websiteleads van udenhout.nl) en offline 21.714 Showroom, 946 Acquisitie, 654 Mail en 400 Telefoon. Internet per soort: overig 6.319, proefrit 3.219, offerte 2.706, private lease 1.754, inruil 583. Van de websiteleads: offerte 2.619, proefrit 2.236, private lease 1.511, overig 638, inruil 213.
 - Bij Internet is overig groot omdat merksites en portals (Volkswagen.nl, Autoscout24, Gaspedaal …) vaak niet zeggen wat voor aanvraag het is. Noem dan de grootste kanalen.
 
+## Internetleads in het overzicht (leadsInternet)
+- Besluit van de eigenaar, 27 november 2026. Tel in de view **marketing_analyse_leads_soort** de leads met **internet = true** (Kanaalgroep "Internet"), voor merk, modellen en periode (aangelegd_op). Alle kanalen binnen Internet tellen: udenhout.nl, merksites (Volkswagen.nl, Audi.nl …) en portals (Autoscout24, Gaspedaal …). Dat is ruimer dan de websiteleads van het leadcijfer tegen het doel.
+- De soort volgt de briefing (kolom soort): noemt het doel of de omschrijving een soort, dan alleen die soort; anders alle soorten. Zeg in leadsInternetSoort wat je telde ("proefritten", "alle soorten").
+- Alleen met een merk en minstens één model in de briefing; anders null en een regel in de datakwaliteit. Bij meer bedrijven alleen het deel Van den Udenhout.
+
 ## De kolommen
 - **Kanaal**: waar de lead binnenkwam ("Udenhout.nl", "Udenhout.nl proefritaanv.", "Volkswagen.nl", "CST" …). Tot april 2026 had elk formulier van udenhout.nl een eigen kanaal; sindsdien komt alles binnen onder "Udenhout.nl" en zegt Onderwerp wat het is.
 - **Kanaalgroep**: "Internet" = online lead; Showroom, Acquisitie, Mail en Telefoon = offline.
@@ -232,8 +248,22 @@ Gecontroleerd in november 2026: dit klopt voor 99,9% met de kolom Lead type in S
 - Ter vergelijking (1 januari t/m 14 november 2026): 12.926 orders, waarvan 8.134 Nieuw, 3.080 Gebruikt en 1.712 Handel.
 
 ## Welke orders tellen (Campagne analyse)
-- Tel in de view **marketing_analyse_orders_klant**: alleen Ordersoort Nieuw en Gebruikt (de verkoop aan klanten), met de kolom **klantgroep_naam** ("Geen klantgroep" als de klantgroep leeg is). Filter op merk, model en periode (orderdatum_op).
-- **Handel** (1.712 in 2026) is geen verkoop aan een klant en heeft bijna nooit een klantgroep. Hij staat niet in de view; noem hem alleen apart, uit marketing_analyse_orders.
+- **De briefing bepaalt welke orders tellen** (besluit van de eigenaar, 27 november 2026). Zegt de briefing (doel of omschrijving) er niets over, dan tellen **alle klantgroepen** van Ordersoort **Nieuw én Gebruikt**: tel in de view **marketing_analyse_orders_klant** (kolom **klantgroep_naam**, "Geen klantgroep" als de klantgroep leeg is), gefilterd op merk, model en periode (orderdatum_op).
+- Noemt de briefing een deel (een ordertype, bepaalde klantgroepen, alleen Nieuw of alleen Gebruikt), tel dan alleen dat deel. Zoek de klantgroepen op in de verdeling hieronder. Twijfel je welke klantgroepen de briefing bedoelt, tel dan ruim en noem welke klantgroepen je meetelde.
+- **Handel** (1.712 in 2026) is geen verkoop aan een klant en heeft bijna nooit een klantgroep. Hij staat niet in de view en telt alleen als de briefing erom vraagt; noem hem anders hoogstens apart, uit marketing_analyse_orders.
+- Zeg in de kerncijfers (ordersSoort, bijv. "alle orders, nieuw en gebruikt" of "koop particulier, nieuw") en in de stap Orders in Syntec welke orders je telde.
+
+## Welke orders tellen: de verdeling (om de briefing te lezen)
+Alle klantgroepen per ordertype, met het aantal orders Nieuw / Gebruikt van 1 januari t/m 14 november 2026 (alle merken). Standaard tellen ze allemaal mee; de briefing kan het beperken.
+- **Koop particulier**: Koop Particulier (BM) 1.115 / 2.037; Cupra - BM ovg Particulier 151 / 2; PARTICULIER_TB – / 10.
+- **Koop zakelijk**: Koop Zakelijk (BM) 888 / 502; Cupra - BM ovg Zakelijk 111 / –; BEDRIJF_TB – / 1.
+- **Private lease**: Private Groeilease 925 / 2; Private lease 353 / 7; Cupra - Dealer Lease - Private Lease 41 / –; Cupra - Uni Lease - Private Lease 1 / –.
+- **Zakelijke lease**: Dealer Lease 1.932 / 166; Lease 980 / 20; Occasion-Lease – / 192; Cupra - Uni Lease - Zakelijk 194 / –; Cupra - Dealer Lease - Zakelijk 181 / 1; Restmarge Dealer Lease 40 / –; Dealerlease Zakelijk_TB – / 1.
+- **Verhuur (Rent)**: Rent 409 / 52; Rentals ext 15 / –.
+- **Demo**: Demo 200 / 75.
+- **Overig**: Restmarge deal 503 / –; Cupra - Euromobi - Koop 69 / –; Centrale Bestelling 1 / –; Geen klantgroep 25 / 8.
+- **Klantgroep Handel** (bij Ordersoort Gebruikt): – / 4. Telt standaard mee, want hij staat in de view; Ordersoort Handel (1.712) niet.
+- Een klantgroep die hier niet staat (nieuw in Syntec): tel hem standaard mee, deel hem in bij het ordertype dat het best past en meld hem in de datakwaliteit.
 - Zie Algemeen, "Orders bij een Campagne analyse", voor de regels: alleen Van den Udenhout, nooit in het leadcijfer, geen koppeling met leads.
 
 ## Klantgroep (altijd uitsplitsen)

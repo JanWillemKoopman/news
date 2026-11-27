@@ -172,6 +172,29 @@ export interface MaKerncijfers {
   leadsSyntec?: number | null;
   /** Vervallen sinds 25 november 2026 (alles in `leadsSyntec` is al Internet); oude versies hebben hem nog. */
   leadsSyntecInternet?: number | null;
+  /**
+   * De drie cijfers in de leadkolom van het overzicht (besluit van de eigenaar, 27 november 2026).
+   * `leadsGa4`: de lead-events van de soort uit het doel in sessies die op de campagnepagina
+   * begonnen (GA4), altijd, ook als het leadcijfer tegen het doel uit Syntec komt.
+   */
+  leadsGa4?: number | null;
+  /**
+   * Internetleads in Syntec (Kanaalgroep "Internet", alle kanalen daarbinnen) voor merk en
+   * modellen in de periode, van de soort die de briefing noemt (anders alle soorten). Alleen als
+   * Van den Udenhout in de briefing staat (bij meer bedrijven alleen dat deel) én de briefing een
+   * merk en minstens één model heeft; anders null.
+   */
+  leadsInternet?: number | null;
+  /** Wat er in `leadsInternet` is geteld, in gewone taal ("proefritten", "alle soorten"). */
+  leadsInternetSoort?: string | null;
+  /**
+   * Orders in Syntec voor merk en modellen in de periode. Standaard alle klantgroepen van Nieuw
+   * en Gebruikt; de briefing kan dat beperken ("alleen koop particulier"). Zelfde voorwaarden als
+   * `leadsInternet`; anders null.
+   */
+  ordersSyntec?: number | null;
+  /** Welke orders er in `ordersSyntec` zijn geteld, in gewone taal ("alle orders, nieuw en gebruikt"). */
+  ordersSoort?: string | null;
   /** Uit welke bron `leadsDoel` komt. */
   leadBron?: LeadBron | null;
   /**

@@ -1754,12 +1754,17 @@ lees dat eerst voordat je hier iets verandert.
   (vooraan), Campagne (met de laatste analyse eronder), Uitgaven (balkje
   tegen het budget, rood boven 100%), CTR (gezamenlijk over Google, Meta en LinkedIn Ads:
   `klikken` ÷ `vertoningenAds`, gewogen, nooit over de vertoningen inclusief organisch),
-  Bezoekers (`sessies`: sessies die op de campagnepagina begonnen, uit elk kanaal), Leads (`leadsDoel` uit één bron:
-  Google Analytics, of Syntec als het doel dat zegt; bron en soort eronder) en Doel leads (balkje, groen
-  vanaf 100%). Het leaddoel komt uit `kerncijfers.doelLeads` (de analyse leest het uit het
+  Bezoekers (`sessies`: sessies die op de campagnepagina begonnen, uit elk kanaal), **Leads en orders**
+  (sinds 27 november 2026, §24 van het plan: onder elkaar Google Analytics, Syntec internet en Syntec
+  orders; Syntec alleen bij Van den Udenhout met merk en model, anders een knop naar de briefing of
+  "Geen Syntec-data voor dit bedrijf", naast een ander bedrijf met "(alleen VDU)"; welke orders tellen
+  zegt de briefing, standaard alle klantgroepen nieuw en gebruikt) en Doel leads (balkje, groen
+  vanaf 100%, met de bron eronder; het doel gaat altijd over leads). Het leaddoel komt uit `kerncijfers.doelLeads` (de analyse leest het uit het
   vrije doel), anders het eerste getal in het doel (`overzichtCijfers` in `rekenen.ts`,
   getest) en helemaal rechts Planning (uitklapmenu, zie hieronder; 26 november 2026 op verzoek van
-  vooraan naar rechts verplaatst). Rapportages hebben een eigen tabel eronder: stipje, Rapportage,
+  vooraan naar rechts verplaatst; sinds 27 november 2026 op verzoek subtieler: in de campagnetabel één
+  grijze regel "Wekelijks · vr 4 dec" zonder kader, `compact` op `PlanningKeuze`, de toelichting in de
+  tooltip, een eindevaluatie oranje; de rapportagetabel houdt het knopje). Rapportages hebben een eigen tabel eronder: stipje, Rapportage,
   Laatste analyse, Planning.
 - **Live-stipje en statusfilter** (26 november 2026, op verzoek). Vooraan elke regel een **groen**
   stipje als de analyse live is (vandaag tussen start- en einddatum, grenzen inbegrepen; zonder

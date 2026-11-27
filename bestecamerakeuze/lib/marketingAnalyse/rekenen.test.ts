@@ -35,6 +35,8 @@ import {
   normaliseerResultaat,
   actiesUitTabbladen,
   syntecVanToepassing,
+  syntecInBriefing,
+  syntecOverzicht,
   tabbladenVoor,
   vandaagNL,
   versieLabel,
@@ -367,6 +369,9 @@ test("tabbladen: vaste volgorde bij formaat 2, leeg met reden, losse sectie acht
   const pgz = tabbladenVoor(resultaat, { rapportage: false, bedrijven: ["PGZ"] });
   assert.match(pgz.find((t) => t.sleutel === "syntec")?.reden ?? "", /Niet van toepassing/);
   assert.match(pgz.find((t) => t.sleutel === "orders")?.reden ?? "", /Niet van toepassing. Orders uit Syntec/);
+  // Van den Udenhout naast een ander bedrijf: Syntec hoort erbij (alleen het deel VDU).
+  const samen = tabbladenVoor(resultaat, { rapportage: false, bedrijven: ["Van den Udenhout", "PGZ"] });
+  assert.match(samen.find((t) => t.sleutel === "orders")?.reden ?? "", /geen onderdeel/);
 });
 
 test("tabbladen: formaat 1 en rapportage krijgen een tabblad per sectie", () => {
@@ -680,4 +685,43 @@ test("vergelijkingVerschil: procenten, procentpunten en het oordeel", async () =
   assert.equal(vergelijkingVerschil(null, { label: "september", waarde: 10 }, "aantal"), null);
   assert.equal(vergelijkingVerschil("niet gemeten", { label: "september", waarde: 10 }, "tekst"), null);
   assert.equal(vergelijkingVerschil(10, undefined, "aantal"), null);
+});
+
+test("overzicht: Syntec-regels alleen bij Van den Udenhout met merk en model", () => {
+  const k = { leadsInternet: 34, leadsInternetSoort: "proefritten", ordersSyntec: 6, ordersSoort: "alle orders" };
+  const a2 = { bedrijven: ["Van den Udenhout"], merk: "Audi", modellen: ["A2"] };
+  assert.deepEqual(syntecOverzicht(a2, k), {
+    stand: "cijfers", leads: 34, leadsSoort: "proefritten", orders: 6, ordersSoort: "alle orders", alleenVdu: false,
+  });
+  // Nog niet geteld (oude analyse): de regels staan er, zonder getal.
+  const oud = syntecOverzicht(a2, {});
+  assert.ok(oud.stand === "cijfers" && oud.leads === null && oud.orders === null);
+  // Meer bedrijven: wel Syntec, met "alleen VDU".
+  const samen = syntecOverzicht({ ...a2, bedrijven: ["Van den Udenhout", "PGZ"] }, k);
+  assert.ok(samen.stand === "cijfers" && samen.alleenVdu);
+  // Merk of model ontbreekt: naar de briefing.
+  assert.deepEqual(syntecOverzicht({ ...a2, modellen: [] }, k), { stand: "briefing", mist: "model" });
+  assert.deepEqual(syntecOverzicht({ ...a2, merk: " " }, k), { stand: "briefing", mist: "merk" });
+  assert.deepEqual(syntecOverzicht({ bedrijven: ["Van den Udenhout"] }, k), { stand: "briefing", mist: "merk en model" });
+  // Ander bedrijf: geen Syntec, ook niet als er (per ongeluk) cijfers staan.
+  assert.deepEqual(syntecOverzicht({ bedrijven: ["PGZ"], merk: "Porsche", modellen: ["911"] }, k), { stand: "nvt" });
+  assert.equal(syntecInBriefing(["PGZ", "Van den Udenhout"]), true);
+  assert.equal(syntecInBriefing(["PGZ"]), false);
+  assert.equal(syntecInBriefing(null), false);
+});
+
+test("overzicht: GA4 staat altijd in de leadkolom, ook als het doel Syntec zegt", () => {
+  const c = { bedrijven: ["Van den Udenhout"], budget: null, doel: "20 proefritten", merk: "Audi", modellen: ["A2"] };
+  // Nieuwe analyse: leadsGa4.
+  assert.equal(overzichtCijfers(c, { leadBron: "ga4", leadsDoel: 9, leadsGa4: 9 }).ga4Leads, 9);
+  // Analyse van vóór 27 november: het leadcijfer uit GA4.
+  const oud = overzichtCijfers(c, { leadBron: "ga4", leadsDoel: 9, leadsDoelSoort: "proefritten" });
+  assert.equal(oud.ga4Leads, 9);
+  assert.equal(oud.ga4Soort, "proefritten");
+  // Doel uit Syntec: het doel meet Syntec, de leadkolom toont toch GA4 (als de analyse hem gaf).
+  const syntec = { ...c, doel: "20 proefritten uit Syntec" };
+  const s = overzichtCijfers(syntec, { leadBron: "syntec", leadsDoel: 14, leadsGa4: 11 });
+  assert.equal(s.leads, 14);
+  assert.equal(s.ga4Leads, 11);
+  assert.equal(overzichtCijfers(syntec, { leadBron: "syntec", leadsDoel: 14 }).ga4Leads, null);
 });

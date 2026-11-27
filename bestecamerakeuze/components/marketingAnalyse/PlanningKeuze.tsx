@@ -36,12 +36,18 @@ export default function PlanningKeuze({
   vandaag,
   bezig,
   onKies,
+  compact = false,
 }: {
   regel: PlanningInvoer;
   naam: string;
   vandaag: string;
   bezig: boolean;
   onKies: (planning: Planning) => void;
+  /**
+   * Eén rustige regel tekst ("Wekelijks · vr 4 dec") zonder kader, voor de campagnetabel waar de
+   * resultaten voorgaan (verzoek van de eigenaar, 27 november 2026). De toelichting staat in de tooltip.
+   */
+  compact?: boolean;
 }) {
   const [plek, setPlek] = useState<{ top: number; left: number } | null>(null);
   const open = plek !== null;
@@ -96,27 +102,60 @@ export default function PlanningKeuze({
   }
 
   const uit = regel.planning === "uit";
+  const volgende = volgendeWeergave(regel, vandaag);
+  const pijl = (
+    <IconChevronDown
+      className={`h-3.5 w-3.5 shrink-0 text-ink-faint transition-transform duration-[var(--duur-snel)] ${open ? "rotate-180" : ""}`}
+    />
+  );
 
   return (
     <div className="flex flex-col items-start gap-1.5" onClick={(e) => e.stopPropagation()}>
-      <button
-        ref={knopRef}
-        type="button"
-        onClick={wissel}
-        disabled={bezig}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-label={`Planning voor ${naam}: ${PLANNING_NAAM[regel.planning]}`}
-        className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-button border border-line bg-card py-1 pl-3 pr-2 text-xs font-medium transition-colors duration-[var(--duur-snel)] hover:bg-surface disabled:opacity-60 ${
-          uit ? "text-ink-faint" : "text-ink"
-        }`}
-      >
-        {PLANNING_NAAM[regel.planning]}
-        <IconChevronDown
-          className={`h-3.5 w-3.5 text-ink-faint transition-transform duration-[var(--duur-snel)] ${open ? "rotate-180" : ""}`}
-        />
-      </button>
-      <VolgendeRegel weergave={volgendeWeergave(regel, vandaag)} />
+      {compact ? (
+        <button
+          ref={knopRef}
+          type="button"
+          onClick={wissel}
+          disabled={bezig}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-label={`Planning voor ${naam}: ${PLANNING_NAAM[regel.planning]}`}
+          title={
+            volgende.datum
+              ? `Volgende analyse ${volgende.datum}${volgende.toelichting ? ` · ${volgende.toelichting}` : ""}. Klik om de planning te wijzigen.`
+              : "Niet ingepland. Klik om de planning te wijzigen."
+          }
+          className="-ml-1 inline-flex items-center gap-1 whitespace-nowrap rounded-control px-1 py-0.5 text-meta text-ink-faint transition-colors duration-[var(--duur-snel)] hover:bg-surface hover:text-ink disabled:opacity-60"
+        >
+          {PLANNING_NAAM[regel.planning]}
+          {volgende.datum && (
+            <>
+              {" · "}
+              <span className={volgende.toon === "eind" ? "text-orange" : undefined}>{volgende.datum}</span>
+            </>
+          )}
+          {pijl}
+        </button>
+      ) : (
+        <>
+          <button
+            ref={knopRef}
+            type="button"
+            onClick={wissel}
+            disabled={bezig}
+            aria-haspopup="menu"
+            aria-expanded={open}
+            aria-label={`Planning voor ${naam}: ${PLANNING_NAAM[regel.planning]}`}
+            className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-button border border-line bg-card py-1 pl-3 pr-2 text-xs font-medium transition-colors duration-[var(--duur-snel)] hover:bg-surface disabled:opacity-60 ${
+              uit ? "text-ink-faint" : "text-ink"
+            }`}
+          >
+            {PLANNING_NAAM[regel.planning]}
+            {pijl}
+          </button>
+          <VolgendeRegel weergave={volgende} />
+        </>
+      )}
       {plek &&
         createPortal(
           <div
