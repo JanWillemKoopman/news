@@ -283,8 +283,8 @@ export default function NotitieLijst({ campagne, ingelogd }: Props) {
               title={s.uitleg}
               className={`rounded-button px-2.5 py-1 text-xs font-medium transition-colors ${
                 soort === s.waarde
-                  ? "bg-primary text-on-primary"
-                  : "border border-line text-ink-muted hover:border-primary/40 hover:text-ink"
+                  ? "bg-ink text-card"
+                  : "border border-line text-ink-muted hover:border-ink-faint hover:text-ink"
               }`}
             >
               {s.label}

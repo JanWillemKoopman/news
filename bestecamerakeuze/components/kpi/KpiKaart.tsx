@@ -578,11 +578,11 @@ function WisselKnop({
       <span
         aria-hidden="true"
         className={`relative inline-block h-3.5 w-6 rounded-pill transition-colors duration-[var(--duur-snel)] ease-merk ${
-          aan ? "bg-primary" : "bg-line"
+          aan ? "bg-ink" : "bg-line"
         }`}
       >
         <span
-          className={`absolute top-0.5 h-2.5 w-2.5 rounded-pill bg-card shadow-subtle transition-transform duration-[var(--duur-snel)] ease-merk ${
+          className={`absolute top-0.5 h-2.5 w-2.5 rounded-pill bg-card ring-1 ring-ink/15 transition-transform duration-[var(--duur-snel)] ease-merk ${
             aan ? "translate-x-3" : "translate-x-0.5"
           }`}
         />

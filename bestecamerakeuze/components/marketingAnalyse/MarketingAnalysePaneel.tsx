@@ -893,8 +893,7 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
   };
 
   return (
-    // `ma-overzicht`: de rustige, vlakke stijl van het overzicht (globals.css). Niet op een geopende analyse.
-    <div className={`flex flex-col gap-5 ${geopend ? "" : "ma-overzicht"}`}>
+    <div className="flex flex-col gap-5">
       {geopend ? (
         <>
           <AnalyseWeergave

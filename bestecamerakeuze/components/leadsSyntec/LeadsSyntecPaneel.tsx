@@ -140,7 +140,7 @@ function Schakelaar({ aan, onClick, children, titel }: {
       title={titel}
       className={`whitespace-nowrap rounded-control border px-2.5 py-1.5 text-sm transition-colors duration-[var(--duur-snel)] ease-merk ${
         aan
-          ? "border-primary bg-primary-light font-medium text-primary"
+          ? "border-ink bg-ink font-medium text-card"
           : "border-line text-ink-muted hover:bg-surface hover:text-ink"
       }`}
     >
@@ -420,7 +420,7 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
                       }}
                       title={`${periodeTekst(p)}`}
                       className={`whitespace-nowrap rounded-control px-2.5 py-1 text-sm transition-colors duration-[var(--duur-snel)] ease-merk ${
-                        p.id === periodeId ? "bg-primary text-on-primary" : "text-ink-muted hover:bg-surface"
+                        p.id === periodeId ? "bg-ink text-card" : "text-ink-muted hover:bg-surface hover:text-ink"
                       }`}
                     >
                       {p.label}
@@ -453,7 +453,7 @@ export default function LeadsSyntecPaneel({ ingelogd }: { ingelogd: boolean }) {
                   onClick={() => setFilters((f) => ({ ...f, herkomst: k.id }))}
                   aria-pressed={filters.herkomst === k.id}
                   className={`rounded-control px-3 py-1 text-sm transition-colors duration-[var(--duur-snel)] ease-merk ${
-                    filters.herkomst === k.id ? "bg-primary text-on-primary" : "text-ink-muted hover:bg-surface"
+                    filters.herkomst === k.id ? "bg-ink text-card" : "text-ink-muted hover:bg-surface hover:text-ink"
                   }`}
                 >
                   {k.label}

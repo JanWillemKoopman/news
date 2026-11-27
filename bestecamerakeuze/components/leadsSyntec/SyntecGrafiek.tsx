@@ -156,7 +156,7 @@ export default function SyntecGrafiek({
               onClick={() => onKorrel(k.id)}
               aria-pressed={korrel === k.id}
               className={`rounded-control px-2.5 py-1 text-sm transition-colors duration-[var(--duur-snel)] ease-merk ${
-                korrel === k.id ? "bg-primary text-on-primary" : "text-ink-muted hover:bg-surface"
+                korrel === k.id ? "bg-ink text-card" : "text-ink-muted hover:bg-surface hover:text-ink"
               }`}
             >
               {k.label}

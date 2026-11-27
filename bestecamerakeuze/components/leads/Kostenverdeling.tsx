@@ -232,7 +232,7 @@ export default function Kostenverdeling({
                 onClick={() => setJaar(j)}
                 aria-pressed={jaar === j}
                 className={`rounded-control px-3 py-1.5 text-sm font-medium transition-colors duration-[var(--duur-snel)] ${
-                  jaar === j ? "bg-primary text-on-primary" : "text-ink-muted hover:bg-surface"
+                  jaar === j ? "bg-ink text-card" : "text-ink-muted hover:bg-surface hover:text-ink"
                 }`}
               >
                 {j}

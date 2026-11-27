@@ -266,18 +266,33 @@ body {
   background-attachment: fixed;
 }
 
-/* Marketing analyse, het overzicht (`MarketingAnalysePaneel`, class `ma-overzicht`): rustig en
-   vlak. Een egale ondergrond zonder merktextuur zolang het overzicht in beeld is, en de grijze
-   tekst (bronlabels, budgetregel, planning) iets donkerder, zodat hij ook op een laptopscherm
-   leesbaar blijft (± 5:1 op wit in plaats van ± 3:1). Afgeleid van --color-ink, dus het klopt in
-   elk theme, licht én donker. Alleen kleur: geen maat of gewicht, dus de rijen worden niet hoger. */
-.ma-overzicht {
+/* ════════════════════════════════════════════════════════════════════════════════
+   RUSTIG EN VLAK — de design principes van het hele dashboard (november 2026, op verzoek;
+   eerst alleen op Marketing analyse, daarna op alle zichtbare pagina's). Zie CLAUDE.md,
+   "Rustig en vlak". Alles hier is kleur, lijn of schaduw: geen maat, gewicht of afstand,
+   dus geen enkel element verschuift of wordt hoger.
+
+   - Egale ondergrond: geen merktextuur op het paginavlak en geen verloop over de sidebar.
+     De tokens per theme blijven staan; terugzetten is deze twee regels weghalen.
+   - Grijze tekst met meer contrast (± 5:1 op wit in plaats van ± 3:1) en iets preciezere
+     zachte lijnen. Afgeleid van --color-ink van het theme, dus het klopt in elk theme, licht
+     én donker. Op `body`, zodat ook pop-ups en zijbalken (portals naar body) meedoen.
+   - Panelen zonder slagschaduw. Tailwind v4 zet de waarde van een --shadow-*-token letterlijk
+     in de utility (`.shadow-card` leest géén var(--shadow-card)), dus het token op none zetten
+     werkt niet; daarom hier ongelaagd, wat altijd wint van de gelaagde utilities. Zwevende
+     lagen (dropdown, pop-up, de uitgeklapte sidebar) houden hun schaduw: die liggen écht boven
+     de pagina. */
+body {
   --color-ink-muted: color-mix(in srgb, var(--color-ink) 74%, transparent);
   --color-ink-faint: color-mix(in srgb, var(--color-ink) 60%, transparent);
   --color-line-soft: color-mix(in srgb, var(--color-ink) 8%, transparent);
+  --theme-page-patroon: none;
+  --theme-sidebar-verloop: none;
 }
-.pagina-vlak:has([role="tabpanel"]:not([hidden]) .ma-overzicht) {
-  background-image: none;
+.shadow-subtle,
+.shadow-card,
+.shadow-raised {
+  box-shadow: none;
 }
 
 /* De donkere navigatieschil. Als `bg-sidebar` met daarbovenop, per merk, een verloop —
@@ -426,17 +441,16 @@ body {
   animation-timing-function: var(--ease-merk);
 }
 
-/* Een kaart die onder de muis een fractie omhoogkomt. Bewust niet in de campagnetabel
+/* Een kaart die onder de muis reageert (alleen de rand). Bewust niet in de campagnetabel
    (die reageert bewust niet op muisbeweging, zie CLAUDE.md) maar op de losse kaarten:
    het prikbord en de kennisbank. */
 .kaart-hover {
-  transition:
-    transform var(--duur-snel) var(--ease-merk),
-    box-shadow var(--duur-snel) var(--ease-merk);
+  transition: border-color var(--duur-snel) var(--ease-merk);
 }
+/* Rustig en vlak: bij hover alleen een donkerdere rand, niets beweegt (eerst een fractie
+   omhoog met een schaduw eronder). */
 .kaart-hover:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-raised);
+  border-color: color-mix(in srgb, var(--color-ink) 22%, transparent);
 }
 
 /* Laadvlak met een trage glans eroverheen, in de merkkleuren in plaats van het
@@ -563,7 +577,6 @@ body {
     animation: none;
   }
 
-  .kaart-hover:hover,
   .iso-blok:hover .iso-beweeg {
     transform: none;
   }

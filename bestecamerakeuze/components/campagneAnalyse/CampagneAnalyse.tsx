@@ -497,7 +497,7 @@ function OnlineSchakelaar({
               onClick={() => onChange(f.id)}
               aria-pressed={actief}
               className={`flex items-center gap-1.5 rounded-[8px] px-2.5 py-0.5 text-sm transition-colors duration-[var(--duur-snel)] ${
-                actief ? "bg-card font-medium text-ink shadow-subtle" : "text-ink-muted hover:text-ink"
+                actief ? "bg-ink font-medium text-card" : "text-ink-muted hover:text-ink"
               }`}
             >
               {f.id === "online" && <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-open" />}

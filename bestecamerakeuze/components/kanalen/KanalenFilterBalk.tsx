@@ -118,8 +118,8 @@ export default function KanalenFilterBalk({
                     onClick={() => onPeriode(p)}
                     className={`whitespace-nowrap rounded-control px-2.5 py-1 text-sm transition-colors duration-[var(--duur-snel)] ease-merk ${
                       p.id === periode.id
-                        ? "bg-primary text-on-primary"
-                        : "text-ink-muted hover:bg-surface"
+                        ? "bg-ink text-card"
+                        : "text-ink-muted hover:bg-surface hover:text-ink"
                     }`}
                   >
                     {p.label}
@@ -208,7 +208,7 @@ export default function KanalenFilterBalk({
               aria-pressed={uitlegAan}
               className={`flex items-center gap-1.5 rounded-control px-2 py-1.5 text-sm font-medium transition-colors duration-[var(--duur-snel)] ${
                 uitlegAan
-                  ? "bg-primary-light text-primary"
+                  ? "bg-ink text-card"
                   : "text-ink-muted hover:bg-surface hover:text-ink"
               }`}
             >
@@ -259,7 +259,7 @@ function Schakelaar({
       title={titel}
       className={`flex items-center gap-1.5 rounded-control border px-2.5 py-1 text-sm font-medium transition-colors duration-[var(--duur-snel)] ${
         aan
-          ? "border-primary bg-primary-light text-primary"
+          ? "border-ink bg-ink text-card"
           : "border-line text-ink-muted hover:bg-surface hover:text-ink"
       }`}
     >
@@ -329,7 +329,7 @@ export function EigenPeriode({
         title="Een eigen periode kiezen"
         className={`flex items-center gap-1.5 whitespace-nowrap rounded-control border px-2.5 py-1.5 text-sm transition-colors duration-[var(--duur-snel)] ${
           eigen
-            ? "border-primary bg-primary-light font-medium text-primary"
+            ? "border-ink bg-ink font-medium text-card"
             : "border-line text-ink-muted hover:bg-surface hover:text-ink"
         }`}
       >

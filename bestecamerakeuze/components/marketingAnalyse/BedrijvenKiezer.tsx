@@ -34,7 +34,7 @@ export default function BedrijvenKiezer({
             onClick={() => wissel(b)}
             disabled={disabled}
             className={`inline-flex items-center gap-1.5 rounded-button border px-3 py-1.5 text-sm transition-colors duration-[var(--duur-snel)] disabled:opacity-60 ${
-              aan ? "border-primary bg-primary/10 text-ink" : "border-line bg-card text-ink-muted hover:bg-surface hover:text-ink"
+              aan ? "border-ink bg-ink text-card" : "border-line bg-card text-ink-muted hover:border-ink-faint hover:text-ink"
             }`}
           >
             {aan && <IconCheck className="h-3.5 w-3.5 text-primary" />}

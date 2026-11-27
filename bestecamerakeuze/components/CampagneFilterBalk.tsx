@@ -55,7 +55,7 @@ export default function CampagneFilterBalk() {
           onClick={() => setUitlegAan((aan) => !aan)}
           aria-pressed={uitlegAan}
           className={`flex items-center gap-1.5 rounded-control px-2 py-1.5 text-sm font-medium transition-colors ${
-            uitlegAan ? "bg-primary-light text-primary" : "text-ink-muted hover:bg-surface hover:text-ink"
+            uitlegAan ? "bg-ink text-card" : "text-ink-muted hover:bg-surface hover:text-ink"
           }`}
         >
           <IconInfo className="h-4 w-4" />

@@ -124,7 +124,7 @@ function MerkKnop({
         title={aan ? `${label} uitzetten` : `${label} aanzetten`}
         className={`flex items-center gap-1.5 rounded-button border px-2.5 py-1 text-sm transition-colors duration-[var(--duur-snel)] ease-merk ${
           aan
-            ? "border-primary bg-primary-light font-medium text-primary"
+            ? "border-ink bg-ink font-medium text-card"
             : "border-line text-ink-faint hover:bg-surface hover:text-ink-muted"
         }`}
       >
