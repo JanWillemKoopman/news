@@ -9,7 +9,8 @@
  * afbeeldingen, want die laden niet overal.
  */
 import { maandNaam, maandrapportForecast } from "./maandrapport";
-import { ontsnap, type Mail } from "./mail";
+import { ontsnap, type Mail, type MailBijlage } from "./mail";
+import { logoSleutelVoor, MAIL_LOGOS } from "./mailLogos";
 import { formatWaarde, vergelijkingVerschil, type VergelijkingOordeel } from "./rekenen";
 import type { Eenheid, MaMaandrapport, MrBedrijf, MrWaarde } from "./types";
 
@@ -111,6 +112,18 @@ function statsRij(cijfers: Cijfer[]): string {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border-top:1px solid ${KLEUR.lijn};border-bottom:1px solid ${KLEUR.lijn};"><tr>${cellen}</tr></table>`;
 }
 
+/** De titel van een bedrijf: het logo van zijn eigen website links, de naam rechts; zonder logo alleen de naam. */
+function titel(naam: string): string {
+  const sleutel = logoSleutelVoor(naam);
+  const tekst = `<span style="${LETTERS}font-size:24px;line-height:30px;font-weight:700;color:${KLEUR.inkt};letter-spacing:-.015em;">${ontsnap(naam)}</span>`;
+  if (!sleutel) return tekst;
+  const l = MAIL_LOGOS[sleutel];
+  return `<table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;"><tr>
+<td valign="middle" style="padding:0 20px 0 0;width:${l.breedte + 20}px;"><img src="cid:logo-${sleutel}" alt="${ontsnap(naam)}" width="${l.breedte}" height="${l.hoogte}" style="display:block;border:0;outline:none;width:${l.breedte}px;height:${l.hoogte}px;"></td>
+<td valign="middle" style="padding:0 0 0 20px;border-left:1px solid ${KLEUR.lijn};">${tekst}</td>
+</tr></table>`;
+}
+
 function bedrijfBlok(b: MrBedrijf, nr: number, totaal: number, vorigeMaand: string, volgende: string, laatste: boolean): string {
   const punten = (b.mailPunten ?? []).filter(Boolean);
   const forecast = forecastRegel(b, volgende);
@@ -122,8 +135,8 @@ function bedrijfBlok(b: MrBedrijf, nr: number, totaal: number, vorigeMaand: stri
     .join("");
   return `<tr><td style="padding:36px 36px ${laatste ? "36px" : "34px"} 36px;${laatste ? "" : `border-bottom:1px solid ${KLEUR.lijn};`}">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
-<tr><td style="padding:0 0 4px 0;${LETTERS}font-size:10px;line-height:14px;letter-spacing:.2em;text-transform:uppercase;color:${KLEUR.accent};font-weight:700;">${String(nr).padStart(2, "0")} / ${String(totaal).padStart(2, "0")}</td></tr>
-<tr><td style="padding:0 0 18px 0;${LETTERS}font-size:24px;line-height:30px;font-weight:700;color:${KLEUR.inkt};letter-spacing:-.015em;">${ontsnap(b.naam)}</td></tr>
+<tr><td style="padding:0 0 14px 0;${LETTERS}font-size:10px;line-height:14px;letter-spacing:.2em;text-transform:uppercase;color:${KLEUR.accent};font-weight:700;">${String(nr).padStart(2, "0")} / ${String(totaal).padStart(2, "0")}</td></tr>
+<tr><td style="padding:0 0 20px 0;">${titel(b.naam)}</td></tr>
 <tr><td>${statsRij(hoofdcijfers(b, vorigeMaand))}</td></tr>
 ${forecast ? `<tr><td style="padding:14px 0 0 0;${LETTERS}font-size:12px;line-height:18px;color:${KLEUR.gedempt};"><span style="color:${KLEUR.inkt};font-weight:700;">${ontsnap(forecast)}</span> &nbsp;&middot;&nbsp; trend doorgezet</td></tr>` : ""}
 ${lijst ? `<tr><td style="padding:26px 0 14px 0;${LETTERS}font-size:10px;line-height:14px;letter-spacing:.2em;text-transform:uppercase;color:${KLEUR.inkt};font-weight:700;">Analyse</td></tr>
@@ -206,5 +219,13 @@ Je krijgt deze mail omdat je dit rapport volgt in het marketing dashboard. <a hr
 </td></tr></table>
 </body></html>`;
 
-  return { onderwerp, html, tekst };
+  const gebruikt = [...new Set(r.bedrijven.map((b) => logoSleutelVoor(b.naam)).filter((x): x is NonNullable<typeof x> => x !== null))];
+  const bijlagen: MailBijlage[] = gebruikt.map((k) => ({
+    cid: `logo-${k}`,
+    bestandsnaam: `logo-${k}.png`,
+    contentType: MAIL_LOGOS[k].contentType,
+    base64: MAIL_LOGOS[k].base64,
+  }));
+
+  return { onderwerp, html, tekst, bijlagen };
 }

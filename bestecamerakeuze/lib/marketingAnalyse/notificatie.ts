@@ -168,6 +168,14 @@ export async function verstuurNotificaties(client: Client, analyseId: string): P
           subject: mail.onderwerp,
           text: mail.tekst,
           html: mail.html,
+          // Ingesloten afbeeldingen (de logo's in het Maandrapport): `cid:` in de HTML wijst naar deze bijlagen.
+          attachments: (mail.bijlagen ?? []).map((b) => ({
+            filename: b.bestandsnaam,
+            content: Buffer.from(b.base64, "base64"),
+            contentType: b.contentType,
+            cid: b.cid,
+            contentDisposition: "inline" as const,
+          })),
         });
         aantal++;
         await logMail(client, { ...logBasis, email: v.email, onderwerp: mail.onderwerp, gelukt: true, fout: null });

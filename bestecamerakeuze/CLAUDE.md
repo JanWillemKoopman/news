@@ -1713,7 +1713,11 @@ lees dat eerst voordat je hier iets verandert.
   geschreven door de analyse, prompt versie 3, migratie 0058 en 0059) en een knop naar het rapport. **Het dashboard
   blijft puur beschrijvend** (geen interpretatie of advies); alleen de mail verklaart: welk soort lead stijgt of daalt,
   uit welke kanalen een verschil in bezoek komt, wat uitgaven en bereik verklaart. Alleen
-  tabellen en inline stijlen, geen afbeeldingen. `notificatie.ts` kiest hem bij `resultaat.formaat === 4`.
+  tabellen en inline stijlen. Bij elke bedrijfstitel staat het **logo van de eigen website van het bedrijf**
+  (porschecentrumbrabant.nl en porschecentrummaastricht.nl hetzelfde Porsche-logo, pgz.nl, bentley-maastricht.nl;
+  `mailLogos.ts`, transparante PNG op 44 px weergavehoogte, op verzoek van de eigenaar, 27 november 2026). De logo's gaan
+  als ingesloten bijlage mee (`cid:`, `Mail.bijlagen`, in `notificatie.ts` als `attachments`), want SVG werkt niet in
+  Gmail en externe links vragen om hosting achter de inlog. `notificatie.ts` kiest hem bij `resultaat.formaat === 4`.
 - **E-mail VDU** (26 november 2026, verzoek van de eigenaar, §23 van het plan): een opzet `rapportage`
   voor de e-mailmarketeers, maandelijks, met drie stappen in de groepen E-mail, Website en Resultaat
   (`Sectie.groep` zet bij een rapportage kopjes in de navigatie). **E-mail is altijd één kanaal**: het

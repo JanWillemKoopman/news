@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { forecastRegel, hoofdcijfers, bouwMaandrapportMail, KLEUR } from "@/lib/marketingAnalyse/mailMaandrapport";
 import { leesMaandrapport } from "@/lib/marketingAnalyse/maandrapport";
+import { logoSleutelVoor } from "@/lib/marketingAnalyse/mailLogos";
 
 const x = ["2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10"];
 const bedrijf = (naam: string, punten: string[]) => ({
@@ -94,4 +95,27 @@ test("de knop Ga naar rapportage staat bovenaan én onderaan, zonder afgeronde h
   assert.ok(eerste < m.html.indexOf("01 / 02"), "de eerste knop staat vóór het eerste bedrijf");
   assert.ok(m.html.lastIndexOf("Ga naar rapportage") > m.html.lastIndexOf("02 / 02"), "de tweede knop staat na het laatste bedrijf");
   assert.doesNotMatch(m.html, /border-radius/);
+});
+
+test("elk bedrijf met een logo krijgt het in de titel; de bijlagen worden eenmalig meegestuurd", () => {
+  const r = leesMaandrapport({
+    maand: "2026-10",
+    vorigeMaand: "2026-09",
+    bedrijven: ["Porsche Centrum Brabant", "Porsche Centrum Maastricht", "Bentley Maastricht", "PGZ", "Onbekend bedrijf"].map((n) => bedrijf(n, [])),
+  })!;
+  const m = bouwMaandrapportMail({ ...invoer, rapport: r });
+  assert.equal((m.html.match(/src="cid:logo-porsche"/g) ?? []).length, 2);
+  assert.equal((m.html.match(/src="cid:logo-bentley"/g) ?? []).length, 1);
+  assert.equal((m.html.match(/src="cid:logo-pgz"/g) ?? []).length, 1);
+  assert.deepEqual(m.bijlagen?.map((b) => b.cid).sort(), ["logo-bentley", "logo-pgz", "logo-porsche"]);
+  assert.ok(m.bijlagen?.every((b) => b.contentType === "image/png" && b.base64.length > 500));
+  assert.match(m.html, /alt="Bentley Maastricht"/);
+});
+
+test("logoSleutelVoor: welk logo bij welk bedrijf", () => {
+  assert.equal(logoSleutelVoor("Porsche Centrum Brabant"), "porsche");
+  assert.equal(logoSleutelVoor("Porsche Centrum Maastricht"), "porsche");
+  assert.equal(logoSleutelVoor("Bentley Maastricht"), "bentley");
+  assert.equal(logoSleutelVoor("PGZ"), "pgz");
+  assert.equal(logoSleutelVoor("VELOO"), null);
 });

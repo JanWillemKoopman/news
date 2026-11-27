@@ -39,10 +39,19 @@ export interface MailInvoer {
   afmeldUrl: string;
 }
 
+/** Een ingesloten afbeelding (`<img src="cid:…">`), als base64 zodat de mail zonder bestanden of externe links werkt. */
+export interface MailBijlage {
+  cid: string;
+  bestandsnaam: string;
+  contentType: string;
+  base64: string;
+}
+
 export interface Mail {
   onderwerp: string;
   html: string;
   tekst: string;
+  bijlagen?: MailBijlage[];
 }
 
 function datum(op: string): string {
