@@ -575,6 +575,39 @@ tenzij de analyse uitsluitend over Van den Udenhout gaat; `leadsSyntecInternet` 
 cijfers van de leadkolom in het overzicht (harde regel "Leads en orders in het overzicht").
 `doelLeads`: het aantal leads uit het doel zoals jij het leest ("20 proefritten uit Syntec" → 20),
 null als het doel niet over een aantal leads gaat.
+**Uitsplitsing voor de hover** (`kerncijfers.uitsplitsing`, 28 november 2026, alleen bij een campagne):
+in Campagne analyse opent bij de muis boven een cijfer een kaartje met waaruit het bestaat. Dat
+levert **jij** mee, uit dezelfde tabellen en dezelfde queries als de stappen in de analyse:
+```json
+"uitsplitsing": {
+  "platforms": [ { "naam": "Meta Ads", "kosten": 1014.87, "vertoningen": 191674, "klikken": 6134 },
+                 { "naam": "Google Ads", "kosten": 1001.95, "vertoningen": 340222, "klikken": 6792 } ],
+  "sessies": [ { "naam": "Meta Ads", "aantal": 3053 }, { "naam": "Direct en e-mail", "aantal": 407 } ],
+  "leadsGa4": [ { "naam": "Proefrit", "detail": "generate_lead_proefrit", "aantal": 20, "telt": true },
+                { "naam": "Offerte", "detail": "generate_lead_offerte", "aantal": 3, "telt": false } ],
+  "leadsInternet": [ { "naam": "Offerte", "aantal": 6 }, { "naam": "Private lease", "aantal": 6 } ],
+  "orders": [ { "naam": "Koop Particulier (BM)", "aantal": 10 }, { "naam": "Private Groeilease", "aantal": 8 } ]
+}
+```
+**De regel: de regels tellen precies op tot het cijfer waar ze bij horen, met dezelfde definitie
+en dezelfde periode.** Het dashboard rekent dat na en laat een blok dat niet klopt gewoon weg (geen
+hover, geen foutmelding); een blok dat je niet kunt laten kloppen, laat je dus liever weg dan dat je
+iets bij elkaar raadt.
+- `platforms`: per advertentieplatform dat in `kosten` zit ("Google Ads", "Meta Ads", "LinkedIn Ads");
+  de `kosten` tellen op tot `kerncijfers.kosten` (afwijking hoogstens € 1), de `vertoningen` tot
+  `vertoningenAds` en de `klikken` tot `klikken` (Meta: linkklikken). Altijd uit de tabel **Per
+  platform en campagne**. Wat een platform niet levert is `null`, nooit 0.
+- `sessies`: sessies op de campagnepagina per kanaal (de tabel **Sessies per kanaal**), samen
+  `sessies`. Hooguit twaalf regels: de staart samenvoegen tot "Overig".
+- `leadsGa4`: de lead-events op de campagnepagina, per soort (`naam`, met de eventnaam in `detail`).
+  `telt: true` bij de events van de soort uit het doel: die tellen samen op tot `leadsGa4`. Andere
+  lead-events op de campagnepagina zet je erbij met `telt: false`; staat `leadEvents` in de
+  kerncijfers, dan tellen alle regels samen daarop op (anders houdt het dashboard alleen de regels
+  met `telt: true`). Geen vacature-events of andere events zonder lead.
+- `leadsInternet`: de Syntec-internetleads per soort (proefrit, offerte, private lease, inruil, overig),
+  samen `leadsInternet`. Alleen als dat cijfer er is.
+- `orders`: de Syntec-orders per klantgroep, samen `ordersSyntec` (dus **alleen de klantgroepen die
+  de briefing laat meetellen**, zoals in `ordersSoort`; Rent staat er niet bij als die niet meetelt).
 Bij een **rapportage** toont het overzicht geen kerncijfers: geef `{}` mee (of vul in wat
 vanzelf meekomt), laat `doel` weg en geef `funnel: []` mee.
 
@@ -587,7 +620,7 @@ een tabel per klantgroep met een totaalregel; bij een campagne staan `leadBron`,
 en `leadsDoelSoort` in de kerncijfers en is `leadBron` alleen `"syntec"` als het doel Syntec noemt
 en de analyse uitsluitend over Van den Udenhout gaat; staat `leadsGa4` erin, en staan
 `leadsInternet` en `ordersSyntec` er (met hun soort) precies als Van den Udenhout in de briefing
-staat en merk en model gevuld zijn; geen tegel, regel of kolom met extra
+staat en merk en model gevuld zijn; tellen de regels van elk blok in `uitsplitsing` precies op tot het kerncijfer waar ze bij horen (anders laat je dat blok weg); geen tegel, regel of kolom met extra
 kanaalkosten bij een campagne-analyse; elke `benchmark` heeft `groep`, `aantal` (minstens 5),
 `mediaan`, `p25` en `p75` met p25 ≤ mediaan ≤ p75 (een onbruikbare benchmark laat het dashboard
 weg). Sla op met

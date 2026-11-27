@@ -1992,6 +1992,26 @@ de sidebar en bovenaan de groep Campagnes op het startscherm.
 - **Samenvatting** boven de tabel over de campagnes in beeld (`samenvatting`): campagnes online, uitgegeven
   tegen budget (alleen campagnes met een analyse), bezoekers en leads (Google Analytics).
 - Live eerst, dan wat nog moet beginnen, dan afgelopen (`sorteerOpStatus`).
+- **Hover met meer uitleg** (28 november 2026, op verzoek): met de muis (of toetsenfocus) boven een
+  cijfer opent een kaartje (`HoverKaart.tsx`, in een portal op `<body>`: de tabel scrolt horizontaal en
+  zou het kaartje afsnijden; klapt naar boven als er onder geen ruimte is). Cellen met een kaartje hebben
+  een stippellijntje onder het grote getal; zonder inhoud is er geen kaartje. Inhoud in
+  `hoverKaarten.tsx`, twee soorten:
+  - **Uitsplitsing van de analyse** (`kerncijfers.uitsplitsing`, type `MaUitsplitsing`): Uitgaven en CTR per
+    platform (Google, Meta, LinkedIn), Bezoekers per kanaal, Google Analytics-leads per event (met welke
+    meetellen voor het doel), Syntec internet per soort lead en Syntec orders per klantgroep. **De analyse
+    levert hem mee** (skill `marketing-analyse`, "Uitsplitsing voor de hover"); er is geen migratie, de
+    kerncijfers zijn jsonb. **Betrouwbaarheid is het punt**: `leesUitsplitsing` (`uitsplitsing.ts`, getest)
+    toont een blok alleen als zijn regels precies optellen tot het cijfer waar ze bij horen (kosten mogen
+    een euro afwijken); klopt het niet of ontbreekt het cijfer, dan valt dat blok stil weg. We lezen bewust
+    geen tabellen uit het resultaat terug: de titels en kolommen verschillen per analyse, en een uitsplitsing
+    die niet optelt is erger dan geen. Bestaande analyses krijgen het veld bij hun volgende versie.
+  - **Afgeleid uit het overzicht zelf**, dus ook voor bestaande analyses: bij Uitgaven de mediakosten per klik,
+    per bezoeker en per lead, en waar de kosten bij het huidige tempo uitkomen tegen het budget; bij Doel
+    leads wat er nog nodig is en waar de leads bij het huidige tempo op uitkomen. De prognose is een rechte
+    lijn (`prognoseBijHuidigTempo`: waarde ÷ verstreken dagen × alle dagen, pas vanaf drie dagen), over de dagen
+    tot en met de dag vóór de analyse.
+  Onderaan elk kaartje staat de datum van de analyse: de cijfers zijn die van de laatste versie, niet van nu.
 
 ### Campagnes → Campagne timeline
 

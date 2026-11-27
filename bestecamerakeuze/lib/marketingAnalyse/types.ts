@@ -212,6 +212,47 @@ export interface MaKerncijfers {
    */
   doelLeads?: number | null;
   doel?: DoelOordeel | null;
+  /**
+   * De uitsplitsing achter de cijfers hierboven, voor de hover in Campagne analyse (28 november 2026).
+   * De analyse levert hem mee; het dashboard toont een blok alleen als de rijen precies optellen
+   * tot het cijfer waar ze bij horen (`leesUitsplitsing` in `uitsplitsing.ts`), anders niet.
+   */
+  uitsplitsing?: MaUitsplitsing | null;
+}
+
+/** Eén regel van een uitsplitsing: een naam, eventueel een technische naam erbij, en een aantal. */
+export interface MaUitsplitsingRegel {
+  naam: string;
+  /** Bijv. de eventnaam `generate_lead_proefrit` bij de naam "Proefrit". */
+  detail?: string | null;
+  aantal: number;
+}
+
+/** Eén advertentieplatform: dezelfde definities als `kosten`, `vertoningenAds` en `klikken`. */
+export interface MaUitsplitsingPlatform {
+  /** "Google Ads", "Meta Ads" of "LinkedIn Ads". */
+  naam: string;
+  kosten: number | null;
+  vertoningen: number | null;
+  klikken: number | null;
+}
+
+/** Een lead-event in GA4; `telt` = hoort bij de soort uit het doel, dus bij `leadsGa4`. */
+export interface MaUitsplitsingEvent extends MaUitsplitsingRegel {
+  telt: boolean;
+}
+
+export interface MaUitsplitsing {
+  /** Per advertentieplatform; kosten, vertoningen en klikken tellen op tot `kosten`, `vertoningenAds` en `klikken`. */
+  platforms?: MaUitsplitsingPlatform[] | null;
+  /** Per kanaal; de sessies tellen op tot `sessies`. */
+  sessies?: MaUitsplitsingRegel[] | null;
+  /** De lead-events op de campagnepagina; de regels met `telt` tellen op tot `leadsGa4`, alle regels tot `leadEvents`. */
+  leadsGa4?: MaUitsplitsingEvent[] | null;
+  /** De Syntec-internetleads per soort; tellen op tot `leadsInternet`. */
+  leadsInternet?: MaUitsplitsingRegel[] | null;
+  /** De Syntec-orders per klantgroep; tellen op tot `ordersSyntec`. */
+  orders?: MaUitsplitsingRegel[] | null;
 }
 
 export type Eenheid = "aantal" | "euro" | "procent" | "seconden" | "tekst";
