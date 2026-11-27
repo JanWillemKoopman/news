@@ -47,7 +47,7 @@ import {
   type LeadBron,
   type StatusFilter,
 } from "@/lib/marketingAnalyse/rekenen";
-import { portefeuille, type CampagneVoortgang } from "@/lib/marketingAnalyse/portefeuille";
+import { filterOpMerk, merkFilterKnoppen, portefeuille, type CampagneVoortgang } from "@/lib/marketingAnalyse/portefeuille";
 import { STANDAARD_SEMANTIEK } from "@/lib/marketingAnalyse/standaardSemantiek";
 import { type MaCampagne, type MaOpzet, type MaOverzichtRegel, type MaVoorstel, type MaZoekronde, type Planning } from "@/lib/marketingAnalyse/types";
 
@@ -62,6 +62,8 @@ const STANDAARD_SOORT = "campagne analyse";
 const STATUS_PARAM = "status";
 /** Het filter op bedrijf staat ook in de URL. */
 const BEDRIJF_PARAM = "bedrijf";
+/** Het filter op merk (sleutel, zie `merkFilterKnoppen`) staat ook in de URL. */
+const MERK_PARAM = "merk";
 
 function zetUrl(id: string | null, param: string = URL_PARAM) {
   const params = new URLSearchParams(window.location.search);
@@ -579,6 +581,86 @@ function FilterChip({ naam, onWis }: { naam: string; onWis: () => void }) {
   );
 }
 
+/** Eén filterknop: naam en aantal; gekozen = de selectiekleur van de werkruimte. */
+function FilterKeuze({ naam, aantal, gekozen, onClick, logo }: { naam: string; aantal: number; gekozen: boolean; onClick: () => void; logo?: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={gekozen}
+      onClick={onClick}
+      className={`inline-flex h-7 shrink-0 items-center gap-1.5 rounded-[7px] px-2.5 text-[12.5px] transition-colors duration-[var(--ma-duur-klein)] ${
+        gekozen
+          ? "bg-ink font-medium text-card"
+          : "text-ink-muted hover:bg-[color-mix(in_srgb,var(--color-ink)_6%,transparent)] hover:text-ink"
+      }`}
+    >
+      {logo}
+      {naam}
+      <span className={`ma-getal text-[11.5px] ${gekozen ? "opacity-70" : "text-ink-faint"}`}>{aantal}</span>
+    </button>
+  );
+}
+
+/**
+ * De filters op bedrijf en merk, als twee rijen boven de voorstellen en de tabel (verzoek van de
+ * eigenaar, 27 november 2026). Ze gelden voor allebei: de voorgestelde campagne-analyses en de
+ * campagne-analyses zelf. Eén keuze per rij; nog eens klikken of "Alle" wist hem.
+ */
+function FilterRijen({
+  bedrijven,
+  totaalBedrijf,
+  actiefBedrijf,
+  onBedrijf,
+  merken,
+  totaalMerk,
+  actiefMerk,
+  onMerk,
+  metVoorstellen,
+}: {
+  bedrijven: { naam: string; aantal: number }[];
+  totaalBedrijf: number;
+  actiefBedrijf: string | null;
+  onBedrijf: (b: string | null) => void;
+  merken: { sleutel: string; naam: string; aantal: number }[];
+  totaalMerk: number;
+  actiefMerk: string | null;
+  onMerk: (m: string | null) => void;
+  metVoorstellen: boolean;
+}) {
+  const rij = "flex items-center gap-1 overflow-x-auto [scrollbar-width:none] lg:flex-wrap lg:overflow-visible";
+  const label = "w-[58px] shrink-0 text-[11px] font-semibold uppercase tracking-[0.04em] text-ink-faint";
+  return (
+    <section aria-label={`Filter op bedrijf en merk${metVoorstellen ? ", voor de voorstellen en de analyses" : ""}`} className="-mb-2 flex flex-col gap-1.5">
+      <div role="group" aria-label="Bedrijf" className={rij}>
+        <span className={label}>Bedrijf</span>
+        <FilterKeuze naam="Alle" aantal={totaalBedrijf} gekozen={actiefBedrijf === null} onClick={() => onBedrijf(null)} />
+        {bedrijven.map((b) => (
+          <FilterKeuze key={b.naam} naam={b.naam} aantal={b.aantal} gekozen={actiefBedrijf === b.naam} onClick={() => onBedrijf(actiefBedrijf === b.naam ? null : b.naam)} />
+        ))}
+      </div>
+      {merken.length > 0 && (
+        <div role="group" aria-label="Merk" className={rij}>
+          <span className={label}>Merk</span>
+          <FilterKeuze naam="Alle" aantal={totaalMerk} gekozen={actiefMerk === null} onClick={() => onMerk(null)} />
+          {merken.map((m) => {
+            const Logo = getBrandLogo(m.naam);
+            return (
+              <FilterKeuze
+                key={m.sleutel}
+                naam={m.naam}
+                aantal={m.aantal}
+                gekozen={actiefMerk === m.sleutel}
+                onClick={() => onMerk(actiefMerk === m.sleutel ? null : m.sleutel)}
+                logo={Logo ? <Logo role="img" aria-hidden="true" className="h-3 w-3 shrink-0" /> : undefined}
+              />
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean }) {
   const [campagnes, setCampagnes] = useState<MaOverzichtRegel[] | null>(null);
   const [opzetten, setOpzetten] = useState<MaOpzet[]>([]);
@@ -595,6 +677,7 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
   >(null);
   const [status, setStatus] = useState<StatusFilter | null>(null);
   const [bedrijfFilter, setBedrijfFilter] = useState<string | null>(null);
+  const [merkFilter, setMerkFilter] = useState<string | null>(null);
   const [planningBezig, setPlanningBezig] = useState<Set<string>>(new Set());
   const [volgersVan, setVolgersVan] = useState<MaOverzichtRegel | null>(null);
   // Het detailpaneel: welke campagne, en welk element het opende (daar gaat de focus naar terug).
@@ -649,6 +732,8 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
     if (st === "live" || st === "niet-live") setStatus(st);
     const bf = params.get(BEDRIJF_PARAM);
     if (bf) setBedrijfFilter(bf);
+    const mf = params.get(MERK_PARAM);
+    if (mf) setMerkFilter(mf);
   }, [ingelogd, laad]);
 
   // Terug uit een analyse: dezelfde scrollpositie, en de focus op de regel waar je vandaan kwam.
@@ -693,6 +778,11 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
   function kiesBedrijf(b: string | null) {
     setBedrijfFilter(b);
     zetUrl(b, BEDRIJF_PARAM);
+  }
+
+  function kiesMerk(m: string | null) {
+    setMerkFilter(m);
+    zetUrl(m, MERK_PARAM);
   }
 
   function kiesStatus(st: StatusFilter | null) {
@@ -775,7 +865,12 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
   const bedrijfKnoppen = bedrijfFilterKnoppen(bedrijven, alle);
   // Een bedrijf uit de URL dat er niet (meer) is, telt als Alle.
   const actiefBedrijf = bedrijfKnoppen.find((b) => b.naam.toLowerCase() === bedrijfFilter?.trim().toLowerCase())?.naam ?? null;
-  const vanBedrijf = filterOpBedrijf(alle, actiefBedrijf);
+  // Het merk geldt voor de campagne-analyses en de voorstellen (verzoek van de eigenaar, 27 november 2026).
+  const openVoorstellen = voorstellen?.open ?? [];
+  const merkKnoppenAlle = merkFilterKnoppen([...alle, ...openVoorstellen]);
+  const actiefMerk = merkKnoppenAlle.find((m) => m.sleutel === merkFilter)?.sleutel ?? null;
+  const actiefMerkNaam = merkKnoppenAlle.find((m) => m.sleutel === actiefMerk)?.naam ?? null;
+  const vanBedrijf = filterOpMerk(filterOpBedrijf(alle, actiefBedrijf), actiefMerk);
   const filterKnoppen = opzetFilterKnoppen(
     opzetten,
     vanBedrijf.map((c) => ({ opzetId: c.opzetId, lopend: binnenStatus(c) })),
@@ -788,19 +883,31 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
     null;
   const filterHeeftActieve = Boolean(filterKnop?.opzetIds.some((id) => opzetPerId.get(id)?.actief));
   const gefilterd = filterOpOpzet(vanBedrijf, filterKnop?.opzetIds ?? null);
-  const bedrijfKnoppenGeteld = bedrijfFilterKnoppen(
-    bedrijven,
-    filterOpOpzet(alle, filterKnop?.opzetIds ?? null).filter(binnenStatus),
-  ).filter((k) => bedrijfKnoppen.some((b) => b.naam === k.naam));
-  const totaalBinnenSoort = filterOpOpzet(alle, filterKnop?.opzetIds ?? null).filter(binnenStatus).length;
+  const isCampagneSoort = filterKnop?.id === STANDAARD_SOORT;
+  // De aantallen op de knoppen tellen de analyses van deze soort (binnen het statusfilter) en, bij
+  // Campagnes, de open voorstellen, telkens binnen het andere filter (bedrijf of merk).
+  const binnenSoort = filterOpOpzet(alle, filterKnop?.opzetIds ?? null).filter(binnenStatus);
+  const telBasis = [...binnenSoort, ...(isCampagneSoort ? openVoorstellen : [])];
+  const bedrijfKnoppenGeteld = bedrijfFilterKnoppen(bedrijven, filterOpMerk(telBasis, actiefMerk)).filter(
+    (k) => bedrijfKnoppen.some((b) => b.naam === k.naam) && (k.aantal > 0 || k.naam === actiefBedrijf),
+  );
+  const totaalBedrijf = filterOpMerk(telBasis, actiefMerk).length;
+  const merkKnoppenGeteld = merkFilterKnoppen(filterOpBedrijf(telBasis, actiefBedrijf));
+  const totaalMerk = filterOpBedrijf(telBasis, actiefBedrijf).length;
+  const voorstellenGefilterd = voorstellen
+    ? {
+        ...voorstellen,
+        open: filterOpMerk(filterOpBedrijf(voorstellen.open, actiefBedrijf), actiefMerk),
+        genegeerd: filterOpMerk(filterOpBedrijf(voorstellen.genegeerd, actiefBedrijf), actiefMerk),
+      }
+    : null;
   const zichtbaar = sorteerOpStatus(gefilterd, vandaag, status);
   const aantalLive = gefilterd.filter((c) => isLive(c, vandaag)).length;
   const statusNaam = status === "live" ? "Live" : status === "niet-live" ? "Niet live" : null;
-  const isCampagneSoort = filterKnop?.id === STANDAARD_SOORT;
   const isRapportage = (c: MaOverzichtRegel) => opzetPerId.get(c.opzetId)?.formulier === "rapportage";
   const campagneRegels = zichtbaar.filter((c) => !isRapportage(c));
   const rapportageRegels = zichtbaar.filter(isRapportage);
-  const aantalFilters = (status ? 1 : 0) + (actiefBedrijf ? 1 : 0);
+  const aantalFilters = status ? 1 : 0;
 
   const p = useMemo(() => portefeuille(campagneRegels, vandaag), [campagneRegels, vandaag]);
   const voortgangPerId = useMemo(() => new Map(p.campagnes.map((c) => [c.id, c])), [p]);
@@ -930,7 +1037,7 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
                 )}
                 <PopoverKnop
                   label="Filters"
-                  titel="Filter op status en bedrijf"
+                  titel="Filter op status"
                   breedte={300}
                   className="ma-groep"
                   inhoud={
@@ -961,31 +1068,13 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
                         />
                       </div>
                       <MenuScheiding />
-                      <MenuKop>Bedrijf</MenuKop>
-                      <MenuRegel rol="menuitemradio" gekozen={actiefBedrijf === null} onClick={() => kiesBedrijf(null)} rechts={totaalBinnenSoort}>
-                        Alle bedrijven
-                      </MenuRegel>
-                      {bedrijfKnoppenGeteld.map((b) => (
-                        <MenuRegel
-                          key={b.naam}
-                          rol="menuitemradio"
-                          gekozen={actiefBedrijf === b.naam}
-                          uit={b.aantal === 0}
-                          onClick={() => kiesBedrijf(b.naam)}
-                          rechts={b.aantal}
-                        >
-                          {b.naam}
-                        </MenuRegel>
-                      ))}
-                      <MenuScheiding />
                       <div className="flex items-center justify-between gap-2 px-2.5 py-1.5">
-                        <p className="text-[11.5px] leading-snug text-ink-faint">Werkt op de kerncijfers, de voortgang en de tabel.</p>
+                        <p className="text-[11.5px] leading-snug text-ink-faint">Bedrijf en merk staan boven de lijst.</p>
                         <button
                           type="button"
                           disabled={aantalFilters === 0}
                           onClick={() => {
                             kiesStatus(null);
-                            kiesBedrijf(null);
                             sluit();
                           }}
                           className="ma-knop shrink-0 px-2 text-[12.5px] disabled:opacity-40"
@@ -997,7 +1086,6 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
                   )}
                 </PopoverKnop>
                 {statusNaam && <FilterChip naam={statusNaam} onWis={() => kiesStatus(null)} />}
-                {actiefBedrijf && <FilterChip naam={actiefBedrijf} onWis={() => kiesBedrijf(null)} />}
               </>
             }
             acties={
@@ -1021,11 +1109,25 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
             {fout && <p className="rounded-[10px] border border-negative/25 bg-negative/5 px-4 py-2.5 text-[13px] text-negative">{fout}</p>}
             {/* Bovenaan, op de plek van de vroegere kerncijfers (verzoek van de eigenaar, 27 november 2026):
                 de campagnes die Claude in de advertenties vond en die nog geanalyseerd kunnen worden. */}
-            {voorstellen && isCampagneSoort && (
+            {campagnes && (
+              <FilterRijen
+                bedrijven={bedrijfKnoppenGeteld}
+                totaalBedrijf={totaalBedrijf}
+                actiefBedrijf={actiefBedrijf}
+                onBedrijf={kiesBedrijf}
+                merken={merkKnoppenGeteld}
+                totaalMerk={totaalMerk}
+                actiefMerk={actiefMerk}
+                onMerk={kiesMerk}
+                metVoorstellen={isCampagneSoort && openVoorstellen.length > 0}
+              />
+            )}
+            {voorstellenGefilterd && isCampagneSoort && (
               <VoorstellenBalk
-                open={voorstellen.open}
-                genegeerd={voorstellen.genegeerd}
-                laatsteZoekronde={voorstellen.laatsteZoekronde}
+                open={voorstellenGefilterd.open}
+                genegeerd={voorstellenGefilterd.genegeerd}
+                gefilterd={Boolean(actiefBedrijf || actiefMerk)}
+                laatsteZoekronde={voorstellenGefilterd.laatsteZoekronde}
                 bezig={voorstelBezig}
                 onToevoegen={(v) => setZijbalk({ campagne: null, voorstel: v })}
                 onNegeren={(v) => zetVoorstel(v, "negeren")}
@@ -1037,13 +1139,13 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
             ) : zichtbaar.length === 0 ? (
               <div className="rounded-[14px] border border-dashed border-line bg-[var(--ma-ondergrond)] px-6 py-10 text-center">
                 <p className="ma-kop text-ink">
-                  {filterKnop || status || actiefBedrijf
-                    ? `Geen ${statusNaam ? `${statusNaam.toLowerCase()} ` : ""}analyses${actiefBedrijf ? ` voor ${actiefBedrijf}` : ""}${filterKnop ? ` van het soort ${filterKnop.naam}` : ""}`
+                  {filterKnop || status || actiefBedrijf || actiefMerk
+                    ? `Geen ${statusNaam ? `${statusNaam.toLowerCase()} ` : ""}analyses${actiefBedrijf ? ` voor ${actiefBedrijf}` : ""}${actiefMerkNaam ? ` met ${actiefMerkNaam}` : ""}${filterKnop ? ` van het soort ${filterKnop.naam}` : ""}`
                     : "Nog geen analyses"}
                 </p>
                 <p className="mx-auto mt-1 max-w-lg text-[13px] text-ink-muted">
                   {filterKnop && filterHeeftActieve ? "Maak er een aan met Nieuwe analyse" : "Maak met Nieuwe analyse een campagne-analyse of een rapportage aan"}
-                  {(status || actiefBedrijf) && (
+                  {(status || actiefBedrijf || actiefMerk) && (
                     <>
                       {", of "}
                       <button
@@ -1051,6 +1153,7 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
                         onClick={() => {
                           kiesStatus(null);
                           kiesBedrijf(null);
+                          kiesMerk(null);
                         }}
                         className="text-ink underline underline-offset-2 hover:text-primary"
                       >

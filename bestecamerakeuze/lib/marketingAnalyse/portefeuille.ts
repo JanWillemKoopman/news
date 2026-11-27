@@ -1,4 +1,4 @@
-import { budgetTempo, isLive, overzichtCijfers, type BudgetTempo } from "./rekenen";
+import { budgetTempo, isLive, merkSleutels, overzichtCijfers, type BudgetTempo } from "./rekenen";
 import { kostenPer } from "./uitsplitsing";
 import type { MaKerncijfers } from "./types";
 
@@ -263,4 +263,36 @@ export function isOnvolledigeWeek(weekStart: string, periodeVan: string | null, 
   if (periodeVan && start < dagNummer(periodeVan)) return true;
   if (periodeTot && eind > dagNummer(periodeTot)) return true;
   return false;
+}
+
+/** "Alle merken", "alle modellen": geen merk om op te filteren. */
+const GEEN_FILTERMERK = /^alle\b/;
+
+/**
+ * De knoppen van het filter op merk boven het overzicht (verzoek van de eigenaar, 27 november 2026):
+ * één per merk dat in de campagne-analyses of de voorstellen voorkomt, op sleutel (`merkSleutels`:
+ * "Skoda" en "Škoda" zijn één merk, "Volkswagen, Audi" telt voor beide), met het aantal; hoog naar
+ * laag. De naam is de eerste schrijfwijze die voorkomt.
+ */
+export function merkFilterKnoppen(items: readonly { merk: string | null }[]): { sleutel: string; naam: string; aantal: number }[] {
+  const knoppen = new Map<string, { sleutel: string; naam: string; aantal: number }>();
+  for (const item of items) {
+    const delen = (item.merk ?? "").split(/\s*(?:,|;|\/|\+|&|\s+en\s+)\s*/i).filter((d) => d.trim());
+    const gezien = new Set<string>();
+    for (const deel of delen) {
+      const sleutel = merkSleutels(deel)[0];
+      if (!sleutel || GEEN_FILTERMERK.test(sleutel) || gezien.has(sleutel)) continue;
+      gezien.add(sleutel);
+      const k = knoppen.get(sleutel);
+      if (k) k.aantal += 1;
+      else knoppen.set(sleutel, { sleutel, naam: deel.trim(), aantal: 1 });
+    }
+  }
+  return [...knoppen.values()].sort((a, b) => b.aantal - a.aantal || a.naam.localeCompare(b.naam, "nl"));
+}
+
+/** Alleen wat over dit merk gaat (sleutel uit `merkFilterKnoppen`); `null` = alle. */
+export function filterOpMerk<T extends { merk: string | null }>(items: readonly T[], sleutel: string | null): T[] {
+  if (sleutel === null) return [...items];
+  return items.filter((i) => merkSleutels(i.merk).includes(sleutel));
 }

@@ -2,7 +2,7 @@
 
 import { Fragment, useId, useState } from "react";
 import { getBrandLogo } from "@/components/brandLogos";
-import { IconChevronDown, IconClose, IconLightbulb, IconLink } from "@/components/icons";
+import { IconChevronDown, IconClose, IconLink } from "@/components/icons";
 import { bedrijvenLabel, datumKort, formatWaarde, isLive, looptijdLabel, paginaKort, sorteerVoorstellen, vandaagNL } from "@/lib/marketingAnalyse/rekenen";
 import { ZEKERHEID_NAAM, type MaVoorstel, type MaZoekronde } from "@/lib/marketingAnalyse/types";
 
@@ -15,6 +15,8 @@ type Props = {
   onToevoegen: (v: MaVoorstel) => void;
   onNegeren: (v: MaVoorstel) => void;
   onTerugzetten: (v: MaVoorstel) => void;
+  /** Er staat een filter op bedrijf of merk: de lijst is daarbinnen geteld. */
+  gefilterd?: boolean;
 };
 
 const KOP = "ma-kolomkop whitespace-nowrap px-3 py-2.5 text-left font-semibold";
@@ -153,13 +155,6 @@ function Bewijs({ v }: { v: MaVoorstel }) {
   );
 }
 
-/** Hoe vaak een waarde voorkomt, hoog naar laag (gelijk: alfabetisch). */
-function telling(waarden: readonly string[]): { naam: string; aantal: number }[] {
-  const m = new Map<string, number>();
-  for (const w of waarden) m.set(w, (m.get(w) ?? 0) + 1);
-  return [...m.entries()].map(([naam, aantal]) => ({ naam, aantal })).sort((a, b) => b.aantal - a.aantal || a.naam.localeCompare(b.naam, "nl"));
-}
-
 function MerkLabel({ merk }: { merk: string | null }) {
   if (!merk) return <span className="text-ink-faint">Geen merk</span>;
   const Logo = getBrandLogo(merk);
@@ -174,11 +169,12 @@ function MerkLabel({ merk }: { merk: string | null }) {
 /**
  * De balk "Voorgestelde campagne-analyses" bovenaan het overzicht (redesign november 2026): live
  * actiecampagnes die Claude Code in de advertenties vond (skill campagne-voorstellen) en die nog
- * niet op de lijst staan. Ingeklapt een duidelijke horizontale balk met het aantal en per bedrijf
- * en per merk hoeveel; uitgeklapt de lijst met merk en bedrijf in eigen kolommen. Toevoegen opent
+ * niet op de lijst staan. Ingeklapt één strakke regel met het aantal; uitgeklapt de lijst met merk en
+ * bedrijf in eigen kolommen. Filteren op bedrijf en merk gebeurt boven de balk (`FilterRijen` in
+ * `MarketingAnalysePaneel.tsx`), en geldt ook voor de analyses eronder. Toevoegen opent
  * de ingevulde briefing; een klik op een regel toont wat er gevonden is.
  */
-export default function VoorstellenBalk({ open, genegeerd, laatsteZoekronde, bezig, onToevoegen, onNegeren, onTerugzetten }: Props) {
+export default function VoorstellenBalk({ open, genegeerd, laatsteZoekronde, bezig, onToevoegen, onNegeren, onTerugzetten, gefilterd = false }: Props) {
   // Standaard ingeklapt (verzoek van de eigenaar): de lopende analyses gaan voor.
   const [ingeklapt, setIngeklapt] = useState(true);
   const [uitgeklapt, setUitgeklapt] = useState<string | null>(null);
@@ -186,10 +182,8 @@ export default function VoorstellenBalk({ open, genegeerd, laatsteZoekronde, bez
   const lijstId = useId();
   const vandaag = vandaagNL();
 
-  if (open.length === 0 && genegeerd.length === 0) return null;
+  if (open.length === 0 && genegeerd.length === 0 && !gefilterd) return null;
 
-  const perBedrijf = telling(open.flatMap((v) => (v.bedrijven.length ? v.bedrijven : ["Geen bedrijf"])));
-  const perMerk = telling(open.map((v) => v.merk ?? "Geen merk"));
   const aantalLive = open.filter((v) => isLive(v, vandaag)).length;
 
   return (
@@ -199,58 +193,30 @@ export default function VoorstellenBalk({ open, genegeerd, laatsteZoekronde, bez
         onClick={() => setIngeklapt((x) => !x)}
         aria-expanded={!ingeklapt}
         aria-controls={lijstId}
-        className="group flex w-full flex-col gap-3 px-4 py-3.5 text-left transition-colors duration-[var(--ma-duur-klein)] hover:bg-[color-mix(in_srgb,var(--color-ink)_2%,transparent)] lg:flex-row lg:items-center lg:gap-5 lg:px-5"
+        className="group flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors duration-[var(--ma-duur-klein)] hover:bg-[color-mix(in_srgb,var(--color-ink)_2%,transparent)] lg:px-5"
       >
-        <span className="flex min-w-0 items-center gap-3 lg:w-[330px] lg:shrink-0">
-          <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-primary-light text-primary">
-            <IconLightbulb className="h-[18px] w-[18px]" />
+        <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
+          <span className="flex items-center gap-2">
+            <span className="ma-kop whitespace-nowrap text-ink">Voorgestelde campagne-analyses</span>
+            <span className="ma-getal flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11.5px] font-semibold text-on-primary">
+              {open.length}
+            </span>
           </span>
-          <span className="min-w-0">
-            <span className="flex items-center gap-2">
-              <span className="ma-kop whitespace-nowrap text-ink">Voorgestelde campagne-analyses</span>
-              <span className="ma-getal flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11.5px] font-semibold text-on-primary">
-                {open.length}
-              </span>
-            </span>
-            <span className="mt-0.5 block text-[12px] text-ink-muted">
-              {open.length > 0 ? `Gevonden in de advertenties, nog niet op de lijst · ${aantalLive} live` : "Geen nieuwe voorstellen"}
-            </span>
+          <span className="text-[12px] text-ink-muted">
+            {open.length > 0
+              ? `Gevonden in de advertenties, nog niet op de lijst · ${aantalLive} live${gefilterd ? " · binnen het filter" : ""}`
+              : gefilterd
+                ? "Geen voorstellen binnen dit filter"
+                : "Geen nieuwe voorstellen"}
           </span>
         </span>
 
-        {open.length > 0 && (
-          <span className="flex min-w-0 flex-1 flex-col gap-1.5">
-            <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
-              <span className="w-14 shrink-0 text-[11px] font-semibold uppercase tracking-[0.04em] text-ink-faint">Bedrijf</span>
-              {perBedrijf.map((b) => (
-                <span key={b.naam} className="ma-groep inline-flex h-[22px] items-center gap-1.5 rounded-[6px] px-2 text-[12px] text-ink">
-                  {b.naam}
-                  <span className="ma-getal text-ink-faint">{b.aantal}</span>
-                </span>
-              ))}
-            </span>
-            <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
-              <span className="w-14 shrink-0 text-[11px] font-semibold uppercase tracking-[0.04em] text-ink-faint">Merk</span>
-              {perMerk.map((m) => {
-                const Logo = m.naam !== "Geen merk" ? getBrandLogo(m.naam) : null;
-                return (
-                  <span key={m.naam} className="ma-groep inline-flex h-[22px] items-center gap-1.5 rounded-[6px] px-2 text-[12px] text-ink">
-                    {Logo && <Logo role="img" aria-hidden="true" className="h-3 w-3 shrink-0 text-ink-muted" />}
-                    <span className={m.naam === "Geen merk" ? "text-ink-muted" : ""}>{m.naam}</span>
-                    <span className="ma-getal text-ink-faint">{m.aantal}</span>
-                  </span>
-                );
-              })}
-            </span>
-          </span>
-        )}
-
-        <span className="flex shrink-0 items-center justify-between gap-3 lg:flex-col lg:items-end lg:gap-1">
+        <span className="flex shrink-0 items-center gap-3">
+          {laatsteZoekronde && <span className="hidden text-[11.5px] text-ink-faint sm:inline">Laatst gezocht {datumKort(laatsteZoekronde.gezochtOp)}</span>}
           <span className="ma-knop ma-groep pointer-events-none text-[12.5px]">
-            {ingeklapt ? "Toon voorstellen" : "Verberg"}
+            {ingeklapt ? "Toon" : "Verberg"}
             <IconChevronDown className={`!h-3.5 !w-3.5 transition-transform duration-[var(--ma-duur-klein)] ${ingeklapt ? "" : "rotate-180"}`} />
           </span>
-          {laatsteZoekronde && <span className="text-[11.5px] text-ink-faint">Laatst gezocht {datumKort(laatsteZoekronde.gezochtOp)}</span>}
         </span>
       </button>
 

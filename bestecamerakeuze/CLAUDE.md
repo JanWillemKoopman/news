@@ -1684,9 +1684,13 @@ behalve waar het over de bediening gaat (het schildje Beheer, de rijen filterkno
   afleesbaar. AppShell kiest de variant met `werkruimte = actief === "marketing-analyse"`: geen rail, geen
   PageHeader, het oogje midden in de knoppenbalk (`ThemeSwitcher plek`).
 - **Overzicht** (bijgesteld op verzoek van de eigenaar, 27 november 2026): geen regel "4 campagne-analyses" en
-  geen blok met totaalcijfers meer. Bovenaan staat de balk **Voorgestelde campagne-analyses**
-  (`VoorstellenBalk.tsx`, alleen bij Campagnes): ingeklapt een duidelijke horizontale balk met het aantal en
-  per bedrijf en per merk hoeveel voorstellen er zijn; uitgeklapt de lijst met Merk en Bedrijf als eigen
+  geen blok met totaalcijfers meer. Bovenaan staan **twee rijen filterknoppen** (`FilterRijen` in
+  `MarketingAnalysePaneel.tsx`): eerst **Bedrijf**, dan **Merk** (met logo), elk met Alle en per keuze het
+  aantal; nog een keer klikken zet hem terug op Alle. Ze gelden voor de voorgestelde én de echte analyses
+  (`filterOpBedrijf`, `filterOpMerk`/`merkFilterKnoppen` in `portefeuille.ts`, getest; URL `?bedrijf=` en
+  `?merk=`). Bedrijf staat daarom niet meer in het popover Filters (alleen Status). Daaronder de balk
+  **Voorgestelde campagne-analyses** (`VoorstellenBalk.tsx`, alleen bij Campagnes): ingeklapt één compacte
+  regel met het aantal, zonder icoon of chips; uitgeklapt de lijst met Merk en Bedrijf als eigen
   kolommen (vaste kolombreedtes, `table-fixed`), Toevoegen en negeren (kruisje). Daaronder **één tabel**
   `CampagneTabel` (in `MarketingAnalysePaneel.tsx`; Voortgang per campagne en Alle cijfers zijn
   samengevoegd), van links naar rechts: **Campagne** (bedrijf, looptijd, laatste versie; geen "dag x van y"),

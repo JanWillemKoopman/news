@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { isOnvolledigeWeek, leadTempo, looptijdOp, portefeuille, versieVerschil, type PortefeuilleInvoer } from "./portefeuille.ts";
+import { filterOpMerk, isOnvolledigeWeek, leadTempo, looptijdOp, merkFilterKnoppen, portefeuille, versieVerschil, type PortefeuilleInvoer } from "./portefeuille.ts";
 
 /** De vier campagne-analyses zoals ze op 27 november 2026 in het overzicht stonden (laatste versie). */
 const regels: PortefeuilleInvoer[] = [
@@ -148,4 +148,26 @@ test("isOnvolledigeWeek: eerste en laatste week van de periode", () => {
   assert.equal(isOnvolledigeWeek("2026-09-21", "2026-09-18", "2026-11-26"), false);
   assert.equal(isOnvolledigeWeek("2026-11-23", "2026-09-18", "2026-11-26"), true);
   assert.equal(isOnvolledigeWeek("week 3", "2026-09-18", "2026-11-26"), false);
+});
+
+test("merkFilterKnoppen: op sleutel, gesplitst, zonder 'Alle merken'", () => {
+  const knoppen = merkFilterKnoppen([
+    { merk: "Škoda" },
+    { merk: "Skoda" },
+    { merk: "Volkswagen, Audi" },
+    { merk: "Audi" },
+    { merk: "Alle merken" },
+    { merk: null },
+  ]);
+  assert.deepEqual(
+    knoppen.map((k) => [k.naam, k.aantal]),
+    [["Audi", 2], ["Škoda", 2], ["Volkswagen", 1]],
+  );
+});
+
+test("filterOpMerk: een campagne met twee merken telt bij allebei", () => {
+  const items = [{ merk: "Volkswagen, Audi" }, { merk: "Škoda" }, { merk: null }];
+  assert.equal(filterOpMerk(items, "audi").length, 1);
+  assert.equal(filterOpMerk(items, "skoda").length, 1);
+  assert.equal(filterOpMerk(items, null).length, 3);
 });
