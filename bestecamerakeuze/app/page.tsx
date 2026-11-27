@@ -28,6 +28,7 @@ import NietGeconfigureerd from "@/components/NietGeconfigureerd";
 import PrikbordPaneel from "@/components/prikbord/PrikbordPaneel";
 import CampagneTijdlijn from "@/components/tijdlijn/CampagneTijdlijn";
 import MarketingAnalysePaneel from "@/components/marketingAnalyse/MarketingAnalysePaneel";
+import CampagneAnalyse from "@/components/campagneAnalyse/CampagneAnalyse";
 import CampagneTimeline from "@/components/campagneTimeline/CampagneTimeline";
 import { getCampagnes } from "@/lib/sheet";
 import { getGebruiker } from "@/lib/auth";
@@ -100,6 +101,7 @@ export default async function DashboardPage() {
         }
         tijdlijn={<CampagneTijdlijn />}
         campagnebeheer={<CampagneBeheer ingelogd={ingelogd} />}
+        campagneAnalyse={<CampagneAnalyse ingelogd={ingelogd} />}
         marketingAnalyse={<MarketingAnalysePaneel ingelogd={ingelogd} />}
         campagneTimeline={<CampagneTimeline ingelogd={ingelogd} />}
         kpiOverzicht={zie("kpi-overzicht") ? <KpiOverzicht /> : null}

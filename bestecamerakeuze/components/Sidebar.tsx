@@ -10,9 +10,10 @@ import {
   IconCalendarRange,
   IconChartBar,
   IconChevronDown,
+  IconColumns,
   IconTrophy,
 } from "@/components/icons";
-import { AnalyseIllustratie, TimelineIllustratie } from "@/components/home/Illustraties";
+import { AnalyseIllustratie, CampagneAnalyseIllustratie, TimelineIllustratie } from "@/components/home/Illustraties";
 import {
   NAV_GROEPEN,
   zichtbarePaginas,
@@ -27,6 +28,7 @@ export type DashboardView =
   | "campagnes"
   | "tijdlijn"
   | "campagnebeheer"
+  | "campagne-analyse"
   | "marketing-analyse"
   | "campagne-timeline"
   | "kpi-overzicht"
@@ -60,8 +62,8 @@ type Props = {
 };
 
 /**
- * De twee pagina's waar de sidebar om draait (november 2026, op verzoek): Marketing analyse
- * en Campagne timeline staan bovenaan als grote tegel met een illustratie, in plaats van
+ * De drie pagina's waar de sidebar om draait (november 2026, op verzoek): Campagne analyse,
+ * Marketing analyse en Campagne timeline staan bovenaan als grote tegel met een illustratie, in plaats van
  * als gewone rij. De rest van de groep Campagnes (Campagnes, Tijdlijn, Campagnebeheer)
  * staat niet meer in de sidebar — wel nog op het startscherm, dat `NAV_GROEPEN` volledig
  * toont. De groepen KPI's 2027, Kanalen en Tools staan eronder, standaard ingeklapt.
@@ -72,6 +74,12 @@ const UITGELICHT: {
   icon: React.ReactNode;
   illustratie: React.ReactNode;
 }[] = [
+  {
+    view: "campagne-analyse",
+    label: "Campagne analyse",
+    icon: <IconColumns />,
+    illustratie: <CampagneAnalyseIllustratie />,
+  },
   {
     view: "marketing-analyse",
     label: "Marketing analyse",

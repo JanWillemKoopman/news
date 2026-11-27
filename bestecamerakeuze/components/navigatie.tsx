@@ -5,6 +5,7 @@ import {
   IconCalendar,
   IconCalendarRange,
   IconChartBar,
+  IconColumns,
   IconCoin,
   IconGlobe,
   IconMail,
@@ -57,6 +58,7 @@ export const NAV_GROEPEN: NavGroep[] = [
     id: "campagnes",
     naam: "Campagnes",
     paginas: [
+      { view: "campagne-analyse", label: "Campagne analyse", icon: <IconColumns /> },
       { view: "campagnes", label: "Campagnes", icon: <IconMegaphone /> },
       { view: "tijdlijn", label: "Tijdlijn", icon: <IconCalendar /> },
       { view: "campagnebeheer", label: "Campagnebeheer", icon: <IconSettings /> },

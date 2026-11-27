@@ -42,10 +42,10 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
   `AppShell.tsx`). Bovenaan staan, los en zonder groepskopje, **Scores** en **Kennis en
   acties** — wat het team zelf vastlegt komt vóór de cijfers, en de stand komt vóór de
   inhoud omdat de weekstand de aanleiding is om iets vast te leggen. **Sinds eind november
-  2026 draait de sidebar om Marketing analyse en Campagne timeline** (op verzoek): die twee
-  staan bovenaan als grote tegel (`SidebarTegel` in `Sidebar.tsx`) met een isometrische
-  illustratie in de stijl van het startscherm (`AnalyseIllustratie`, `TimelineIllustratie`
-  in `home/Illustraties.tsx`) en de titel eronder; in de smalle rail zijn het vierkantjes
+  2026 draait de sidebar om Campagne analyse, Marketing analyse en Campagne timeline** (op verzoek): die drie
+  staan bovenaan als grote tegel (`SidebarTegel` in `Sidebar.tsx`, Campagne analyse eerst) met een isometrische
+  illustratie in de stijl van het startscherm (`CampagneAnalyseIllustratie` — een billboard met een auto en
+  staafjes —, `AnalyseIllustratie`, `TimelineIllustratie` in `home/Illustraties.tsx`) en de titel eronder; in de smalle rail zijn het vierkantjes
   met alleen het icoon. De kleuren staan in `.sidebar-tegel` (globals.css), zodat het in
   elk theme klopt. Campagnes, Tijdlijn en Campagnebeheer staan **niet meer in de sidebar**
   (wel nog op het startscherm en via `?tab=…`). Daaronder de groepen **KPI's 2027**,
@@ -1937,6 +1937,30 @@ lees dat eerst voordat je hier iets verandert.
   herkenning als startpunt.
 - **Een eigen tabel, niet de sheet.** Dit is geen campagnelijst maar de briefing voor een
   analyse; de sheet blijft de bron van de campagnetabel.
+
+### Campagnes → Campagne analyse
+
+Tabblad onder **Campagnes** (view `campagne-analyse`, `components/campagneAnalyse/CampagneAnalyse.tsx`,
+rekenwerk in `lib/campagneAnalyseOverzicht.ts`, getest; 27 november 2026, op verzoek van de eigenaar). De
+**Campagne analyses** uit Marketing analyse als **campagnes naast elkaar**: elke campagne een kolom, de cijfers
+uit de laatste analyse als rijen, zoals de campagnetabel. Alleen lezen voor iedereen: geen briefing
+bewerken, planning, E-mail settings, Nieuwe analyse of beheer (dat blijft in Marketing analyse). Staat bovenaan
+de sidebar en bovenaan de groep Campagnes op het startscherm.
+
+- **Bron**: `GET /api/marketing-analyse` en `overzichtCijfers`, dus dezelfde getallen als het overzicht in
+  Marketing analyse. Alleen opzetten met formulier `campagne` (`isCampagneAnalyse`, gedeeld met Campagne timeline).
+- **Kolomkop** = link naar de analyse (`/?tab=marketing-analyse&analyse=<id>`): status (Online/Offline), naam,
+  merk en bedrijf, looptijd met voortgangsbalk (dag x van y), laatste versie en label. Onderaan elke kolom een knop
+  Bekijk analyse. Een gewone link (volledige paginalading), net als Campagne timeline.
+- **Rijen**: Budget (Uitgaven, balk met streepje voor het verstreken deel van de looptijd en
+  Op schema / sneller / achter, `budgetTempo`), Bereik (CTR, Bezoekers), Leads en orders (Google Analytics,
+  Syntec internet, Syntec orders; de Syntec-rijen alleen als minstens één campagne er cijfers voor heeft) en Doel
+  (percentage gehaald, groen vanaf 100%).
+- **Filters**: Bedrijf, Merk (multi-select, `filterTimeline`) en **Online/Offline**. Online = live (vandaag binnen de
+  looptijd, `isLive`), offline = nog niet begonnen of afgelopen; de aantallen tellen binnen Bedrijf en Merk.
+- **Samenvatting** boven de tabel over de campagnes in beeld (`samenvatting`): campagnes online, uitgegeven
+  tegen budget (alleen campagnes met een analyse), bezoekers en leads (Google Analytics).
+- Live eerst, dan wat nog moet beginnen, dan afgelopen (`sorteerOpStatus`).
 
 ### Campagnes → Campagne timeline
 

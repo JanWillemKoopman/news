@@ -319,30 +319,23 @@ export function InterneDataIllustratie() {
 }
 
 /**
- * Campagnes monitoren: een billboard met een autoadvertentie (we zijn een autodealer):
- * links de auto in zijaanzicht, rechts kop, tekstregels en een knop. Bij hover komt het
- * bord een fractie omhoog en rijdt de auto een stukje naar rechts.
+ * Een auto in zijaanzicht op het voorvlak van een billboard. `f` zet een punt (u, v) op dat
+ * vlak om naar tekenpunten; de linkerkant van de auto staat op u0 en de weg op v0, `k` is de
+ * schaal. Gedeeld door het startscherm (`CampagnesIllustratie`) en de sidebar
+ * (`CampagneAnalyseIllustratie`).
  */
-export function CampagnesIllustratie() {
-  const s = 16;
-  const p = maakProjectie(150, 95, s);
-  // Billboard langs de x-as; het zichtbare voorvlak ligt op y = vy, dus alles op het bord
-  // tekenen we in (u, v) = (x, z) op dat vlak.
-  const vy = 0.25;
-  const bb = 8.2;
-  const pz = 2.2;
-  const ph = 3.6;
-  const f = (u: number, v: number) => p(u, vy, pz + v);
-  const vlak = (u1: number, v1: number, u2: number, v2: number) =>
-    pts([f(u1, v1), f(u2, v1), f(u2, v2), f(u1, v2)]);
-  const lijn = (u1: number, u2: number, v: number) => pts([f(u1, v), f(u2, v)]);
-
-  // De auto, in zijaanzicht, met zijn linkerkant op u0 en de weg op v0.
-  const u0 = 0.55;
-  const v0 = 0.7;
-  const k = 1.25; // schaal van de auto op het bord
-  const auto = (pnt: [number, number][]) =>
-    pts(pnt.map(([u, v]) => f(u0 + u * k, v0 + v * k)));
+function ZijAuto({
+  f,
+  u0,
+  v0,
+  k,
+}: {
+  f: (u: number, v: number) => Punt;
+  u0: number;
+  v0: number;
+  k: number;
+}) {
+  const auto = (pnt: [number, number][]) => pts(pnt.map(([u, v]) => f(u0 + u * k, v0 + v * k)));
   const carrosserie: [number, number][] = [
     [0.05, 0.22],
     [0, 0.55],
@@ -378,6 +371,43 @@ export function CampagnesIllustratie() {
         return [cu + Math.cos(a) * r, 0.22 + Math.sin(a) * r] as [number, number];
       }),
     );
+  return (
+    <g>
+      <polygon points={auto(carrosserie)} />
+      {ruiten.map((r, i) => (
+        <polygon key={i} points={auto(r)} />
+      ))}
+      {/* deurnaad en koplamp */}
+      <polyline fill="none" strokeOpacity={0.6} points={auto([[2.0, 0.3], [2.0, 0.82]])} />
+      <polyline fill="none" strokeOpacity={0.6} points={auto([[3.3, 0.58], [3.52, 0.58]])} />
+      {[0.75, 2.85].map((cu) => (
+        <g key={cu}>
+          <polygon points={wiel(cu, 0.3)} />
+          <polygon points={wiel(cu, 0.13)} />
+        </g>
+      ))}
+    </g>
+  );
+}
+
+/**
+ * Campagnes monitoren: een billboard met een autoadvertentie (we zijn een autodealer):
+ * links de auto in zijaanzicht, rechts kop, tekstregels en een knop. Bij hover komt het
+ * bord een fractie omhoog en rijdt de auto een stukje naar rechts.
+ */
+export function CampagnesIllustratie() {
+  const s = 16;
+  const p = maakProjectie(150, 95, s);
+  // Billboard langs de x-as; het zichtbare voorvlak ligt op y = vy, dus alles op het bord
+  // tekenen we in (u, v) = (x, z) op dat vlak.
+  const vy = 0.25;
+  const bb = 8.2;
+  const pz = 2.2;
+  const ph = 3.6;
+  const f = (u: number, v: number) => p(u, vy, pz + v);
+  const vlak = (u1: number, v1: number, u2: number, v2: number) =>
+    pts([f(u1, v1), f(u2, v1), f(u2, v2), f(u1, v2)]);
+  const lijn = (u1: number, u2: number, v: number) => pts([f(u1, v), f(u2, v)]);
 
   return (
     <Tekening label="Billboard met een autoadvertentie" viewBox="91 -12 201 214">
@@ -389,7 +419,7 @@ export function CampagnesIllustratie() {
         <Blok p={p} x={0} y={0} z={pz} b={bb} d={vy} h={ph} />
         <polygon points={vlak(0.25, 0.25, bb - 0.25, ph - 0.25)} />
         {/* de weg onder de auto */}
-        <polyline fill="none" strokeOpacity={0.6} points={lijn(0.45, 5.25, v0 - 0.02)} />
+        <polyline fill="none" strokeOpacity={0.6} points={lijn(0.45, 5.25, 0.68)} />
         {/* kop, twee regels en een knop */}
         <polyline fill="none" points={lijn(5.5, bb - 0.55, ph - 0.85)} />
         <polyline fill="none" strokeOpacity={0.6} points={lijn(5.5, bb - 0.85, ph - 1.35)} />
@@ -399,19 +429,7 @@ export function CampagnesIllustratie() {
           className="iso-beweeg"
           style={beweeg(0.35 * 0.866 * s, 0.35 * 0.5 * s, 120)}
         >
-          <polygon points={auto(carrosserie)} />
-          {ruiten.map((r, i) => (
-            <polygon key={i} points={auto(r)} />
-          ))}
-          {/* deurnaad en koplamp */}
-          <polyline fill="none" strokeOpacity={0.6} points={auto([[2.0, 0.3], [2.0, 0.82]])} />
-          <polyline fill="none" strokeOpacity={0.6} points={auto([[3.3, 0.58], [3.52, 0.58]])} />
-          {[0.75, 2.85].map((cu) => (
-            <g key={cu}>
-              <polygon points={wiel(cu, 0.3)} />
-              <polygon points={wiel(cu, 0.13)} />
-            </g>
-          ))}
+          <ZijAuto f={f} u0={0.55} v0={0.7} k={1.25} />
         </g>
       </g>
     </Tekening>
@@ -562,6 +580,57 @@ export function TimelineIllustratie() {
           <Blok p={p} x={bk.x} y={bk.y} z={0} b={bk.b} d={0.7} h={bk.h} />
         </g>
       ))}
+    </Tekening>
+  );
+}
+
+/**
+ * Campagne analyse: een billboard op twee palen met links de auto in zijaanzicht en rechts
+ * drie staafjes (de campagnes naast elkaar vergeleken). Staat in de sidebar
+ * (`components/Sidebar.tsx`). Bij hover komt het bord omhoog, rijdt de auto een stukje door
+ * en schuiven de staafjes elk een eigen stukje omhoog.
+ */
+export function CampagneAnalyseIllustratie() {
+  const s = 15;
+  const p = maakProjectie(140, 100, s);
+  const vy = 0.25;
+  const bb = 8.4;
+  const pz = 2.1;
+  const ph = 3.7;
+  const f = (u: number, v: number): Punt => p(u, vy, pz + v);
+  const vlak = (u1: number, v1: number, u2: number, v2: number) =>
+    pts([f(u1, v1), f(u2, v1), f(u2, v2), f(u1, v2)]);
+  const lijn = (u1: number, u2: number, v: number) => pts([f(u1, v), f(u2, v)]);
+  // Staafjes op het bord: plek, hoogte en hoeveel ze bij hover omhoogkomen (px).
+  const staven = [
+    { u: 5.55, h: 1.0, lift: 2 },
+    { u: 6.35, h: 1.75, lift: 3.5 },
+    { u: 7.15, h: 1.3, lift: 2.5 },
+  ];
+
+  return (
+    <Tekening label="Billboard met een autoadvertentie en een staafgrafiek" viewBox="90 6 180 192">
+      <Blok p={p} x={-0.6} y={-0.6} z={-0.25} b={bb + 1.2} d={3.4} h={0.25} />
+      <Blok p={p} x={1.5} y={0} z={0} b={0.25} d={0.25} h={pz} />
+      <Blok p={p} x={bb - 1.75} y={0} z={0} b={0.25} d={0.25} h={pz} />
+      <g className="iso-beweeg" style={beweeg(0, -3)}>
+        <Blok p={p} x={0} y={0} z={pz} b={bb} d={vy} h={ph} />
+        <polygon points={vlak(0.25, 0.25, bb - 0.25, ph - 0.25)} />
+        {/* de weg onder de auto */}
+        <polyline fill="none" strokeOpacity={0.6} points={lijn(0.45, 5.0, 0.68)} />
+        {/* grondlijn van de staafjes */}
+        <polyline fill="none" strokeOpacity={0.6} points={lijn(5.35, bb - 0.45, 0.68)} />
+        {staven.map((st, i) => (
+          <g key={st.u} className="iso-beweeg" style={beweeg(0, -st.lift, i * 60)}>
+            <polygon points={vlak(st.u, 0.68, st.u + 0.5, 0.68 + st.h)} />
+          </g>
+        ))}
+        {/* kop boven de staafjes */}
+        <polyline fill="none" points={lijn(5.35, bb - 0.9, ph - 0.7)} />
+        <g className="iso-beweeg" style={beweeg(0.35 * 0.866 * s, 0.35 * 0.5 * s, 120)}>
+          <ZijAuto f={f} u0={0.5} v0={0.7} k={1.2} />
+        </g>
+      </g>
     </Tekening>
   );
 }
