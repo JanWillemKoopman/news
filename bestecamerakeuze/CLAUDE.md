@@ -1705,6 +1705,11 @@ lees dat eerst voordat je hier iets verandert.
   de toppost zit als data-URL in het resultaat (klein, ≤ 10 kB: het gaat alleen via `execute_sql` de database in).
   De accounts per tabblad, de leadregels en de keuzes (Porsche Groep Zuid-accounts bij Porsche Centrum Brabant,
   LinkedIn organisch zonder bereik, top content alleen Instagram) staan in het blok Maandrapport Jana en in de skill.
+  **De mail bij een nieuw Maandrapport** (27 november 2026, `mailMaandrapport.ts`, getest) is een eigen, verzorgde
+  HTML-mail in plaats van de standaardmail: een navy kop met de maand, per bedrijf de vier hoofdcijfers naast die van
+  de maand ervoor, de forecast en drie of vier zinnen (`maandrapport.bedrijven[].mailPunten`, geschreven door de
+  analyse, prompt versie 2, migratie 0058; het dashboard toont ze niet), en een knop naar het rapport. Alleen
+  tabellen en inline stijlen, geen afbeeldingen. `notificatie.ts` kiest hem bij `resultaat.formaat === 4`.
 - **E-mail VDU** (26 november 2026, verzoek van de eigenaar, §23 van het plan): een opzet `rapportage`
   voor de e-mailmarketeers, maandelijks, met drie stappen in de groepen E-mail, Website en Resultaat
   (`Sectie.groep` zet bij een rapportage kopjes in de navigatie). **E-mail is altijd één kanaal**: het

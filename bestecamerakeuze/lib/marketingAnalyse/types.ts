@@ -507,6 +507,12 @@ export interface MrBedrijf {
   socialKanalen: MrSocialKanaal[];
   /** Waarom er geen socialkanalen zijn ("geen organisch account gekoppeld"). */
   socialReden?: string;
+  /**
+   * Drie tot vier korte zinnen met de belangrijkste uitkomsten van dit tabblad, alleen voor de mail bij
+   * een nieuw rapport (`mailMaandrapport.ts`). Het dashboard toont ze niet: het rapport zelf blijft puur
+   * resultaten. Feiten met cijfers, geen advies.
+   */
+  mailPunten?: string[];
 }
 
 export interface MaMaandrapport {

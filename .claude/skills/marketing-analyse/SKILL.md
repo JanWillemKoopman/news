@@ -262,6 +262,9 @@ het bereik en de uitgaven telt en wat het tijdelijke jaarbudget is.
 - **Formaat**: `formaat: 4`, `maandrapport` met `maand`, `vorigeMaand` en `bedrijven` (vier objecten in de
   volgorde Porsche Centrum Brabant, Porsche Centrum Maastricht, Bentley Maastricht, PGZ, dezelfde velden). De
   velden staan in `MaMaandrapport` (`types.ts`), de volgorde van de bedrijven in `MAANDRAPPORT_BEDRIJVEN`.
+  Per bedrijf ook `mailPunten`: drie of vier korte zinnen met de belangrijkste uitkomsten, alleen voor de mail die
+  bij een nieuw rapport naar de volgers gaat (`mailMaandrapport.ts`); het dashboard toont ze niet. Feiten met cijfers
+  uit het rapport (zelfde afronding), geen advies of oordeel, en elke meetbeperking die een cijfer beïnvloedt.
   `samenvatting.kop` is alleen "Maandrapport <maand> <jaar>" (voor de mail), `samenvatting.regels`, `secties`,
   `aanbevelingen` en `funnel` zijn leeg, `doel` ontbreekt, kerncijfers `{}`. Wat niet gemeten wordt is `null`
   met de reden in `nietGemeten` of `toelichting`, nooit 0. De forecast, de percentages van de cirkel, het
@@ -306,7 +309,8 @@ het bereik en de uitgaven telt en wat het tijdelijke jaarbudget is.
   de som van de campagnetabel is gelijk aan die uitgaven; `reeks.waarden` heeft evenveel punten als `reeks.x` en
   eindigt op de rapportmaand (gelijk aan `waarde`); `jaarbudget` = `jaarTotaal` × 1,22 (zolang het semantic-layerblok
   dat zegt); er staat geen woord als "goed", "slecht", "aandacht", "aanbeveling" of "actie" in het resultaat
-  behalve in `waarom` van de toppost; geen Syntec; de afbeelding is een `data:image/…` of `https://`-adres.
+  behalve in `waarom` van de toppost; elk bedrijf heeft drie of vier `mailPunten` waarvan elk getal ook in het rapport
+  staat; geen Syntec; de afbeelding is een `data:image/…` of `https://`-adres.
 - **Bewaren**: `marketing_analyse_bewaar` zoals in stap 5, `p_kerncijfers => '{}'`, `p_samenvatting` de kop.
   Het dashboard toont dit format zonder stappenlijst en zonder samenvattingspagina.
 

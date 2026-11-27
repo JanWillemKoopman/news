@@ -14,6 +14,8 @@ import { Client } from "pg";
 import nodemailer from "nodemailer";
 import { controleerVerbindingssnaar } from "@/lib/verbindingssnaar";
 import { bouwMail } from "./mail";
+import { leesMaandrapport } from "./maandrapport";
+import { bouwMaandrapportMail } from "./mailMaandrapport";
 import { bedrijvenLabel } from "./rekenen";
 import type { DoelOordeel, Label } from "./types";
 
@@ -95,7 +97,7 @@ export async function verstuurNotificaties(client: Client, analyseId: string): P
     versie: number;
     label: Label | null;
     geanalyseerd_op: Date;
-    resultaat: { samenvatting?: { kop?: unknown; regels?: unknown }; doel?: DoelOordeel | null } | null;
+    resultaat: { formaat?: unknown; maandrapport?: unknown; samenvatting?: { kop?: unknown; regels?: unknown }; doel?: DoelOordeel | null } | null;
     samenvatting: string | null;
   }>(
     `update dataloket.marketing_analyse_versies
@@ -140,19 +142,25 @@ export async function verstuurNotificaties(client: Client, analyseId: string): P
     let aantal = 0;
     const fouten: string[] = [];
     const logBasis = { versieId: analyseId, campagneId: versie.campagne_id, campagneNaam: c.naam, versie: versie.versie, label: versie.label };
+    // Een Maandrapport (formaat 4) krijgt een eigen mail met per bedrijf de hoofdcijfers en een paar zinnen.
+    const maandrapport = versie.resultaat?.formaat === 4 ? leesMaandrapport(versie.resultaat.maandrapport) : undefined;
     for (const v of volgers.rows) {
-      const mail = bouwMail({
-        campagneNaam: c.naam,
-        bedrijf: bedrijvenLabel(c.bedrijven),
-        versie: versie.versie,
-        label: versie.label,
-        geanalyseerdOp: versie.geanalyseerd_op.toISOString(),
-        kop,
-        regels,
-        doel: versie.resultaat?.doel ?? null,
-        analyseUrl: `${basis}/?tab=marketing-analyse&analyse=${encodeURIComponent(versie.campagne_id)}`,
-        afmeldUrl: `${basis}/api/marketing-analyse/afmelden?token=${encodeURIComponent(v.afmeld_token)}`,
-      });
+      const analyseUrl = `${basis}/?tab=marketing-analyse&analyse=${encodeURIComponent(versie.campagne_id)}`;
+      const afmeldUrl = `${basis}/api/marketing-analyse/afmelden?token=${encodeURIComponent(v.afmeld_token)}`;
+      const mail = maandrapport
+        ? bouwMaandrapportMail({ campagneNaam: c.naam, versie: versie.versie, rapport: maandrapport, analyseUrl, afmeldUrl })
+        : bouwMail({
+            campagneNaam: c.naam,
+            bedrijf: bedrijvenLabel(c.bedrijven),
+            versie: versie.versie,
+            label: versie.label,
+            geanalyseerdOp: versie.geanalyseerd_op.toISOString(),
+            kop,
+            regels,
+            doel: versie.resultaat?.doel ?? null,
+            analyseUrl,
+            afmeldUrl,
+          });
       try {
         await transport.sendMail({
           from: { name: "Marketing analyse", address: gmail.gebruiker },

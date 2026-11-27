@@ -141,6 +141,10 @@ function bedrijf(ruw: unknown): MrBedrijf | null {
     campagnes: campagnes(r.campagnes),
     socialKanalen: socialKanalen(r.socialKanalen),
     ...(tekst(r.socialReden) ? { socialReden: tekst(r.socialReden) } : {}),
+    mailPunten: lijst(r.mailPunten as string[] | undefined)
+      .filter((x) => typeof x === "string" && x.trim())
+      .map((x) => x.trim().slice(0, 400))
+      .slice(0, 4),
   };
 }
 
