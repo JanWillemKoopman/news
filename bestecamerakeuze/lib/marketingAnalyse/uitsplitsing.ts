@@ -89,6 +89,8 @@ export interface GeldigeUitsplitsing {
   ctr: PlatformRegel[] | null;
   sessies: MaUitsplitsingRegel[] | null;
   leadsGa4: MaUitsplitsingEvent[] | null;
+  /** De leads in Google Analytics per kanaal, tegen `leadsGa4`. */
+  leadsKanaal: MaUitsplitsingRegel[] | null;
   leadsInternet: MaUitsplitsingRegel[] | null;
   orders: MaUitsplitsingRegel[] | null;
 }
@@ -98,6 +100,7 @@ export const GEEN_UITSPLITSING: GeldigeUitsplitsing = {
   ctr: null,
   sessies: null,
   leadsGa4: null,
+  leadsKanaal: null,
   leadsInternet: null,
   orders: null,
 };
@@ -145,6 +148,7 @@ export function leesUitsplitsing(k: MaKerncijfers | null | undefined): GeldigeUi
   if (events && telt.length > 0 && klopt(telt, k.leadsGa4)) {
     leadsGa4 = k.leadEvents != null && !klopt(events, k.leadEvents) ? telt : events;
   }
+  const leadsKanaal = leesRegels(u.leadsKanaal);
   const leadsInternet = leesRegels(u.leadsInternet);
   const orders = leesRegels(u.orders);
 
@@ -153,9 +157,15 @@ export function leesUitsplitsing(k: MaKerncijfers | null | undefined): GeldigeUi
     ctr,
     sessies: sessies && klopt(sessies, k.sessies) ? sorteer(sessies) : null,
     leadsGa4: sorteer(leadsGa4),
+    leadsKanaal: leadsKanaal && klopt(leadsKanaal, k.leadsGa4) ? sorteer(leadsKanaal) : null,
     leadsInternet: leadsInternet && klopt(leadsInternet, k.leadsInternet) ? sorteer(leadsInternet) : null,
     orders: orders && klopt(orders, k.ordersSyntec) ? sorteer(orders) : null,
   };
+}
+
+/** Een naam om platform en kanaal mee te vergelijken: zonder hoofdletters en overtollige spaties. */
+export function vergelijkNaam(naam: string): string {
+  return naam.trim().replace(/\s+/g, " ").toLowerCase();
 }
 
 /** Het aandeel van een regel in het totaal, in procenten; null als het totaal nul is. */

@@ -249,6 +249,12 @@ export interface MaUitsplitsing {
   sessies?: MaUitsplitsingRegel[] | null;
   /** De lead-events op de campagnepagina; de regels met `telt` tellen op tot `leadsGa4`, alle regels tot `leadEvents`. */
   leadsGa4?: MaUitsplitsingEvent[] | null;
+  /**
+   * De leads in Google Analytics (`leadsGa4`, dus van de soort uit het doel) per kanaal, ook organisch en
+   * direct; tellen op tot `leadsGa4`. Een kanaal van betaald verkeer heet precies zoals het platform in
+   * `platforms`, zodat het dashboard de mediakosten per lead per platform kan uitrekenen.
+   */
+  leadsKanaal?: MaUitsplitsingRegel[] | null;
   /** De Syntec-internetleads per soort; tellen op tot `leadsInternet`. */
   leadsInternet?: MaUitsplitsingRegel[] | null;
   /** De Syntec-orders per klantgroep; tellen op tot `ordersSyntec`. */

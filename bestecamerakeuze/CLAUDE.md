@@ -1979,6 +1979,15 @@ de sidebar en bovenaan de groep Campagnes op het startscherm.
 - **Samenvatting** boven de tabel over de campagnes in beeld (`samenvatting`): campagnes online, uitgegeven
   tegen budget (alleen campagnes met een analyse), bezoekers en leads (Google Analytics).
 - Live eerst, dan wat nog moet beginnen, dan afgelopen (`sorteerOpStatus`).
+- **Kosten per klik en Kosten per lead** (28 november 2026, op verzoek, groep Efficiëntie tussen Leads en
+  orders en Doel): mediakosten ÷ klikken en mediakosten ÷ leads in Google Analytics (de soort uit het doel,
+  dezelfde leads als in de rij Google Analytics). Zonder klikken of leads een streepje, niet "€ 0". Beide hebben een
+  hover. Kosten per klik: per platform (kosten, klikken en CTR per platform, alleen als `platforms` klopt) en altijd
+  de opbouw: kosten per 1.000 vertoningen en CTR. Meta telt linkklikken, dus een vergelijking per platform is bij
+  benadering (staat in het kaartje). Kosten per lead: de leads per kanaal (`leadsKanaal`), de mediakosten per lead
+  **per platform** (kosten van het platform ÷ leads van het kanaal met **precies dezelfde naam**, anders geen regel)
+  en de opbouw: kosten per bezoeker en leads per 100 bezoekers. Geen kosten per Syntec-lead: die leads zijn alle
+  internetleads voor merk en model en niet te herleiden tot deze campagne.
 - **Hover met meer uitleg** (28 november 2026, op verzoek): met de muis (of toetsenfocus) boven een
   cijfer opent een kaartje (`HoverKaart.tsx`, in een portal op `<body>`: de tabel scrolt horizontaal en
   zou het kaartje afsnijden; klapt naar boven als er onder geen ruimte is). Cellen met een kaartje hebben
@@ -1986,7 +1995,7 @@ de sidebar en bovenaan de groep Campagnes op het startscherm.
   `hoverKaarten.tsx`, twee soorten:
   - **Uitsplitsing van de analyse** (`kerncijfers.uitsplitsing`, type `MaUitsplitsing`): Uitgaven en CTR per
     platform (Google, Meta, LinkedIn), Bezoekers per kanaal, Google Analytics-leads per event (met welke
-    meetellen voor het doel), Syntec internet per soort lead en Syntec orders per klantgroep. **De analyse
+    meetellen voor het doel) en per kanaal (`leadsKanaal`), Syntec internet per soort lead en Syntec orders per klantgroep. **De analyse
     levert hem mee** (skill `marketing-analyse`, "Uitsplitsing voor de hover"); er is geen migratie, de
     kerncijfers zijn jsonb. **Betrouwbaarheid is het punt**: `leesUitsplitsing` (`uitsplitsing.ts`, getest)
     toont een blok alleen als zijn regels precies optellen tot het cijfer waar ze bij horen (kosten mogen
