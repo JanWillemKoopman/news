@@ -300,6 +300,13 @@ export default function AppShell({
     wisUrlStand();
   }
   const { title, subtitle } = TITLES[actief];
+  // Een geopende marketinganalyse heeft zijn eigen kop (kruimelrij + titel); de pagina-header past dan niet.
+  const [analyseOpen, setAnalyseOpen] = useState(false);
+  useEffect(() => {
+    const luister = (e: Event) => setAnalyseOpen(Boolean((e as CustomEvent<boolean>).detail));
+    window.addEventListener("ma-detail", luister);
+    return () => window.removeEventListener("ma-detail", luister);
+  }, []);
   const { zijbalkOpen, openZijbalk, melding, wisMelding } = useTeamData();
 
   return (
@@ -327,7 +334,7 @@ export default function AppShell({
           lampje ernaast (`KanaalPagina.tsx`), zodat de status-/updateknop in de
           PageHeader er niet onder verdwijnt. */}
       <main className="min-w-0 flex-1 py-6 pl-8 pr-28">
-        {actief !== "chat" && actief !== "home" && (
+        {actief !== "chat" && actief !== "home" && !(actief === "marketing-analyse" && analyseOpen) && (
           <PageHeader
             title={title}
             subtitle={subtitle}

@@ -683,6 +683,14 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
     if (bf) setBedrijfFilter(bf);
   }, [ingelogd, laad]);
 
+  // De pagina-header van AppShell (titel + ondertitel) wijkt voor de kruimelrij zodra een analyse openstaat.
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("ma-detail", { detail: Boolean(openId) }));
+    return () => {
+      window.dispatchEvent(new CustomEvent("ma-detail", { detail: false }));
+    };
+  }, [openId]);
+
   function open(id: string | null) {
     setOpenId(id);
     zetUrl(id);
@@ -888,8 +896,8 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
     <div className="flex flex-col gap-5">
       {geopend ? (
         <>
-          <div className="flex justify-end">{knoppen}</div>
           <AnalyseWeergave
+            acties={knoppen}
             key={geopend.id}
             campagne={geopend}
             opzet={opzetPerId.get(geopend.opzetId) ?? null}
