@@ -1687,6 +1687,24 @@ lees dat eerst voordat je hier iets verandert.
   ("+12% t.o.v. oktober: 500"). Het dashboard rekent het zelf uit (`vergelijkingVerschil` in
   `rekenen.ts`, getest); de kleur zegt "gunstig" via `vergelijking.hogerIsBeter` (false bij kosten per
   lead), en zonder die vlag (uitgaven) blijft het verschil neutraal.
+- **Maandrapport Jana** (27 november 2026, migratie 0057, `formaat: 4`): een eigen format zoals HRM campagne en
+  E-mail VDU, maar ook met een eigen weergave (`MaandrapportWeergave.tsx`, rekenwerk en opschoning in
+  `maandrapport.ts`, getest). Vier tabbladen bovenaan, geen stappenlijst of samenvattingspagina: Porsche Centrum
+  Brabant (opent als eerste), Porsche Centrum Maastricht, Bentley Maastricht en PGZ, elk met precies dezelfde
+  blokken: vier tegels (online leads met uitsplitsing per soort bij hover, websitebezoeken, social media bereik
+  betaald en organisch, uitgaven met de balk tegen het jaarbudget), trend en forecast van de leads, de toppresterende
+  organische Instagram-post met beeld, sessies per online kanaal als cirkel, een tabel social media kanalen en de
+  campagnetabel (hoog naar laag op uitgaven). **Alleen resultaten**: geen samenvatting, oordeel, benchmark of actie;
+  het enige oordeel is de zin `waarom` bij de toppost. Elk cijfer staat naast dat van de maand ervoor
+  (`vergelijkingVerschil`). Bronnen: alleen Windsor live, **geen Syntec** (die bestaat alleen voor Van den
+  Udenhout). De **forecast** rekent het dashboard zelf: een rechte lijn door de laatste zes maanden met een cijfer,
+  doorgetrokken naar de volgende maand, met de standaardafwijking als marge (`maandrapportForecast`); maanden zonder
+  meting (de Porsche-uitval van 25 juni t/m 11 augustus) zijn `null` en tellen niet mee. Het **jaarbudget** is
+  tijdelijk de uitgaven van 1 januari t/m de rapportmaand × 1,22 (blok Maandrapport Jana in de semantic layer,
+  versie 13/14; vervang die ene regel zodra het echte budget er is), dus de balk staat steeds op ±82%. Het beeld van
+  de toppost zit als data-URL in het resultaat (klein, ≤ 10 kB: het gaat alleen via `execute_sql` de database in).
+  De accounts per tabblad, de leadregels en de keuzes (Porsche Groep Zuid-accounts bij Porsche Centrum Brabant,
+  LinkedIn organisch zonder bereik, top content alleen Instagram) staan in het blok Maandrapport Jana en in de skill.
 - **E-mail VDU** (26 november 2026, verzoek van de eigenaar, §23 van het plan): een opzet `rapportage`
   voor de e-mailmarketeers, maandelijks, met drie stappen in de groepen E-mail, Website en Resultaat
   (`Sectie.groep` zet bij een rapportage kopjes in de navigatie). **E-mail is altijd één kanaal**: het

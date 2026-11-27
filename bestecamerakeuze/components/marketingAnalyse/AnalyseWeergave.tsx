@@ -5,6 +5,7 @@ import { Briefing, BriefingZijbalk } from "@/components/marketingAnalyse/Briefin
 import SamenvattingPagina from "@/components/marketingAnalyse/SamenvattingPagina";
 import StapNavigatie, { SAMENVATTING, VERANTWOORDING } from "@/components/marketingAnalyse/StapNavigatie";
 import StapPagina, { type Buur } from "@/components/marketingAnalyse/StapPagina";
+import MaandrapportWeergave from "@/components/marketingAnalyse/MaandrapportWeergave";
 import Verantwoording, { DataCorrectie } from "@/components/marketingAnalyse/Verantwoording";
 import VolgersZijbalk from "@/components/marketingAnalyse/VolgersZijbalk";
 import { LabelBadge } from "@/components/marketingAnalyse/onderdelen";
@@ -238,7 +239,32 @@ export default function AnalyseWeergave({ campagne, opzet, isEigenaar, onTerug, 
         </>
       )}
 
-      {analyse && r && (
+      {analyse && r && r.formaat === 4 && (
+        <div className={`flex flex-col gap-4 transition-opacity ${laadt ? "opacity-60" : ""}`}>
+          {r.maandrapport ? (
+            <MaandrapportWeergave key={analyse.id} rapport={r.maandrapport} bronnen={r.bronnen ?? []} datakwaliteit={r.datakwaliteit ?? []} />
+          ) : (
+            <p className="rounded-panel border border-dashed border-line bg-card px-6 py-8 text-center text-sm text-ink-muted">
+              Deze versie bevat geen maandrapport.
+            </p>
+          )}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+            <p className="text-meta text-ink-faint">
+              Geanalyseerd op{" "}
+              {new Intl.DateTimeFormat("nl-NL", { dateStyle: "long", timeStyle: "short" }).format(new Date(analyse.geanalyseerdOp))}
+              {` · prompt ${analyse.promptVersie ? `v${analyse.promptVersie}` : "standaard"}`}
+              {` · semantic layer ${analyse.semantiekVersie ? `v${analyse.semantiekVersie}` : "standaard"}`}
+            </p>
+            {isEigenaar && (
+              <button type="button" onClick={verwijderVersie} className="text-meta text-negative underline-offset-2 hover:underline">
+                {bevestigWeg ? `Versie ${analyse.versie} echt verwijderen?` : "Versie verwijderen"}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {analyse && r && r.formaat !== 4 && (
         <div className={`grid grid-cols-[272px_minmax(0,1fr)] items-start gap-6 transition-opacity ${laadt ? "opacity-60" : ""}`}>
           <StapNavigatie tabs={tabs} actief={actief} onKies={kiesTab} />
           <div className="flex min-w-0 flex-col gap-5">

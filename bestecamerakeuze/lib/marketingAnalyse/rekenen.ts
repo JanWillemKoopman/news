@@ -25,6 +25,7 @@ import {
   type SemantiekInhoud,
   type SemantiekSleutel,
 } from "./types";
+import { leesMaandrapport } from "./maandrapport";
 
 // ---------------------------------------------------------------------------
 // Briefing
@@ -595,7 +596,8 @@ function leesAanbevelingen(ruw: unknown): Aanbeveling[] {
 export function normaliseerResultaat(ruw: unknown): MaResultaat {
   const r = (ruw ?? {}) as Partial<MaResultaat>;
   return {
-    formaat: r.formaat === 3 ? 3 : r.formaat === 2 ? 2 : 1,
+    formaat: r.formaat === 4 ? 4 : r.formaat === 3 ? 3 : r.formaat === 2 ? 2 : 1,
+    ...(r.formaat === 4 ? { maandrapport: leesMaandrapport(r.maandrapport) } : {}),
     samenvatting: {
       kop: r.samenvatting?.kop ?? "",
       regels: lijst(r.samenvatting?.regels).filter((x) => typeof x === "string").slice(0, 5),

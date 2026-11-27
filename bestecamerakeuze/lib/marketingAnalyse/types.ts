@@ -402,14 +402,130 @@ export interface SemantiekVoorstel {
   reden: string;
 }
 
+/**
+ * Formaat 4: het Maandrapport (opzet "Maandrapport Jana", 27 november 2026). Een eigen weergave
+ * met één tabblad per bedrijf en alleen resultaten: geen samenvatting, oordelen, benchmarks of
+ * acties. Elk cijfer van de rapportmaand staat naast dat van de maand ervoor; het dashboard rekent
+ * het verschil en de forecast zelf uit (`maandrapportForecast` in `maandrapport.ts`).
+ */
+export const MAANDRAPPORT_OPZET_ID = "7d0c0000-0000-4000-8000-000000000007";
+
+/** De tabbladen van het Maandrapport, in vaste volgorde; het eerste staat open. */
+export const MAANDRAPPORT_BEDRIJVEN = [
+  "Porsche Centrum Brabant",
+  "Porsche Centrum Maastricht",
+  "Bentley Maastricht",
+  "PGZ",
+] as const;
+
+/** Een waarde van de rapportmaand met dezelfde waarde van de maand ervoor. */
+export interface MrWaarde {
+  waarde: number | null;
+  vorige?: number | null;
+}
+
+/** Een regel van een uitsplitsing die bij hover getoond wordt (leadsoort, betaald/organisch, platform). */
+export interface MrUitsplitsing extends MrWaarde {
+  label: string;
+}
+
+/** Een tegel bovenaan: groot cijfer, vergelijking met de vorige maand, maandreeks en uitsplitsing. */
+export interface MrTegel extends MrWaarde {
+  /** Per kalendermaand (x = JJJJ-MM), t/m de rapportmaand; de sparkline en, bij leads, de trendgrafiek. */
+  reeks?: { x: string[]; waarden: (number | null)[] };
+  uitsplitsing?: MrUitsplitsing[];
+  /** Gewone taal: hoe dit cijfer gemeten is (hoogstens één regel). */
+  toelichting?: string;
+  /** Staat er een tekst, dan is er geen cijfer ("niet gemeten") en toont de tegel die tekst. */
+  nietGemeten?: string;
+}
+
+export interface MrUitgaven extends MrWaarde {
+  /** Uitgaven van 1 januari t/m de rapportmaand. */
+  jaarTotaal: number | null;
+  /** Tijdelijk: `jaarTotaal` × 1,22, tot het echte jaarbudget er is (semantic layer, blok Maandrapport). */
+  jaarbudget: number | null;
+  /** Per platform: Google Ads, Meta Ads, LinkedIn Ads. */
+  uitsplitsing?: MrUitsplitsing[];
+  nietGemeten?: string;
+}
+
+export interface MrKanaal extends MrWaarde {
+  kanaal: string;
+}
+
+export interface MrTopContent {
+  kanaal: string;
+  account: string;
+  datum?: string | null;
+  /** De (ingekorte) tekst van de post. */
+  titel: string;
+  url?: string | null;
+  /** Een data-URL (het beeld is bij het maken van het rapport opgehaald) of een https-adres. */
+  afbeelding?: string | null;
+  /** De maat waarop gekozen is, bijv. "Engagement rate" 4,1%. */
+  metriek: { label: string; waarde: number | null; eenheid: Eenheid };
+  /** Wat de lezer erbij leest: de post tegen het gemiddelde van het account. Het enige oordeel in het rapport. */
+  waarom: string;
+}
+
+export interface MrCampagne {
+  campagne: string;
+  /** Google Ads, Meta Ads of LinkedIn Ads. */
+  platform: string;
+  uitgaven: MrWaarde;
+  /** Wat het platform zelf als lead telt; null = het platform levert geen leads ("n.v.t."). */
+  leads: MrWaarde;
+  /** Kosten per lead: uitgaven ÷ leads; null zonder leads. */
+  cpl: MrWaarde;
+}
+
+export interface MrSocialKanaal {
+  kanaal: string;
+  account: string;
+  volgers: MrWaarde;
+  bereik: MrWaarde;
+  vertoningen?: MrWaarde;
+  likes: MrWaarde;
+  reacties: MrWaarde;
+  posts?: MrWaarde;
+}
+
+export interface MrBedrijf {
+  naam: string;
+  leads: MrTegel;
+  sessies: MrTegel;
+  bereik: MrTegel;
+  uitgaven: MrUitgaven;
+  /** Sessies per kanaal (de cirkel); het dashboard rekent de percentages uit. */
+  kanalen: MrKanaal[];
+  topContent?: MrTopContent | null;
+  /** Waarom er geen top content is ("geen organisch account gekoppeld"). */
+  topContentReden?: string;
+  /** Alle advertentiecampagnes van de maand; het dashboard sorteert op uitgaven, hoog naar laag. */
+  campagnes: MrCampagne[];
+  socialKanalen: MrSocialKanaal[];
+  /** Waarom er geen socialkanalen zijn ("geen organisch account gekoppeld"). */
+  socialReden?: string;
+}
+
+export interface MaMaandrapport {
+  /** De rapportmaand, JJJJ-MM. */
+  maand: string;
+  /** De maand ervoor, JJJJ-MM. */
+  vorigeMaand: string;
+  bedrijven: MrBedrijf[];
+}
+
 export interface MaResultaat {
   /**
    * 1: secties onder elkaar, inzichten en aanbevelingen onderaan (versies tot 24 november 2026).
    * 2: secties per tabblad met bevindingen en acties; `aanbevelingen` zijn de acties voor de
    * campagne als geheel en `inzichten` vervallen (`ANALYSE_TABBLADEN_V2`).
    * 3: hetzelfde, met de stappen van `ANALYSE_TABBLADEN` (vanaf 25 november 2026, plan §21).
+   * 4: het Maandrapport: alleen `maandrapport`, geen stappen, samenvatting of oordelen.
    */
-  formaat: 1 | 2 | 3;
+  formaat: 1 | 2 | 3 | 4;
   samenvatting: {
     /** Eén zin: het oordeel. */
     kop: string;
@@ -418,6 +534,8 @@ export interface MaResultaat {
     /** Optioneel: verdere toelichting (Markdown). */
     tekst?: string;
   };
+  /** Alleen formaat 4. */
+  maandrapport?: MaMaandrapport;
   doel?: DoelOordeel;
   /** Niet meer getoond (de hoofdgetallen staan in de tabbalk); blijft voor oudere versies. */
   funnel: FunnelStap[];
@@ -520,6 +638,7 @@ export const SEMANTIEK_BLOKKEN = [
   { sleutel: "data_orders", naam: "Syntec orders" },
   { sleutel: "kanaalkosten", naam: "Extra kanaalkosten" },
   { sleutel: "werving", naam: "Werving (HRM campagne)" },
+  { sleutel: "maandrapport", naam: "Maandrapport Jana" },
 ] as const;
 
 export type SemantiekSleutel = (typeof SEMANTIEK_BLOKKEN)[number]["sleutel"];

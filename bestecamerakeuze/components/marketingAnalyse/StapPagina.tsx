@@ -28,7 +28,7 @@ export default function StapPagina({
   tab: AnalyseTab;
   nr: number;
   aantal: number;
-  formaat: 1 | 2 | 3;
+  formaat: 1 | 2 | 3 | 4;
   vorige: Buur;
   volgende: Buur;
   onKies: (sleutel: string) => void;

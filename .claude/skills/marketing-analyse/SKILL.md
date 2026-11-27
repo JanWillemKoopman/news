@@ -20,7 +20,9 @@ analyses; jij maakt ze. Het plan en alle besluiten van de eigenaar staan in
   oordeelt; bij Campagne analyse met een hoofdstuk per label. Volg hem; hij gaat vóór deze
   skill waar het om inhoud gaat. **Altijd geldend, welke opzet ook** (besluit van de eigenaar):
   de harde dataregel hieronder, schrijven voor de marketeer, en een managementsamenvatting van
-  hoogstens vijf regels. Een opzetprompt hoeft die niet te herhalen.
+  hoogstens vijf regels. Een opzetprompt hoeft die niet te herhalen. **Enige uitzondering: Maandrapport
+  Jana** (formaat 4, besluit van de eigenaar, 27 november 2026): daar staat geen samenvatting, geen
+  oordeel en geen advies in, alleen resultaten (zie die paragraaf).
 - **Semantic layer** (`marketing_analyse_semantiek`): per databron hoe je de data leest. In
   het blok Algemeen: welke accounts en GA4-properties bij welk bedrijf horen en welke bronnen
   per bedrijf van toepassing zijn. Volg hem altijd.
@@ -240,6 +242,73 @@ het blok Google Analytics 4 van de semantic layer zegt hoe je e-mail en lead-eve
 - **Controle vóór het opslaan**: per maand tellen deel A en B op tot het e-mailtotaal; de som van
   de landingspagina's (met de regel "Overige") is het totaal van de maand; zoek in de JSON op
   "M_BT", "Selligent" en "direct" en haal elke treffer weg.
+
+## Maandrapport Jana (formaat 4, vier tabbladen, alleen resultaten)
+Opzet **Maandrapport Jana** (vast id `7d0c0000-0000-4000-8000-000000000007`, formulier `rapportage`,
+planning Maandelijks; migratie 0057, besluiten van de eigenaar van 27 november 2026). Een eigen format,
+net als HRM campagne en E-mail VDU, met een eigen weergave in het dashboard
+(`components/marketingAnalyse/MaandrapportWeergave.tsx`, `lib/marketingAnalyse/maandrapport.ts`). Wat hier
+staat geldt alleen voor deze opzet en gaat vóór de algemene rapportageregels in stap 3 en 4, ook vóór de
+regel dat een samenvatting altijd geldt. De prompt van de opzet zegt wat er per bedrijf in hoort; het blok
+**Maandrapport Jana** van de semantic layer zegt welke accounts bij welk tabblad horen, hoe je een lead,
+het bereik en de uitgaven telt en wat het tijdelijke jaarbudget is.
+- **Bronnen**: alleen Windsor live. **Geen Syntec-leads, geen Syntec-orders, geen `lead_kanaalkosten`,
+  geen benchmark**: de vier bedrijven hebben geen Syntec-data.
+- **Periode**: de **laatste volle kalendermaand** vóór de dag van de analyse (bij een geplande ronde de
+  maand uit `marketing_analyse_ronde()`), de vergelijkingsmaand is de maand daarvoor. Zet `p_periode_van` en
+  `p_periode_tot` op de eerste en laatste dag van de rapportmaand. De maandreeks voor de grafiek loopt over de
+  laatste twaalf kalendermaanden (x = JJJJ-MM) t/m de rapportmaand; de uitgaven voor het jaarbudget van
+  1 januari t/m de rapportmaand.
+- **Formaat**: `formaat: 4`, `maandrapport` met `maand`, `vorigeMaand` en `bedrijven` (vier objecten in de
+  volgorde Porsche Centrum Brabant, Porsche Centrum Maastricht, Bentley Maastricht, PGZ, dezelfde velden). De
+  velden staan in `MaMaandrapport` (`types.ts`), de volgorde van de bedrijven in `MAANDRAPPORT_BEDRIJVEN`.
+  `samenvatting.kop` is alleen "Maandrapport <maand> <jaar>" (voor de mail), `samenvatting.regels`, `secties`,
+  `aanbevelingen` en `funnel` zijn leeg, `doel` ontbreekt, kerncijfers `{}`. Wat niet gemeten wordt is `null`
+  met de reden in `nietGemeten` of `toelichting`, nooit 0. De forecast, de percentages van de cirkel, het
+  verschil met de maand ervoor en de sortering van de campagnetabel rekent het dashboard zelf (en test het);
+  jij levert de maandcijfers.
+- **Ophalen** (velden eerst met `get_fields` controleren; een pull die "pending" geeft opnieuw doen):
+  - GA4 per bedrijf, één opvraging `year_month` × `event_name` × `event_count` met `event_name` bevat
+    "generate_lead" over twaalf maanden (Bentley: ook `Contactaanvraag` met `page_path`); tel zelf de soorten
+    uit het semantic-layerblok. Sessies: `year_month` × `sessions` met het hostfilter. Kanalen:
+    `session_source_medium` × `sessions` voor de rapportmaand en de maand ervoor (een hostfilter kan rijen
+    dubbel geven: komt de som niet bij de sessies van de maand, haal het dan zonder hostfilter op; filter op
+    `sessions` groter dan 14 houdt de uitvoer klein, het restant zet je bij Verwijzingen & overig). Controleer per
+    maand of er dagen zonder sessies waren (tracking uitgevallen): die maand is `null`, niet 0.
+  - Deel `session_source_medium` in met `kanaalVoor` uit `lib/kpi2027/kanalen.ts`, zodat het dashboard één
+    indeling houdt: `node --import ./scripts/test-resolver.mjs --experimental-strip-types -e '…'` in
+    `bestecamerakeuze/` (de namen staan in `KANALEN`). Verzin geen eigen kanalen.
+  - Advertenties per account: `facebook` (Meta Ads): `campaign`, `spend`, `actions_lead` voor de rapportmaand
+    en de maand ervoor, `reach` **zonder campagne als dimensie** voor het periodebereik per account;
+    `google_ads`: `campaign`, `spend`, `conversions`; `linkedin`: `campaign`, `spend`, en
+    `approximate_unique_impressions` voor het bereik (hoogstens 92 dagen). Jaartotaal: `spend` van
+    1 januari t/m de rapportmaand per platform, zonder campagne.
+  - Organisch (alleen Porsche Brabant en Maastricht): Instagram `reach` over de hele maand **zonder `date`** en
+    zonder `year_month` (periodebereik; een som van dagen komt veel hoger uit; `year_month` geeft hier een fout
+    label), elke maand een eigen opvraging; `views`, `likes`, `comments` (optelbaar, tel de rijen) en
+    `followers_count` (alleen vandaag). LinkedIn organisch geeft alleen dagelijkse unieke weergaven: geen bereik; posts per `media_id`: `media_caption`, `media_permalink`,
+    `media_url`, `media_thumbnail_url`, `media_type`, `timestamp`, `media_views`, `media_reach`,
+    `media_like_count`, `media_comments_count`, `media_shares`, `media_saved` voor posts uit de rapportmaand;
+    Facebook organisch `post_*` en `page_*`; LinkedIn organisch per account. Time-out? Splits per account en
+    haal het deel zonder `media_views` en met `media_views` apart op (zie HRM campagne, Instagram).
+  - **Toppresterende content**: alleen Instagram, de post met de hoogste engagement rate (semantic layer).
+    Download het beeld in je scratchpad (`curl` via de proxy werkt voor scontent-…cdninstagram.com), snij het
+    naar 4:3, schaal het naar 360 × 270 en zet het als JPEG (`data:image/jpeg;base64,…`) in `afbeelding`.
+    **Houd het beeld onder ~10 kB** (kwaliteit rond 35): het resultaat gaat alleen via `execute_sql` de database
+    in, en een groter beeld wordt bij het overtypen onbetrouwbaar. Bewaar eerst het resultaat met een
+    placeholder (`@@IMG_PCB@@`) en zet het beeld daarna met `replace(resultaat::text, …)::jsonb` op de plek;
+    controleer daarna `md5(…->>'afbeelding')` tegen de md5 die je lokaal van de data-URL hebt (`print()` van
+    een data-URL laat de harness als plaatje zien: toon alleen de base64 zonder `data:`-voorvoegsel, in regels
+    van 120 tekens). Lukt het niet, zet dan `afbeelding` op `null` en meld het in `datakwaliteit`. Een
+    platformlink bewaar je nooit als enige bron: hij verloopt.
+- **Controle vóór het opslaan**: elk bedrijf heeft dezelfde velden; de uitsplitsing van leads telt op tot het
+  totaal; Betaald + Organisch = het bereik; de uitgaven per platform tellen op tot de uitgaven van de maand en
+  de som van de campagnetabel is gelijk aan die uitgaven; `reeks.waarden` heeft evenveel punten als `reeks.x` en
+  eindigt op de rapportmaand (gelijk aan `waarde`); `jaarbudget` = `jaarTotaal` × 1,22 (zolang het semantic-layerblok
+  dat zegt); er staat geen woord als "goed", "slecht", "aandacht", "aanbeveling" of "actie" in het resultaat
+  behalve in `waarom` van de toppost; geen Syntec; de afbeelding is een `data:image/…` of `https://`-adres.
+- **Bewaren**: `marketing_analyse_bewaar` zoals in stap 5, `p_kerncijfers => '{}'`, `p_samenvatting` de kop.
+  Het dashboard toont dit format zonder stappenlijst en zonder samenvattingspagina.
 
 ## Stap 0 — Welke campagne(s) of rapportage(s)
 ```sql
