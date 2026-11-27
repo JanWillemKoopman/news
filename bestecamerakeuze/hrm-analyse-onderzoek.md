@@ -72,8 +72,8 @@ vacaturecampagnes. Daarna direct, Google Bedrijfsprofiel, Bing en Meta Ads; vaca
 9. Wekelijkse Meta-pulls met `week_iso` liepen vast; per dag ophalen en zelf per ISO-week optellen werkt.
 
 ## 3. Opzet van het dashboard
-Opzet **HRM analyse**, formulier `rapportage`, alle bedrijven, planning Wekelijks, periode
-"1 januari t/m gisteren". Zes stappen: Investering, Leads via social media, Sollicitaties op de
+Opzet **HRM analyse** (sinds 27 november 2026 **HRM campagne**, zie §5), formulier `rapportage`, alle
+bedrijven, planning Wekelijks, periode "1 januari t/m gisteren". Zes stappen: Investering, Leads via social media, Sollicitaties op de
 website, Vacaturepagina's, Campagnes en Employer branding. Wat er per stap in hoort en hoe er geoordeeld
 wordt, staat in de prompt van de opzet (migratie 0053); hoe je de data leest in het blok Werving van de
 semantic layer (`werving` in `lib/marketingAnalyse/standaardSemantiek.ts`).
@@ -90,3 +90,21 @@ semantic layer (`werving` in `lib/marketingAnalyse/standaardSemantiek.ts`).
    sollicitaties "niet gemeten", geen nul. Daar alleen Meta-leads en sessies op de vacaturepagina.
 4. Eén wekelijkse HRM analyse voor de hele groep, met elk cijfer uitgesplitst per bedrijf.
 5. Bedragen en aantallen staan niet in de repository, alleen in het dashboard.
+
+## 5. HRM campagne: maandrapport (besluiten van de eigenaar, 27 november 2026)
+Migratie 0054, prompt versie 2.
+1. De opzet en de analyse heten **HRM campagne** (de analyse heette "HRM analyse werving").
+2. Het is een **maandrapport**, planning Maandelijks: het wordt elke maand verstuurd. De periode loopt
+   van 1 januari 2026 t/m de afgelopen (laatste volle) maand, de **focusmaand**.
+3. Elke vergelijking gaat tegen **de maand vóór de focusmaand**, niet meer tegen de laatste vier weken.
+   Per kerncijfer staat de vorige maand eronder met het verschil in procenten (het dashboard rekent dat
+   uit: `vergelijkingVerschil` in `lib/marketingAnalyse/rekenen.ts`).
+4. De lezer moet drie dingen zien: hoe het op jaarbasis staat, hoe de afgelopen maand presteerde, en
+   hoe die maand was tegen de maand ervoor. Een eerste stap **Maandoverzicht** zet dat naast elkaar.
+5. In **Leads via social media** komen eerst **Leads per maand** en **Kosten per lead per maand**, en
+   daaronder dezelfde twee grafieken per week. Ook uitgaven en sollicitaties krijgen een maand- en een
+   weekgrafiek.
+6. Steeds apart voor **Van den Udenhout** en **PGZ** (Porsche, Bentley). Aanname bij de indeling, nog
+   te bevestigen: Van den Udenhout = Van den Udenhout, Instra, Caromi en VELOO; PGZ = Porsche Groep
+   Zuid (het gedeelde Meta-account van Porsche Centrum Brabant en PGZ), Porsche Centrum Maastricht, PGZ
+   en Bentley Maastricht.

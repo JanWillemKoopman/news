@@ -2,7 +2,14 @@
 
 import Markdown from "@/components/chat/Markdown";
 import AnalyseGrafiek from "@/components/marketingAnalyse/AnalyseGrafiek";
-import { benchmarkOordeel, benchmarkSchaal, formatWaarde, type BenchmarkOordeel } from "@/lib/marketingAnalyse/rekenen";
+import {
+  benchmarkOordeel,
+  benchmarkSchaal,
+  formatWaarde,
+  vergelijkingVerschil,
+  type BenchmarkOordeel,
+  type VergelijkingOordeel,
+} from "@/lib/marketingAnalyse/rekenen";
 import type { Kerncijfer, Sectie, Tabel } from "@/lib/marketingAnalyse/types";
 
 const BENCHMARK: Record<BenchmarkOordeel, { naam: string; tekst: string; stip: string }> = {
@@ -44,6 +51,34 @@ function BenchmarkRegel({ cijfer }: { cijfer: Kerncijfer }) {
   );
 }
 
+const VERSCHIL: Record<VergelijkingOordeel, string> = {
+  gunstig: "text-positive",
+  ongunstig: "text-negative",
+  neutraal: "text-ink",
+};
+
+/**
+ * De regel onder een kerncijfer met een vergelijking: het verschil (in procenten, bij een
+ * percentage in procentpunten) en het cijfer van de vorige periode. De kleur zegt "gunstig", niet
+ * "hoger": bij kosten per lead is een daling goed nieuws, uitgaven krijgen geen kleur.
+ */
+function VergelijkingRegel({ cijfer }: { cijfer: Kerncijfer }) {
+  const v = cijfer.vergelijking;
+  if (!v) return null;
+  const verschil = vergelijkingVerschil(cijfer.waarde, v, cijfer.eenheid);
+  return (
+    <p className="mt-0.5 text-meta tabular-nums text-ink-muted">
+      {verschil && (
+        <span className={`font-semibold ${VERSCHIL[verschil.oordeel]}`}>
+          {verschil.tekst === "gelijk" ? "Gelijk" : verschil.tekst}
+        </span>
+      )}
+      {verschil ? " t.o.v. " : ""}
+      {v.label}: {formatWaarde(v.waarde, cijfer.eenheid)}
+    </p>
+  );
+}
+
 /** Eén rij kerncijfers: het cijfer groot, de toelichting en vergelijking eronder. */
 export function KerncijferRij({ cijfers }: { cijfers: Kerncijfer[] }) {
   if (cijfers.length === 0) return null;
@@ -53,11 +88,7 @@ export function KerncijferRij({ cijfers }: { cijfers: Kerncijfer[] }) {
         <div key={`${c.label}-${i}`} className="rounded-card border border-line-soft bg-surface-tint px-4 py-3">
           <p className="label-theme text-label text-ink-faint">{c.label}</p>
           <p className="mt-1 font-sans-w7 text-xl font-bold tabular-nums text-ink">{formatWaarde(c.waarde, c.eenheid)}</p>
-          {c.vergelijking && (
-            <p className="mt-0.5 text-meta tabular-nums text-ink-muted">
-              {c.vergelijking.label}: {formatWaarde(c.vergelijking.waarde, c.eenheid)}
-            </p>
-          )}
+          <VergelijkingRegel cijfer={c} />
           {c.toelichting && <p className="mt-1 text-meta text-ink-muted">{c.toelichting}</p>}
           <BenchmarkRegel cijfer={c} />
         </div>

@@ -129,35 +129,50 @@ group by 1, 2 order by orders desc;
 - Model kan in orders anders heten dan in leads (Audi A2 e-tron = "A2 e-tron (A1)" in de
   orders): zoek breed en noem de modelwaarden.
 
-## HRM analyse (werving bij alle bedrijven)
-Opzet **HRM analyse** (vast id `7d0c0000-0000-4000-8000-000000000006`, formulier `rapportage`,
-planning standaard Wekelijks; migratie 0053, besluiten van de eigenaar van 25 en 26 november 2026 in
-`bestecamerakeuze/hrm-analyse-onderzoek.md`). Eén analyse voor de hele groep, elk cijfer per bedrijf.
-De prompt van de opzet zegt wat er per sectie in hoort; het blok **Werving** van de semantic layer
-zegt hoe je werving herkent, welk account bij welk bedrijf hoort en welke events sollicitaties zijn.
-Wat hier staat geldt alleen voor deze opzet en gaat vóór de algemene rapportageregels in stap 3.
+## HRM campagne (maandrapport werving)
+Opzet **HRM campagne** (vast id `7d0c0000-0000-4000-8000-000000000006`, formulier `rapportage`,
+planning standaard Maandelijks; migraties 0053 en 0054, besluiten van de eigenaar van 25, 26 en
+27 november 2026 in `bestecamerakeuze/hrm-analyse-onderzoek.md`; tot 27 november heette hij "HRM
+analyse" en liep hij wekelijks). Eén maandrapport voor de hele groep, met elk hoofdcijfer apart voor
+de clusters **Van den Udenhout** (VDU, Instra, Caromi, VELOO) en **PGZ** (Porsche Groep Zuid, Porsche
+Centrum Maastricht, PGZ, Bentley Maastricht). De prompt van de opzet zegt wat er per sectie in hoort;
+het blok **Werving** van de semantic layer zegt hoe je werving herkent, welk account bij welk bedrijf
+hoort en welke events sollicitaties zijn. Wat hier staat geldt alleen voor deze opzet en gaat vóór de
+algemene rapportageregels in stap 3.
 - **Bronnen**: alleen Windsor live. Geen Syntec-leads, geen Syntec-orders, geen `lead_kanaalkosten`.
-- **Periode**: 1 januari van het lopende jaar t/m gisteren (`periode_tekst`). Weekgrafieken per
-  ISO-week met de maandag als datum; "vorige week" is de laatste volledige week vóór vandaag.
+- **Periode**: 1 januari t/m de laatste dag van de **focusmaand** (de laatste volle maand vóór de
+  dag van de analyse; bij een geplande ronde de maand uit de planning). De **vergelijkingsmaand** is
+  de maand daarvoor. Maandgrafieken per kalendermaand (x-as JJJJ-MM), weekgrafieken per ISO-week met
+  de maandag als datum; dagen na de focusmaand tellen nergens mee.
+- **Vergelijking**: elk kerncijfer van de focusmaand krijgt `vergelijking` met de vergelijkingsmaand
+  (`label` = naam van die maand, `hogerIsBeter`: true bij leads, sollicitaties en sessies, false bij
+  kosten per lead, weglaten bij uitgaven). Het dashboard rekent het verschil in procenten zelf uit
+  (`vergelijkingVerschil` in `rekenen.ts`); in tabellen staat het als tekstkolom "Verschil".
 - **Ophalen** (velden eerst met `get_fields` controleren):
   - Meta Ads (`facebook`), alle accounts, filter op de campagnenaam zoals het blok Werving zegt
     (bevat "acature", "erving" of "eeloopdag", of "LL14"):
     `account_name`, `campaign`, `objective`, `spend`, `impressions`, `reach`, `link_clicks`,
     `actions_lead`, `actions_onsite_conversion_lead_grouped`, `actions_offsite_conversion_fb_pixel_lead`
-    over de hele periode, en `date`, `spend`, `actions_lead` per dag in stukken van een half jaar
-    (per week opvragen met `week_iso` of `year_week_iso` liep vast).
-  - Google Ads, filter `campaign` bevat "acature": `account_name`, `campaign`, `week_iso`, `spend`,
+    over de hele periode, en `date`, `account_name`, `campaign`, `spend`, `actions_lead` per dag in
+    stukken van een half jaar (per week opvragen met `week_iso` of `year_week_iso` liep vast); tel daar
+    zelf maanden, ISO-weken en clusters uit op.
+  - Google Ads, filter `campaign` bevat "acature": `account_name`, `campaign`, `date`, `spend`,
     `clicks`. LinkedIn Ads: alle campagnes, controleer of er werving bij zit.
-  - GA4, properties 255949462 en 405407306: `generate_lead_vacature` per `year_week_iso` (dat werkt
-    wel) en per `session_source_medium` en `campaign`; sessies op vacaturepagina's per property met
-    `page_path`. Niet property 469094476.
+  - GA4, properties 255949462 en 405407306: `generate_lead_vacature` per `date` (tel zelf maanden en
+    weken) en per `session_source_medium` en `campaign` voor de focusmaand, de vergelijkingsmaand en
+    de hele periode; sessies op vacaturepagina's per property met `page_path`, per maand. Niet property 469094476.
   - Facebook en LinkedIn organisch: posts met vacature, solliciteren, collega of werken bij in de
-    tekst; LinkedIn `careers_page_views` per account. Instagram kan een time-out geven.
-- **Formaat**: rapportage, dus secties met `stap` 1 t/m 6 en zonder `tab`, in de volgorde van de
-  prompt. Wat niet gemeten wordt is tekst ("niet gemeten", "niet opgehaald"), nooit 0. Kerncijfers
+    tekst; LinkedIn `careers_page_views` per account.
+  - Instagram (`instagram`) in twee stappen, anders loopt het na 60 seconden vast (27 november 2026):
+    eerst `account_name`, `media_id`, `timestamp` met het tekstfilter op `media_caption`, **zonder**
+    `media_views`, per account (udenhoutgroep apart, de andere accounts samen) en per periode van
+    hoogstens acht maanden; daarna `media_id`, `media_views` met een `in`-filter op de gevonden ids.
+- **Formaat**: rapportage, dus secties met `stap` 1 t/m 7, zonder `tab` en met `groep`, in de
+  volgorde van de prompt. Wat niet gemeten wordt is tekst ("niet gemeten", "niet opgehaald"), nooit 0. Kerncijfers
   voor het overzicht: alleen `kosten`.
-- **Controle vóór het opslaan**: de uitgaven per week tellen op tot het totaal in de kerncijfers;
-  leads per bedrijf tellen op tot het totaal; een Meta-lead staat nergens opgeteld bij de
+- **Controle vóór het opslaan**: de uitgaven per maand en per week tellen op tot het totaal in de
+  kerncijfers; leads per bedrijf en per cluster tellen op tot het totaal; de focusmaand in de
+  maandgrafiek is gelijk aan het kerncijfer van de focusmaand; een Meta-lead staat nergens opgeteld bij de
   sollicitaties op de website.
 
 ## E-mail VDU (e-mailverkeer op udenhout.nl)

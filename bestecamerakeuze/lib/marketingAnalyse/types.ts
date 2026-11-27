@@ -220,7 +220,13 @@ export interface Kerncijfer {
   waarde: number | string | null;
   eenheid: Eenheid;
   toelichting?: string;
-  vergelijking?: { label: string; waarde: number | null };
+  /**
+   * Hetzelfde cijfer over een eerdere periode (bij een maandrapport: de maand ervoor). Het dashboard
+   * rekent het verschil zelf uit (`vergelijkingVerschil`). `hogerIsBeter` kleurt het verschil:
+   * true = stijging is gunstig, false = daling is gunstig (kosten per lead), weglaten = geen oordeel
+   * (uitgaven).
+   */
+  vergelijking?: { label: string; waarde: number | null; hogerIsBeter?: boolean };
   benchmark?: KerncijferBenchmark;
 }
 
@@ -490,7 +496,7 @@ export const SEMANTIEK_BLOKKEN = [
   { sleutel: "data_leads", naam: "Data leads (Syntec)" },
   { sleutel: "data_orders", naam: "Syntec orders" },
   { sleutel: "kanaalkosten", naam: "Extra kanaalkosten" },
-  { sleutel: "werving", naam: "Werving (HRM analyse)" },
+  { sleutel: "werving", naam: "Werving (HRM campagne)" },
 ] as const;
 
 export type SemantiekSleutel = (typeof SEMANTIEK_BLOKKEN)[number]["sleutel"];
