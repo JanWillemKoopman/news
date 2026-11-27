@@ -1934,6 +1934,16 @@ lees dat eerst voordat je hier iets verandert.
   analyse. Analyse prompts, Semantic layer en (alleen voor de eigenaar) Verzonden e-mails staan achter het schildje (vooral voor beheerders, maar
   iedereen kan ze openen); open of dicht wordt per browser onthouden. De open analyse staat in de URL
   (`?analyse=<campagne-id>`).
+- **Stijl van het overzicht** (27 november 2026, op verzoek: rustig en vlak, Apple-achtig, in de huisstijl
+  van Udenhout). Alleen styling; indeling, maten, kolombreedtes en rijhoogtes zijn exact gelijk gebleven
+  (voor en na gemeten: elke kolom begint op dezelfde pixel, geen rij werd hoger). De class `ma-overzicht`
+  (globals.css, alleen op het overzicht, niet op een geopende analyse) maakt de ondergrond egaal (geen
+  textuur), de grijze tekst donkerder (`--color-ink-faint` 60% en `--color-ink-muted` 74% van de inktkleur,
+  ± 5:1 op wit) en de rijscheiding iets preciezer. Paneel en voorstellenbalk zonder schaduw. Een gekozen
+  filterknop is een vol vlak in de inktkleur; hover wisselt overal alleen kleur of rand, nooit positie.
+  Kerncijfers in de tabel zijn `font-semibold`. Alleen **Nieuwe analyse** is primair blauw; de andere acties
+  (E-mail settings, Beheer, Toevoegen bij een voorstel) zijn rustiger. Verander je hier een gewicht of maat,
+  meet dan opnieuw of de rijen even hoog blijven.
 - **Filterbalk op soort analyse** (25–26 november 2026, op verzoek; `OpzetFilterBalk.tsx`). Tussen de
   filter op bedrijf en het blok met analyses een rij knoppen, met links het statusfilter (Live / Niet
   live): precies twee **soorten**, met het aantal analyses binnen de andere filters (27 november 2026,

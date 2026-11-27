@@ -123,7 +123,7 @@ function AnalysePromptsMenu({
         onClick={wissel}
         aria-expanded={open}
         aria-haspopup="menu"
-        className="flex items-center gap-2 rounded-button border border-line bg-card px-4 py-2 text-sm font-medium text-ink transition-colors duration-[var(--duur-snel)] hover:bg-surface"
+        className="flex items-center gap-2 rounded-button border border-line bg-card px-4 py-2 text-sm font-medium text-ink-muted transition-colors duration-[var(--duur-snel)] ease-merk hover:border-ink-faint hover:text-ink"
       >
         <IconBrain className="h-4 w-4 text-ink-muted" />
         Analyse prompts
@@ -189,7 +189,7 @@ type TabelProps = {
 
 const KOP = "label-theme whitespace-nowrap px-3 py-2.5 font-normal";
 const RIJ =
-  "cursor-pointer align-top transition-colors duration-[var(--duur-snel)] hover:bg-surface [&>td]:border-t [&>td]:border-line-soft";
+  "cursor-pointer align-top transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-surface-tint [&>td]:border-t [&>td]:border-line-soft";
 
 /** Groen ademend stipje als de analyse live is (vandaag tussen start en eind), anders grijs. */
 function StatusStip({ c, vandaag }: { c: MaOverzichtRegel; vandaag: string }) {
@@ -283,7 +283,7 @@ function BalkCel({
 }) {
   return (
     <div className="flex min-w-[150px] flex-col gap-1.5">
-      <span className="tabular-nums text-ink">{waarde}</span>
+      <span className="font-semibold tabular-nums text-ink">{waarde}</span>
       {pct !== null ? <ProgressBar percent={pct} className="h-1 max-w-40" /> : null}
       <span className={`text-meta ${toon === "negatief" ? "text-negative" : toon === "positief" ? "text-positive" : "text-ink-faint"}`}>
         {onder}
@@ -302,7 +302,7 @@ const BRON_UITLEG: Record<LeadBron, string> = {
 function LeadRegel({ waarde, naam, soort, title }: { waarde: string; naam: string; soort: string | null; title: string }) {
   return (
     <div className="flex items-baseline gap-2.5" title={title}>
-      <span className="min-w-[2.5rem] text-right tabular-nums text-ink">{waarde}</span>
+      <span className="min-w-[2.5rem] text-right font-semibold tabular-nums text-ink">{waarde}</span>
       <span className="text-meta text-ink-faint">
         {naam}
         {soort ? ` · ${soort}` : ""}
@@ -459,7 +459,7 @@ function CampagneAnalyseTabel({ campagnes, opzetten, vandaag, planningBezig, onO
                 </td>
                 <td className="px-3 py-3" title="Alle klikken ÷ alle vertoningen van Google Ads, Meta Ads en LinkedIn Ads samen">
                   <div className="flex min-w-[110px] flex-col gap-1.5">
-                    <span className="tabular-nums text-ink">{geanalyseerd ? formatWaarde(o.ctr, "procent") : "—"}</span>
+                    <span className="font-semibold tabular-nums text-ink">{geanalyseerd ? formatWaarde(o.ctr, "procent") : "—"}</span>
                     <span className="text-meta text-ink-faint">
                       {geanalyseerd && o.ctr === null ? "Bij de volgende analyse" : "Google, Meta en LinkedIn"}
                     </span>
@@ -467,7 +467,7 @@ function CampagneAnalyseTabel({ campagnes, opzetten, vandaag, planningBezig, onO
                 </td>
                 <td className="px-3 py-3" title="Sessies die op de campagnepagina('s) begonnen, uit elk kanaal (GA4)">
                   <div className="flex min-w-[110px] flex-col gap-1.5">
-                    <span className="tabular-nums text-ink">{geanalyseerd ? formatWaarde(o.bezoekers) : "—"}</span>
+                    <span className="font-semibold tabular-nums text-ink">{geanalyseerd ? formatWaarde(o.bezoekers) : "—"}</span>
                     <span className="text-meta text-ink-faint">Op de campagnepagina</span>
                   </div>
                 </td>
@@ -829,7 +829,7 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
           <button
             type="button"
             onClick={() => setPaneel({ soort: "semantiek" })}
-            className="flex items-center gap-2 rounded-button border border-line bg-card px-4 py-2 text-sm font-medium text-ink transition-colors duration-[var(--duur-snel)] hover:bg-surface"
+            className="flex items-center gap-2 rounded-button border border-line bg-card px-4 py-2 text-sm font-medium text-ink-muted transition-colors duration-[var(--duur-snel)] ease-merk hover:border-ink-faint hover:text-ink"
           >
             <IconBook className="h-4 w-4 text-ink-muted" />
             Semantic layer
@@ -839,7 +839,7 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
               type="button"
               onClick={() => setPaneel({ soort: "mails" })}
               title="Wie wanneer welke analyse per mail kreeg"
-              className="flex items-center gap-2 rounded-button border border-line bg-card px-4 py-2 text-sm font-medium text-ink transition-colors duration-[var(--duur-snel)] hover:bg-surface"
+              className="flex items-center gap-2 rounded-button border border-line bg-card px-4 py-2 text-sm font-medium text-ink-muted transition-colors duration-[var(--duur-snel)] ease-merk hover:border-ink-faint hover:text-ink"
             >
               <IconNotes className="h-4 w-4 text-ink-muted" />
               Verzonden e-mails
@@ -855,7 +855,7 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
         aria-label={beheerOpen ? "Beheer verbergen" : "Beheer: Analyse prompts, Semantic layer en Verzonden e-mails"}
         title={beheerOpen ? "Beheer verbergen" : "Beheer: Analyse prompts, Semantic layer en Verzonden e-mails"}
         className={`flex items-center justify-center self-stretch rounded-button border px-2.5 transition-colors duration-[var(--duur-snel)] ${
-          beheerOpen ? "border-line bg-surface text-ink" : "border-line bg-card text-ink-muted hover:bg-surface hover:text-ink"
+          beheerOpen ? "border-ink-faint bg-surface text-ink" : "border-line bg-card text-ink-muted hover:border-ink-faint hover:text-ink"
         }`}
       >
         <IconShield className="h-4 w-4" />
@@ -863,7 +863,7 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
       <button
         type="button"
         onClick={() => setPaneel({ soort: "merk-mail" })}
-        className="flex items-center gap-2 rounded-button border border-line bg-card px-4 py-2 text-sm font-medium text-ink transition-colors duration-[var(--duur-snel)] hover:bg-surface"
+        className="flex items-center gap-2 rounded-button border border-line bg-card px-4 py-2 text-sm font-medium text-ink-muted transition-colors duration-[var(--duur-snel)] ease-merk hover:border-ink-faint hover:text-ink"
       >
         <IconMail className="h-4 w-4 text-ink-muted" />
         E-mail settings
@@ -873,7 +873,7 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
           type="button"
           // Staat het filter op een soort, dan begint de nieuwe analyse met die opzet.
           onClick={() => setZijbalk({ campagne: null, startOpzetId: filterKnop?.startOpzetId ?? undefined })}
-          className="flex items-center gap-2 rounded-button bg-primary px-4 py-2 text-sm font-medium text-on-primary transition-colors duration-[var(--duur-snel)] hover:bg-primary-dark"
+          className="flex items-center gap-2 rounded-button bg-primary px-4 py-2 text-sm font-medium text-on-primary transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-primary-dark"
         >
           <IconPlus className="h-4 w-4" />
           Nieuwe analyse
@@ -893,7 +893,8 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
   };
 
   return (
-    <div className="flex flex-col gap-5">
+    // `ma-overzicht`: de rustige, vlakke stijl van het overzicht (globals.css). Niet op een geopende analyse.
+    <div className={`flex flex-col gap-5 ${geopend ? "" : "ma-overzicht"}`}>
       {geopend ? (
         <>
           <AnalyseWeergave
@@ -942,7 +943,7 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
               onKies={kiesFilter}
             />
           )}
-          <section className="kaart-accent overflow-hidden rounded-panel border border-line bg-card shadow-card">
+          <section className="kaart-accent overflow-hidden rounded-panel border border-line bg-card">
             <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line-soft px-6 py-4">
               <div>
                 <h2 className="label-theme text-label text-ink-muted">

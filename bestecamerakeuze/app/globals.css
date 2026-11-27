@@ -266,6 +266,20 @@ body {
   background-attachment: fixed;
 }
 
+/* Marketing analyse, het overzicht (`MarketingAnalysePaneel`, class `ma-overzicht`): rustig en
+   vlak. Een egale ondergrond zonder merktextuur zolang het overzicht in beeld is, en de grijze
+   tekst (bronlabels, budgetregel, planning) iets donkerder, zodat hij ook op een laptopscherm
+   leesbaar blijft (± 5:1 op wit in plaats van ± 3:1). Afgeleid van --color-ink, dus het klopt in
+   elk theme, licht én donker. Alleen kleur: geen maat of gewicht, dus de rijen worden niet hoger. */
+.ma-overzicht {
+  --color-ink-muted: color-mix(in srgb, var(--color-ink) 74%, transparent);
+  --color-ink-faint: color-mix(in srgb, var(--color-ink) 60%, transparent);
+  --color-line-soft: color-mix(in srgb, var(--color-ink) 8%, transparent);
+}
+.pagina-vlak:has([role="tabpanel"]:not([hidden]) .ma-overzicht) {
+  background-image: none;
+}
+
 /* De donkere navigatieschil. Als `bg-sidebar` met daarbovenop, per merk, een verloop —
    zo blijft de kleur één token en is het verloop optioneel. */
 .sidebar-vlak {
