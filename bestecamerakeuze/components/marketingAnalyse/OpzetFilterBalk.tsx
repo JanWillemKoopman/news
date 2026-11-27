@@ -40,15 +40,15 @@ export function FilterKnop({
       // gewicht en maat als voorheen, dus de knoppen schuiven niet; hover wisselt alleen rand en tekst.
       className={`inline-flex items-center gap-2 whitespace-nowrap rounded-button border px-3.5 py-1.5 text-sm transition-colors duration-[var(--duur-snel)] ease-merk ${
         aan
-          ? "border-ink bg-ink font-medium text-card"
+          ? "border-primary bg-primary/10 vdu:border-ink vdu:bg-ink font-medium text-ink vdu:text-card"
           : leeg
-            ? "border-line-soft bg-surface text-ink-faint hover:border-line hover:text-ink-muted"
-            : "border-line bg-card text-ink-muted hover:border-ink-faint hover:text-ink"
+            ? "border-line-soft bg-surface text-ink-faint vdu:hover:border-line hover:text-ink-muted"
+            : "border-line bg-card text-ink-muted hover:bg-surface vdu:hover:border-ink-faint vdu:hover:bg-card hover:text-ink"
       }`}
     >
       {stip && <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${stip === "live" ? "bg-open" : "bg-closed"}`} />}
       {naam}
-      <span className={`text-meta tabular-nums ${aan ? "text-card/70" : "text-ink-faint"}`}>{aantal}</span>
+      <span className={`text-meta tabular-nums ${aan ? "text-ink-muted vdu:text-card/70" : "text-ink-faint"}`}>{aantal}</span>
     </button>
   );
 }

@@ -355,7 +355,7 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
                         aria-pressed={periodeId === k.id}
                         title={p.van <= p.tot ? periodeTekst(p) : "Geen dagen met data"}
                         className={`whitespace-nowrap rounded-control px-2.5 py-1 text-sm transition-colors duration-[var(--duur-snel)] ease-merk ${
-                          periodeId === k.id ? "bg-ink text-card" : "text-ink-muted hover:bg-surface hover:text-ink"
+                          periodeId === k.id ? "bg-primary text-on-primary vdu:bg-ink vdu:text-card" : "text-ink-muted hover:bg-surface vdu:hover:text-ink"
                         }`}
                       >
                         {k.label}
@@ -433,7 +433,7 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
     <button
       type="button"
       onClick={() => setVerdelingOpen(true)}
-      className="fixed right-16 top-4 z-50 flex h-9 items-center gap-2 rounded-button border border-line bg-card px-3 text-sm font-medium text-ink-muted shadow-subtle transition-colors duration-[var(--duur-snel)] ease-merk hover:border-ink-faint hover:bg-surface hover:text-ink"
+      className="fixed right-16 top-4 z-50 flex h-9 items-center gap-2 rounded-button border border-line bg-card px-3 text-sm font-medium text-ink vdu:text-ink-muted shadow-subtle transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-surface vdu:hover:border-ink-faint vdu:hover:text-ink"
     >
       <IconCoin className="h-4 w-4 text-ink-muted" />
       Kostenverdeling
@@ -500,8 +500,8 @@ export default function LeadsPaneel({ ingelogd }: { ingelogd: boolean }) {
                 aria-pressed={filters.betaald === k.id}
                 className={`rounded-control px-3 py-1.5 text-sm font-medium transition-colors duration-[var(--duur-snel)] ${
                   filters.betaald === k.id
-                    ? "bg-ink text-card"
-                    : "text-ink-muted hover:bg-surface hover:text-ink"
+                    ? "bg-primary text-on-primary vdu:bg-ink vdu:text-card"
+                    : "text-ink-muted hover:bg-surface vdu:hover:text-ink"
                 }`}
               >
                 {k.label}

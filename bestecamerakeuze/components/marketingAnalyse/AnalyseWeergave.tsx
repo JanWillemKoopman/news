@@ -205,7 +205,7 @@ export default function AnalyseWeergave({ campagne, opzet, isEigenaar, onTerug, 
               <button
                 type="button"
                 onClick={() => setBriefingOpen(true)}
-                className="rounded-button border border-line bg-card px-3.5 py-1.5 text-sm font-medium text-ink-muted transition-colors hover:border-ink-faint hover:bg-surface hover:text-ink"
+                className="rounded-button border border-line bg-card px-3.5 py-1.5 text-sm font-medium text-ink vdu:text-ink-muted transition-colors hover:bg-surface vdu:hover:border-ink-faint vdu:hover:text-ink"
               >
                 Briefing
               </button>
@@ -213,7 +213,7 @@ export default function AnalyseWeergave({ campagne, opzet, isEigenaar, onTerug, 
             <button
               type="button"
               onClick={() => setVolgersOpen(true)}
-              className="flex items-center gap-1.5 rounded-button border border-line bg-card px-3.5 py-1.5 text-sm font-medium text-ink-muted transition-colors hover:border-ink-faint hover:bg-surface hover:text-ink"
+              className="flex items-center gap-1.5 rounded-button border border-line bg-card px-3.5 py-1.5 text-sm font-medium text-ink vdu:text-ink-muted transition-colors hover:bg-surface vdu:hover:border-ink-faint vdu:hover:text-ink"
             >
               <IconMail className="h-4 w-4 text-ink-muted" />
               Volgers

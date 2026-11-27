@@ -123,7 +123,7 @@ export default function CampaignCijfer({ campagneNaam, cijfer, ingelogd, onChang
                   disabled={bezig}
                   onClick={() => kies(waarde)}
                   className={`rounded-control px-2 py-1 text-center text-sm tabular-nums transition-colors disabled:opacity-60 ${
-                    waarde === cijfer ? "bg-ink font-semibold text-card" : "text-ink hover:bg-surface"
+                    waarde === cijfer ? "bg-primary-light vdu:bg-ink font-semibold text-primary vdu:text-card" : "text-ink hover:bg-surface"
                   }`}
                 >
                   {waarde}

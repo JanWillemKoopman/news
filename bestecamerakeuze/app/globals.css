@@ -267,32 +267,34 @@ body {
 }
 
 /* ════════════════════════════════════════════════════════════════════════════════
-   RUSTIG EN VLAK — de design principes van het hele dashboard (november 2026, op verzoek;
-   eerst alleen op Marketing analyse, daarna op alle zichtbare pagina's). Zie CLAUDE.md,
-   "Rustig en vlak". Alles hier is kleur, lijn of schaduw: geen maat, gewicht of afstand,
-   dus geen enkel element verschuift of wordt hoger.
+   RUSTIG EN VLAK — de design principes van de huisstijl van Udenhout (november 2026, op
+   verzoek; eerst op Marketing analyse, daarna op alle zichtbare pagina's). Zie CLAUDE.md,
+   "Rustig en vlak". **Alleen in het standaardtheme** (`data-theme="udenhout"`): de
+   merkthemes (Volkswagen, Audi, Porsche, …) houden precies hun eigen textuur, verloop,
+   schaduwen, grijstinten en selectiekleuren, zoals de eigenaar vroeg. In componenten gaat dat
+   met de variant `vdu:` (hieronder): de klassen zonder `vdu:` zijn de stijl van de merkthemes,
+   de `vdu:`-klassen gelden alleen in de huisstijl. Alles hier is kleur, lijn of schaduw: geen
+   maat, gewicht of afstand, dus geen enkel element verschuift of wordt hoger.
 
-   - Egale ondergrond: geen merktextuur op het paginavlak en geen verloop over de sidebar.
-     De tokens per theme blijven staan; terugzetten is deze twee regels weghalen.
+   - Egale ondergrond: geen korrel op het paginavlak, geen verloop over de sidebar.
    - Grijze tekst met meer contrast (± 5:1 op wit in plaats van ± 3:1) en iets preciezere
-     zachte lijnen. Afgeleid van --color-ink van het theme, dus het klopt in elk theme, licht
-     én donker. Op `body`, zodat ook pop-ups en zijbalken (portals naar body) meedoen.
+     zachte lijnen. Op `body`, zodat ook pop-ups en zijbalken (portals naar body) meedoen.
    - Panelen zonder slagschaduw. Tailwind v4 zet de waarde van een --shadow-*-token letterlijk
      in de utility (`.shadow-card` leest géén var(--shadow-card)), dus het token op none zetten
-     werkt niet; daarom hier ongelaagd, wat altijd wint van de gelaagde utilities. Zwevende
-     lagen (dropdown, pop-up, de uitgeklapte sidebar) houden hun schaduw: die liggen écht boven
-     de pagina. */
-body {
+     werkt niet; daarom zetten we hier het schaduwdeel (`--tw-shadow`) ongelaagd op nul, wat
+     altijd wint van de gelaagde utilities en een `ring` laat staan. Zwevende lagen (dropdown,
+     pop-up, de uitgeklapte sidebar) houden hun schaduw: die liggen écht boven de pagina. */
+@custom-variant vdu (&:where([data-theme="udenhout"] *));
+
+[data-theme="udenhout"] body {
   --color-ink-muted: color-mix(in srgb, var(--color-ink) 74%, transparent);
   --color-ink-faint: color-mix(in srgb, var(--color-ink) 60%, transparent);
   --color-line-soft: color-mix(in srgb, var(--color-ink) 8%, transparent);
   --theme-page-patroon: none;
   --theme-sidebar-verloop: none;
 }
-.shadow-subtle,
-.shadow-card,
-.shadow-raised {
-  box-shadow: none;
+[data-theme="udenhout"] :is(.shadow-subtle, .shadow-card, .shadow-raised) {
+  --tw-shadow: 0 0 #0000;
 }
 
 /* De donkere navigatieschil. Als `bg-sidebar` met daarbovenop, per merk, een verloop —
@@ -441,15 +443,23 @@ body {
   animation-timing-function: var(--ease-merk);
 }
 
-/* Een kaart die onder de muis reageert (alleen de rand). Bewust niet in de campagnetabel
+/* Een kaart die onder de muis een fractie omhoogkomt. Bewust niet in de campagnetabel
    (die reageert bewust niet op muisbeweging, zie CLAUDE.md) maar op de losse kaarten:
    het prikbord en de kennisbank. */
 .kaart-hover {
-  transition: border-color var(--duur-snel) var(--ease-merk);
+  transition:
+    transform var(--duur-snel) var(--ease-merk),
+    box-shadow var(--duur-snel) var(--ease-merk),
+    border-color var(--duur-snel) var(--ease-merk);
 }
-/* Rustig en vlak: bij hover alleen een donkerdere rand, niets beweegt (eerst een fractie
-   omhoog met een schaduw eronder). */
 .kaart-hover:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-raised);
+}
+/* Rustig en vlak (alleen de huisstijl): bij hover een donkerdere rand, niets beweegt. */
+[data-theme="udenhout"] .kaart-hover:hover {
+  transform: none;
+  box-shadow: none;
   border-color: color-mix(in srgb, var(--color-ink) 22%, transparent);
 }
 
@@ -577,6 +587,7 @@ body {
     animation: none;
   }
 
+  .kaart-hover:hover,
   .iso-blok:hover .iso-beweeg {
     transform: none;
   }

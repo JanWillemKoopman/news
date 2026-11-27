@@ -146,7 +146,7 @@ function Keuzeknoppen<T extends string>({
           onClick={() => onKies(k.id)}
           aria-pressed={gekozen === k.id}
           className={`whitespace-nowrap rounded-control px-2.5 py-1 text-sm transition-colors duration-[var(--duur-snel)] ease-merk ${
-            gekozen === k.id ? "bg-ink text-card" : "text-ink-muted hover:bg-surface hover:text-ink"
+            gekozen === k.id ? "bg-primary text-on-primary vdu:bg-ink vdu:text-card" : "text-ink-muted hover:bg-surface vdu:hover:text-ink"
           }`}
         >
           {k.label}

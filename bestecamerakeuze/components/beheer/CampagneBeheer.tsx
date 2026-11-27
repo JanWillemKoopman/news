@@ -187,7 +187,7 @@ export default function CampagneBeheer({ ingelogd }: Props) {
               onClick={() => setTabblad(t.id)}
               className={`-mb-px border-b-2 px-1 pb-2.5 text-sm transition-colors duration-[var(--duur-snel)] ease-merk ${
                 gekozen
-                  ? "border-ink font-medium text-ink"
+                  ? "border-primary vdu:border-ink font-medium text-ink"
                   : "border-transparent text-ink-muted hover:text-ink"
               }`}
             >

@@ -171,7 +171,7 @@ export default function VoorstellenBalk({ open, genegeerd, laatsteZoekronde, bez
   if (open.length === 0 && genegeerd.length === 0) return null;
 
   return (
-    <section className="overflow-hidden rounded-panel border border-line bg-card">
+    <section className="overflow-hidden rounded-panel border border-line bg-card shadow-subtle">
       <header className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
         <button
           type="button"
@@ -221,7 +221,7 @@ export default function VoorstellenBalk({ open, genegeerd, laatsteZoekronde, bez
                   <Fragment key={v.id}>
                     <tr
                       onClick={() => setUitgeklapt(isOpen ? null : v.id)}
-                      className="cursor-pointer align-top transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-surface-tint [&>td]:border-t [&>td]:border-line-soft"
+                      className="cursor-pointer align-top transition-colors duration-[var(--duur-snel)] hover:bg-surface vdu:ease-merk vdu:hover:bg-surface-tint [&>td]:border-t [&>td]:border-line-soft"
                       aria-expanded={isOpen}
                     >
                       <td className="py-3 pl-6 pr-3">
@@ -266,7 +266,7 @@ export default function VoorstellenBalk({ open, genegeerd, laatsteZoekronde, bez
                               onToevoegen(v);
                             }}
                             disabled={bezig.has(v.id)}
-                            className="whitespace-nowrap rounded-button bg-primary/10 px-3 py-1.5 text-meta font-medium text-primary transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-primary/15 disabled:opacity-60"
+                            className="whitespace-nowrap rounded-button bg-primary vdu:bg-primary/10 px-3 py-1.5 text-meta font-medium text-on-primary vdu:text-primary transition-colors duration-[var(--duur-snel)] hover:bg-primary-dark vdu:ease-merk vdu:hover:bg-primary/15 disabled:opacity-60"
                           >
                             Toevoegen
                           </button>

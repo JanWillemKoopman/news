@@ -118,8 +118,8 @@ export default function KanalenFilterBalk({
                     onClick={() => onPeriode(p)}
                     className={`whitespace-nowrap rounded-control px-2.5 py-1 text-sm transition-colors duration-[var(--duur-snel)] ease-merk ${
                       p.id === periode.id
-                        ? "bg-ink text-card"
-                        : "text-ink-muted hover:bg-surface hover:text-ink"
+                        ? "bg-primary text-on-primary vdu:bg-ink vdu:text-card"
+                        : "text-ink-muted hover:bg-surface vdu:hover:text-ink"
                     }`}
                   >
                     {p.label}
@@ -208,7 +208,7 @@ export default function KanalenFilterBalk({
               aria-pressed={uitlegAan}
               className={`flex items-center gap-1.5 rounded-control px-2 py-1.5 text-sm font-medium transition-colors duration-[var(--duur-snel)] ${
                 uitlegAan
-                  ? "bg-ink text-card"
+                  ? "bg-primary-light text-primary vdu:bg-ink vdu:text-card"
                   : "text-ink-muted hover:bg-surface hover:text-ink"
               }`}
             >
@@ -259,7 +259,7 @@ function Schakelaar({
       title={titel}
       className={`flex items-center gap-1.5 rounded-control border px-2.5 py-1 text-sm font-medium transition-colors duration-[var(--duur-snel)] ${
         aan
-          ? "border-ink bg-ink text-card"
+          ? "border-primary bg-primary-light text-primary vdu:border-ink vdu:bg-ink vdu:text-card"
           : "border-line text-ink-muted hover:bg-surface hover:text-ink"
       }`}
     >
@@ -329,7 +329,7 @@ export function EigenPeriode({
         title="Een eigen periode kiezen"
         className={`flex items-center gap-1.5 whitespace-nowrap rounded-control border px-2.5 py-1.5 text-sm transition-colors duration-[var(--duur-snel)] ${
           eigen
-            ? "border-ink bg-ink font-medium text-card"
+            ? "border-primary bg-primary-light vdu:border-ink vdu:bg-ink font-medium text-primary vdu:text-card"
             : "border-line text-ink-muted hover:bg-surface hover:text-ink"
         }`}
       >

@@ -314,8 +314,8 @@ export default function DataOphalen({
                   onClick={() => setDagen(p.dagen)}
                   className={`rounded-control border px-3 py-2 text-left transition-colors duration-[var(--duur-snel)] disabled:opacity-50 ${
                     p.dagen === dagen
-                      ? "border-ink bg-surface"
-                      : "border-line hover:border-ink-faint hover:bg-surface"
+                      ? "border-primary bg-primary-light vdu:border-ink vdu:bg-surface"
+                      : "border-line vdu:hover:border-ink-faint hover:bg-surface"
                   }`}
                 >
                   <span className="block text-sm font-medium text-ink">{p.label}</span>

@@ -170,7 +170,7 @@ export default function SelligentGrafiek({
                   aria-pressed={jaar === vanaf}
                   className={`rounded-control px-2.5 py-1 text-sm transition-colors duration-[var(--duur-snel)] ease-merk ${
                     jaar === vanaf
-                      ? "bg-ink text-card"
+                      ? "bg-primary text-on-primary vdu:bg-ink vdu:text-card"
                       : "text-ink-muted hover:bg-surface"
                   }`}
                 >
@@ -186,7 +186,7 @@ export default function SelligentGrafiek({
             title="Een logaritmische as laat de kleine maanden zien naast een migratiepiek"
             className={`rounded-control border px-2.5 py-1 text-sm transition-colors duration-[var(--duur-snel)] ease-merk ${
               logaritmisch
-                ? "border-ink bg-ink text-card"
+                ? "border-primary bg-primary-light text-primary vdu:border-ink vdu:bg-ink vdu:text-card"
                 : "border-line text-ink-muted hover:bg-surface"
             }`}
           >
