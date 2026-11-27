@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { aandeel, kostenPer, leesUitsplitsing, prognoseBijHuidigTempo } from "./uitsplitsing.ts";
+import { aandeel, kostenPer, leesUitsplitsing, prognoseBijHuidigTempo, vergelijkNaam } from "./uitsplitsing.ts";
 import type { MaKerncijfers } from "./types.ts";
 
 /** De cijfers van Audi A2 (versie 5), met de uitsplitsing zoals de analyse hem hoort mee te geven. */
@@ -28,6 +28,13 @@ function audi(extra: Partial<MaKerncijfers> = {}): MaKerncijfers {
         { naam: "Proefrit", detail: "generate_lead_proefrit", aantal: 20, telt: true },
         { naam: "Offerte", detail: "generate_lead_offerte", aantal: 3, telt: false },
         { naam: "Overig", aantal: 4, telt: false },
+      ],
+      leadsKanaal: [
+        { naam: "Direct en e-mail", aantal: 8 },
+        { naam: "Meta Ads", aantal: 3 },
+        { naam: "Organisch zoeken", aantal: 3 },
+        { naam: "Google Ads", aantal: 2 },
+        { naam: "Overig", aantal: 4 },
       ],
       leadsInternet: [
         { naam: "Offerte", aantal: 6 },
@@ -59,6 +66,14 @@ test("een uitsplitsing die optelt tot het cijfer wordt getoond, grootste eerst",
   assert.equal(u.leadsGa4?.length, 3);
   assert.deepEqual(u.leadsInternet?.map((r) => r.naam), ["Offerte", "Private lease", "Proefrit", "Inruil"]);
   assert.equal(u.orders?.[0].naam, "Koop Particulier (BM)");
+});
+
+test("leads per kanaal tellen op tot leadsGa4, anders valt het blok weg", () => {
+  const u = leesUitsplitsing(audi());
+  assert.equal(u.leadsKanaal?.[0].naam, "Direct en e-mail");
+  assert.equal(leesUitsplitsing(audi({ leadsGa4: 19 })).leadsKanaal, null);
+  assert.equal(leesUitsplitsing(audi({ leadsGa4: null })).leadsKanaal, null);
+  assert.equal(vergelijkNaam("  Meta   Ads "), "meta ads");
 });
 
 test("kosten mogen een euro afwijken (afronding), klikken en vertoningen niet", () => {

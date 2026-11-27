@@ -585,6 +585,8 @@ levert **jij** mee, uit dezelfde tabellen en dezelfde queries als de stappen in 
   "sessies": [ { "naam": "Meta Ads", "aantal": 3053 }, { "naam": "Direct en e-mail", "aantal": 407 } ],
   "leadsGa4": [ { "naam": "Proefrit", "detail": "generate_lead_proefrit", "aantal": 20, "telt": true },
                 { "naam": "Offerte", "detail": "generate_lead_offerte", "aantal": 3, "telt": false } ],
+  "leadsKanaal": [ { "naam": "Meta Ads", "aantal": 3 }, { "naam": "Google Ads", "aantal": 2 },
+                   { "naam": "Direct en e-mail", "aantal": 8 }, { "naam": "Overig", "aantal": 7 } ],
   "leadsInternet": [ { "naam": "Offerte", "aantal": 6 }, { "naam": "Private lease", "aantal": 6 } ],
   "orders": [ { "naam": "Koop Particulier (BM)", "aantal": 10 }, { "naam": "Private Groeilease", "aantal": 8 } ]
 }
@@ -604,6 +606,14 @@ iets bij elkaar raadt.
   lead-events op de campagnepagina zet je erbij met `telt: false`; staat `leadEvents` in de
   kerncijfers, dan tellen alle regels samen daarop op (anders houdt het dashboard alleen de regels
   met `telt: true`). Geen vacature-events of andere events zonder lead.
+- `leadsKanaal`: de leads in Google Analytics (dezelfde als `leadsGa4`, dus van de soort uit het doel) per
+  kanaal, ook organisch en direct, samen `leadsGa4` (uit de tabel **Proefrit-events per kanaal**, of hoe de
+  analyse die ook noemt). **Betaald verkeer krijgt precies de naam van het platform in `platforms`**
+  ("Meta Ads", "Google Ads"): alleen dan rekent het dashboard de mediakosten per lead per platform uit. Hoort
+  het verkeer van een platform bij meer kanalen (bijv. "Google Ads Demand Gen" en "Betaald zoeken, andere
+  campagnes"), tel de leads dan alleen onder de platformnaam als ze echt bij die campagne horen, en zet de
+  rest onder een andere naam. Weet je het niet, geef dan het kanaal een eigen naam: dan komt er geen
+  kostenregel per platform, en dat is beter dan een verkeerde.
 - `leadsInternet`: de Syntec-internetleads per soort (proefrit, offerte, private lease, inruil, overig),
   samen `leadsInternet`. Alleen als dat cijfer er is.
 - `orders`: de Syntec-orders per klantgroep, samen `ordersSyntec` (dus **alleen de klantgroepen die

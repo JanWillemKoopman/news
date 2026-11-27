@@ -12,6 +12,8 @@ import {
   kaartBezoekers,
   kaartCtr,
   kaartDoel,
+  kaartKostenPerKlik,
+  kaartKostenPerLead,
   kaartLeadsGa4,
   kaartSyntecLeads,
   kaartSyntecOrders,
@@ -45,7 +47,7 @@ import {
   type OverzichtCijfers,
 } from "@/lib/marketingAnalyse/rekenen";
 import type { MaOpzet, MaOverzichtRegel } from "@/lib/marketingAnalyse/types";
-import { leesUitsplitsing } from "@/lib/marketingAnalyse/uitsplitsing";
+import { kostenPer, leesUitsplitsing } from "@/lib/marketingAnalyse/uitsplitsing";
 
 const LABELKOLOM = 196;
 const KOLOM_MIN = 280;
@@ -374,6 +376,49 @@ const GROEPEN: Groep[] = [
         label: "Syntec orders",
         uitleg: "Orders in Syntec voor merk en model in de periode. Alleen voor Van den Udenhout.",
         render: (k) => <SyntecCel k={k} soort="orders" />,
+      },
+    ],
+  },
+  {
+    titel: "Efficiëntie",
+    rijen: [
+      {
+        label: "Kosten per klik",
+        uitleg: "Mediakosten ÷ klikken op de advertenties (Google Ads, Meta Ads en LinkedIn Ads samen).",
+        render: (kol) => {
+          const { o, k } = kol.kaartBron;
+          const { geanalyseerd } = kol;
+          const waarde = kostenPer(o.kosten, k?.klikken);
+          return (
+            <Cel kaart={kaartKostenPerKlik(kol.kaartBron)}>
+              {geanalyseerd && waarde !== null ? <Groot>{formatWaarde(waarde, "euro")}</Groot> : <Leeg />}
+              <Meta>{geanalyseerd && waarde === null ? "Nog geen klikken" : "Mediakosten ÷ klikken"}</Meta>
+            </Cel>
+          );
+        },
+      },
+      {
+        label: "Kosten per lead",
+        uitleg: "Mediakosten ÷ leads in Google Analytics (de soort uit het doel). Geen extra kanaalkosten.",
+        render: (kol) => {
+          const { o } = kol.kaartBron;
+          const { geanalyseerd } = kol;
+          const waarde = kostenPer(o.kosten, o.ga4Leads);
+          return (
+            <Cel kaart={kaartKostenPerLead(kol.kaartBron)}>
+              {geanalyseerd && waarde !== null ? <Groot>{formatWaarde(waarde, "euro")}</Groot> : <Leeg />}
+              <Meta>
+                {!geanalyseerd
+                  ? "Mediakosten ÷ leads"
+                  : waarde !== null
+                    ? `Per lead · ${o.ga4Soort ?? "Google Analytics"}`
+                    : o.ga4Leads === 0
+                      ? "Nog geen leads"
+                      : "Bij de volgende analyse"}
+              </Meta>
+            </Cel>
+          );
+        },
       },
     ],
   },

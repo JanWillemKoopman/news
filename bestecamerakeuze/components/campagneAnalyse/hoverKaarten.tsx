@@ -2,7 +2,13 @@ import type { ReactNode } from "react";
 import { type TijdVoortgang } from "@/lib/campagneAnalyseOverzicht";
 import { datumKort, formatWaarde, type OverzichtCijfers } from "@/lib/marketingAnalyse/rekenen";
 import type { MaKerncijfers, MaOverzichtRegel } from "@/lib/marketingAnalyse/types";
-import { aandeel, kostenPer, prognoseBijHuidigTempo, type GeldigeUitsplitsing } from "@/lib/marketingAnalyse/uitsplitsing";
+import {
+  aandeel,
+  kostenPer,
+  prognoseBijHuidigTempo,
+  vergelijkNaam,
+  type GeldigeUitsplitsing,
+} from "@/lib/marketingAnalyse/uitsplitsing";
 
 /**
  * De inhoud van de kaartjes die opengaan als je met de muis over een cijfer in Campagne analyse
@@ -80,6 +86,13 @@ function Voet({ b, extra }: { b: KaartBron; extra?: string | null }) {
 const euro = (n: number | null) => formatWaarde(n, "euro");
 const procent = (n: number | null) => formatWaarde(n, "procent");
 const aantal = (n: number | null) => formatWaarde(n);
+
+/** "1 lead", "20 leads": het meervoud volgt het aantal. */
+const leads = (n: number | null) => `${aantal(n)} ${n === 1 ? "lead" : "leads"}`;
+
+/** Een klein getal met genoeg decimalen om niet op nul af te ronden (0,04 blijft 0,04). */
+const klein = (n: number) =>
+  new Intl.NumberFormat("nl-NL", { maximumFractionDigits: n < 1 ? 2 : 1 }).format(n);
 
 /** Uitgaven: per platform, de kosten per klik, bezoeker en lead, en waar het bij dit tempo op uitkomt. */
 export function kaartUitgaven(b: KaartBron): Kaart | null {
@@ -245,6 +258,131 @@ export function kaartSyntecOrders(b: KaartBron): Kaart | null {
       <>
         <Lijst regels={u.orders.map((r) => ({ label: r.naam, waarde: aantal(r.aantal), aandeel: aandeel(r.aantal, totaal) }))} />
         <Voet b={b} extra={o.syntec.ordersSoort ? `Geteld: ${o.syntec.ordersSoort}.` : null} />
+      </>
+    ),
+  };
+}
+
+/**
+ * Kosten per klik: per platform (als de analyse de uitsplitsing meelevert) en altijd waaruit de prijs
+ * van een klik is opgebouwd: wat 1.000 vertoningen kosten en hoe vaak er geklikt wordt.
+ */
+export function kaartKostenPerKlik(b: KaartBron): Kaart | null {
+  const { o, k, u } = b;
+  const perKlik = kostenPer(o.kosten, k?.klikken);
+  if (perKlik === null) return null;
+  const secties: ReactNode[] = [];
+
+  // Alleen als zowel de kosten als de klikken per platform kloppen met hun totaal.
+  const platforms = u.kosten && u.ctr ? u.ctr : null;
+  if (platforms) {
+    secties.push(
+      <Sectie key="platform" titel="Per platform">
+        <Lijst
+          regels={platforms.map((p) => ({
+            label: p.naam,
+            detail: `${euro(p.kosten)} · ${aantal(p.klikken)} klikken · CTR ${procent(p.ctr)}`,
+            waarde: euro(kostenPer(p.kosten, p.klikken)),
+          }))}
+        />
+      </Sectie>,
+    );
+  }
+
+  const cpm = k?.vertoningenAds ? kostenPer(o.kosten, k.vertoningenAds / 1000) : null;
+  if (cpm !== null && o.ctr !== null) {
+    secties.push(
+      <Sectie key="opbouw" titel="Waaruit een klik bestaat">
+        <Lijst
+          regels={[
+            { label: "Per 1.000 vertoningen", waarde: euro(cpm) },
+            { label: "CTR (klikken per vertoning)", waarde: procent(o.ctr) },
+          ]}
+        />
+        <p className="mt-2 text-meta text-ink-faint">Goedkoper vertoond of vaker geklikt maakt een klik goedkoper.</p>
+      </Sectie>,
+    );
+  }
+
+  return {
+    titel: "Kosten per klik",
+    inhoud: (
+      <>
+        <Lijst regels={[{ label: "Samen", detail: `${euro(o.kosten)} · ${aantal(k?.klikken ?? null)} klikken`, waarde: euro(perKlik) }]} />
+        {secties}
+        <Voet b={b} extra="Alleen mediakosten. Meta telt linkklikken, Google en LinkedIn alle klikken: een vergelijking per platform is dus bij benadering." />
+      </>
+    ),
+  };
+}
+
+/**
+ * Kosten per lead: per platform (leads per kanaal tegen de kosten van het platform met dezelfde naam),
+ * en waaruit de prijs van een lead is opgebouwd: wat een bezoeker kost en hoeveel bezoekers een lead worden.
+ */
+export function kaartKostenPerLead(b: KaartBron): Kaart | null {
+  const { o, u } = b;
+  const perLead = kostenPer(o.kosten, o.ga4Leads);
+  if (perLead === null) return null;
+  const secties: ReactNode[] = [];
+
+  if (u.leadsKanaal) {
+    secties.push(
+      <Sectie key="kanaal" titel="Leads per kanaal">
+        <Lijst
+          regels={u.leadsKanaal.map((r) => ({ label: r.naam, waarde: aantal(r.aantal), aandeel: aandeel(r.aantal, o.ga4Leads) }))}
+        />
+      </Sectie>,
+    );
+    // Mediakosten per lead per platform: alleen platforms die ook als kanaal voorkomen, met hun eigen leads.
+    const perPlatform: Regel[] = [];
+    for (const p of u.kosten ?? []) {
+      const kanaal = u.leadsKanaal.find((r) => vergelijkNaam(r.naam) === vergelijkNaam(p.naam));
+      const kosten = kostenPer(p.kosten, kanaal?.aantal);
+      if (kanaal && kosten !== null) {
+        perPlatform.push({ label: p.naam, detail: `${euro(p.kosten)} · ${leads(kanaal.aantal)}`, waarde: euro(kosten) });
+      }
+    }
+    if (perPlatform.length > 0) {
+      secties.push(
+        <Sectie key="platform" titel="Mediakosten per lead per platform">
+          <Lijst regels={perPlatform} />
+        </Sectie>,
+      );
+    }
+  }
+
+  const perBezoeker = kostenPer(o.kosten, o.bezoekers);
+  const leadsPer100 = o.bezoekers && o.ga4Leads !== null ? (o.ga4Leads / o.bezoekers) * 100 : null;
+  if (perBezoeker !== null && leadsPer100 !== null) {
+    secties.push(
+      <Sectie key="opbouw" titel="Waaruit een lead bestaat">
+        <Lijst
+          regels={[
+            { label: "Mediakosten per bezoeker", waarde: euro(perBezoeker) },
+            { label: "Leads per 100 bezoekers", waarde: klein(leadsPer100) },
+          ]}
+        />
+        <p className="mt-2 text-meta text-ink-faint">Goedkoper bezoek of een pagina die beter converteert maakt een lead goedkoper.</p>
+      </Sectie>,
+    );
+  }
+
+  return {
+    titel: "Kosten per lead",
+    inhoud: (
+      <>
+        <Lijst
+          regels={[
+            {
+              label: "Samen",
+              detail: `${euro(o.kosten)} · ${o.ga4Soort ? `${aantal(o.ga4Leads)} ${o.ga4Soort}` : leads(o.ga4Leads)}`,
+              waarde: euro(perLead),
+            },
+          ]}
+        />
+        {secties}
+        <Voet b={b} extra="Alleen mediakosten, gedeeld door de leads in Google Analytics (soort uit het doel)." />
       </>
     ),
   };
