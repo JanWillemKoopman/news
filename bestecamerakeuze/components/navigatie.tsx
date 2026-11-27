@@ -35,7 +35,11 @@ export type NavGroep = {
  * en wat `magTabbladZien` (`lib/beperkteTabbladen.ts`) toestaat, staat op allebei — en
  * niets anders. Volgorde = volgorde in de sidebar.
  *
- * - **Campagnes** staat bovenaan: de campagnetabel is waar het weekoverleg begint.
+ * - **Campagnes** staat bovenaan: de campagnetabel is waar het weekoverleg begint. In de
+ *   sidebar staat deze groep sinds eind november 2026 niet meer als groep: daar staan alleen
+ *   Marketing analyse en Campagne timeline, als tegels (`UITGELICHT` in `Sidebar.tsx`). Het
+ *   startscherm toont de groep nog volledig. De overige groepen zijn in de sidebar
+ *   standaard ingeklapt.
  * - **KPI's 2027**: de targets per GA4-website, per Syntec-bron en per social-account. KPI's 2026
  *   (`kpi-overzicht`) is er in november 2026 op verzoek uit gehaald en staat verborgen.
  * - **Kanalen** komt ná de KPI's: dat is waar je doorklikt om te zien waaróm een

@@ -417,3 +417,151 @@ export function CampagnesIllustratie() {
     </Tekening>
   );
 }
+
+/** Punten van een cirkel in het grondvlak (z vast), als veelhoek. */
+function cirkelPunten(p: Projectie, cx: number, cy: number, z: number, r: number, n = 48): Punt[] {
+  return Array.from({ length: n + 1 }, (_, i) => {
+    const a = (i / n) * Math.PI * 2;
+    return p(cx + r * Math.cos(a), cy + r * Math.sin(a), z);
+  });
+}
+
+/** Convexe omhullende (monotone chain), voor de zijkant van een schijf. */
+function omhullende(punten: Punt[]): Punt[] {
+  const s = [...punten].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const kruis = (o: Punt, a: Punt, b: Punt) =>
+    (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const onder: Punt[] = [];
+  for (const q of s) {
+    while (onder.length > 1 && kruis(onder[onder.length - 2], onder[onder.length - 1], q) <= 0) onder.pop();
+    onder.push(q);
+  }
+  const boven: Punt[] = [];
+  for (const q of s.reverse()) {
+    while (boven.length > 1 && kruis(boven[boven.length - 2], boven[boven.length - 1], q) <= 0) boven.pop();
+    boven.push(q);
+  }
+  return onder.slice(0, -1).concat(boven.slice(0, -1));
+}
+
+/**
+ * Marketing analyse: een rapport (twee bladen) met een titel, tekstregels en een
+ * staafgrafiek, en een vergrootglas dat erboven zweeft en de trend uitvergroot — "het
+ * rapport onder de loep". Bij hover komt het vergrootglas een stukje omhoog en groeien
+ * de staafjes één voor één. Gekozen uit acht varianten (november 2026, optie H).
+ * Staat in de sidebar (`components/Sidebar.tsx`), niet op het startscherm.
+ */
+export function AnalyseIllustratie() {
+  const s = 15;
+  const p = maakProjectie(140, 60, s);
+  const breed = 5.2;
+  const diep = 6.8;
+  const blad = 0.3;
+  const T = (u: number, w: number) => p(u, w, blad);
+  const vlak = (u1: number, w1: number, u2: number, w2: number) =>
+    pts([T(u1, w1), T(u2, w1), T(u2, w2), T(u1, w2)]);
+  const regel = (u1: number, u2: number, w: number) => pts([T(u1, w), T(u2, w)]);
+  const staven = [
+    { u: 0.6, h: 0.54 },
+    { u: 1.3, h: 0.9 },
+    { u: 2.0, h: 0.72 },
+    { u: 2.7, h: 1.2 },
+    { u: 3.4, h: 1.44 },
+  ];
+
+  // Het vergrootglas: een schijf (lens) op hoogte cz, met een plat handvat schuin naar
+  // rechtsvoor.
+  const cx = 3.0;
+  const cy = 3.6;
+  const cz = 2.6;
+  const r = 1.55;
+  const dik = 0.2;
+  const lensOnder = cirkelPunten(p, cx, cy, cz - dik, r);
+  const lensBoven = cirkelPunten(p, cx, cy, cz, r);
+  const [dx, dy] = [0.96, -0.28];
+  const [nx, ny] = [-dy, dx]; // loodrecht op het handvat
+  const hb = 0.19; // halve breedte van het handvat
+  const h = (t: number, k: number, z: number) =>
+    p(cx + t * dx + k * nx, cy + t * dy + k * ny, z);
+  const t0 = r - 0.05;
+  const t1 = r + 1.9;
+  const handvatBoven = [h(t0, -hb, cz - 0.05), h(t1, -hb, cz - 0.05), h(t1, hb, cz - 0.05), h(t0, hb, cz - 0.05)];
+  const handvatZij = [h(t0, hb, cz - 0.05), h(t1, hb, cz - 0.05), h(t1, hb, cz - 0.2), h(t0, hb, cz - 0.2)];
+  const handvatKop = [h(t1, -hb, cz - 0.05), h(t1, hb, cz - 0.05), h(t1, hb, cz - 0.2), h(t1, -hb, cz - 0.2)];
+  const L = (u: number, w: number) => p(cx + u, cy + w, cz);
+
+  return (
+    <Tekening label="Een rapport met een vergrootglas boven de trend" viewBox="48 42 172 112">
+      {/* twee bladen */}
+      <Blok p={p} x={0.3} y={-0.3} z={0} b={breed} d={diep} h={0.12} />
+      <Blok p={p} x={0} y={0} z={0.18} b={breed} d={diep} h={0.12} />
+      {/* titel en tekstregels */}
+      <polygon points={vlak(0.5, 0.6, 3.2, 1.0)} strokeOpacity={0.9} />
+      <polyline fill="none" strokeOpacity={0.45} points={regel(0.5, 4.4, 1.5)} />
+      <polyline fill="none" strokeOpacity={0.45} points={regel(0.5, 4.4, 1.9)} />
+      <polyline fill="none" strokeOpacity={0.5} points={regel(0.5, 4.4, 6.2)} />
+      {/* staafgrafiek */}
+      {staven.map((st, i) => (
+        <g key={i} className="iso-beweeg" style={beweeg(0, -(i + 1) * 1.2, 60 + i * 40)}>
+          <Blok p={p} x={st.u} y={5.6} z={blad} b={0.45} d={0.45} h={st.h} />
+        </g>
+      ))}
+      {/* vergrootglas */}
+      <g className="iso-beweeg" style={beweeg(-2, -5)}>
+        <polygon points={pts(handvatZij)} />
+        <polygon points={pts(handvatKop)} />
+        <polygon points={pts(handvatBoven)} />
+        <polygon points={pts(omhullende([...lensOnder, ...lensBoven]))} />
+        <polygon points={pts(lensBoven)} />
+        <polygon points={pts(cirkelPunten(p, cx, cy, cz, r * 0.82))} fill="none" strokeOpacity={0.5} />
+        <polyline
+          fill="none"
+          strokeOpacity={0.95}
+          points={pts([L(-0.5, 0.9), L(-0.2, 0.1), L(0.3, 0.2), L(0.8, -1.2)])}
+        />
+      </g>
+    </Tekening>
+  );
+}
+
+/**
+ * Campagne timeline: een grondplaat met vier balken als in een Gantt-planning, langs de
+ * tijdas (x). Bij hover schuiven de balken elk een eigen stukje op in de tijd.
+ * Staat in de sidebar (`components/Sidebar.tsx`), niet op het startscherm.
+ */
+export function TimelineIllustratie() {
+  const s = 15;
+  const p = maakProjectie(140, 60, s);
+  const lengte = 8.4;
+  const diepte = 5;
+  const balken = [
+    { y: 0.5, x: 0.5, b: 3.4, h: 0.45, schuif: 0.5 },
+    { y: 1.6, x: 2.4, b: 4.2, h: 0.7, schuif: -0.4 },
+    { y: 2.7, x: 1.1, b: 2.6, h: 0.45, schuif: 0.7 },
+    { y: 3.8, x: 3.6, b: 3.8, h: 0.6, schuif: -0.3 },
+  ];
+  // Een stap langs de tijdas (+x) in px.
+  const langs = (eenheden: number, vertraging: number) =>
+    beweeg(eenheden * 0.866 * s, eenheden * 0.5 * s, vertraging);
+
+  return (
+    <Tekening label="Een planning met balken langs een tijdas" viewBox="71 54 182 115">
+      <Blok p={p} x={0} y={0} z={-0.3} b={lengte} d={diepte} h={0.3} />
+      {/* maandstrepen op de grondplaat */}
+      {[2.1, 4.2, 6.3].map((x) => (
+        <polyline
+          key={x}
+          fill="none"
+          strokeOpacity={0.5}
+          strokeDasharray="2 3"
+          points={pts([p(x, 0.15, 0), p(x, diepte - 0.15, 0)])}
+        />
+      ))}
+      {balken.map((bk, i) => (
+        <g key={i} className="iso-beweeg" style={langs(bk.schuif, i * 50)}>
+          <Blok p={p} x={bk.x} y={bk.y} z={0} b={bk.b} d={0.7} h={bk.h} />
+        </g>
+      ))}
+    </Tekening>
+  );
+}

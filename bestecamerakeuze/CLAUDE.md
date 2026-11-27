@@ -41,13 +41,18 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
   hem te verschuiven (de aside is absoluut gepositioneerd binnen een vaste 72px-kolom in
   `AppShell.tsx`). Bovenaan staan, los en zonder groepskopje, **Scores** en **Kennis en
   acties** — wat het team zelf vastlegt komt vóór de cijfers, en de stand komt vóór de
-  inhoud omdat de weekstand de aanleiding is om iets vast te leggen. Daaronder staat de
-  navigatie in twee
-  groepen onder een klein, uppercase groepskopje (net als de "Planning"/"Budget"-
-  groepskoppen in de campagnetabel): **Campagnes** (Campagnes, Tijdlijn, Campagnebeheer, Marketing analyse, Campagne timeline) en **Chatbot**
-  (Start gesprek, Prikbord, Kennisbank) — het Prikbord staat bewust onder Chatbot, want
-  het is een functie van de chat (grafieken die je daaruit vastpint), niet van het
-  wekelijkse cijferoverzicht.
+  inhoud omdat de weekstand de aanleiding is om iets vast te leggen. **Sinds eind november
+  2026 draait de sidebar om Marketing analyse en Campagne timeline** (op verzoek): die twee
+  staan bovenaan als grote tegel (`SidebarTegel` in `Sidebar.tsx`) met een isometrische
+  illustratie in de stijl van het startscherm (`AnalyseIllustratie`, `TimelineIllustratie`
+  in `home/Illustraties.tsx`) en de titel eronder; in de smalle rail zijn het vierkantjes
+  met alleen het icoon. De kleuren staan in `.sidebar-tegel` (globals.css), zodat het in
+  elk theme klopt. Campagnes, Tijdlijn en Campagnebeheer staan **niet meer in de sidebar**
+  (wel nog op het startscherm en via `?tab=…`). Daaronder de groepen **KPI's 2027**,
+  **Kanalen** en **Tools**, **standaard ingeklapt**: het kopje is een knop met een pijltje
+  (rechts = dicht, omlaag = open). Open je een pagina uit een ingeklapte groep (via het
+  startscherm of een link), dan klapt die groep vanzelf open. De groepen zelf staan in
+  `components/navigatie.tsx`, gedeeld met het startscherm.
   Onderaan, buiten de groepen: Kosten, Instellingen en het gebruikersprofiel. Eén actieve
   state, subtiel gemarkeerd — geen felle kleuren.
 - **Geen dubbele navigatie**: de tabbladtitels staan alleen in de sidebar, nooit ook nog

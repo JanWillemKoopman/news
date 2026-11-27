@@ -311,6 +311,41 @@ body {
   background-color: var(--theme-nav-streep-kleur);
 }
 
+/* De twee uitgelichte tegels bovenin de sidebar (Marketing analyse, Campagne timeline —
+   `SidebarTegel` in components/Sidebar.tsx). Het vlak is een tikje lichter dan de
+   sidebar en moet dekkend zijn: de isometrische illustratie vult zijn vlakken met
+   --color-card om wat erachter ligt weg te laten vallen, dus die zetten we hier op het
+   tegelvlak, en de lijnkleur (--color-ink) op de inkt van de sidebar. Zo klopt het in
+   elk theme zonder eigen kleuren. */
+.sidebar-tegel {
+  --tegel-vlak: color-mix(in srgb, var(--color-sidebar-ink) 6%, var(--color-sidebar));
+  --color-card: var(--tegel-vlak);
+  --color-ink: var(--color-sidebar-ink);
+  background-color: var(--tegel-vlak);
+  border-color: var(--color-sidebar-line);
+  color: var(--color-sidebar-ink-muted);
+}
+.sidebar-tegel:hover {
+  --tegel-vlak: color-mix(in srgb, var(--color-sidebar-ink) 10%, var(--color-sidebar));
+  color: var(--color-sidebar-ink);
+}
+.sidebar-tegel[aria-current="page"] {
+  --tegel-vlak: color-mix(in srgb, var(--color-sidebar-ink) 13%, var(--color-sidebar));
+  border-color: color-mix(in srgb, var(--color-sidebar-ink) 30%, transparent);
+  color: var(--color-sidebar-ink);
+}
+.sidebar-tegel[aria-current="page"] .iso-lijnen {
+  stroke-opacity: 0.75;
+}
+/* Een zachte lichtval van boven, zodat het blok niet plat oogt. */
+.sidebar-tegel-gloed {
+  background: radial-gradient(
+    120% 80% at 50% 0%,
+    color-mix(in srgb, var(--color-sidebar-ink) 7%, transparent),
+    transparent 70%
+  );
+}
+
 /* De paginatitel van elk tabblad. Per merk verschilt niet alleen de grootte maar ook
    het gewicht (Audi zet zijn koppen juist licht neer), de spatiëring en of hij in
    kapitalen staat (CUPRA, Bentley). */
