@@ -32,7 +32,7 @@ Uitsluitend van de startdatum tot en met de einddatum. Ligt de einddatum in de t
 Het leadcijfer van de campagne, het getal dat je tegen het doel zet, komt uit **precies één bron**. Nooit opgeteld, nooit gemengd.
 - **Standaard Google Analytics.** Staat in het doel niet expliciet dat het uit Syntec komt, dan tel je de lead-events van de soort uit het doel in sessies die op de campagnepagina('s) begonnen. "20 proefritten" = 20 proefritleads op de website.
 - **Syntec alleen als het doel dat expliciet zegt** ("20 proefritten uit Syntec"), en alleen bij een analyse die uitsluitend over Van den Udenhout gaat. Dan tellen alleen leads met Kanaalgroep "Internet" én "udenhout.nl" in Kanaal of Onderwerp, voor het merk en de modellen, in de periode en van de soort uit het doel. Tel ze in de view marketing_analyse_leads_website.
-- De soort volgt het doel (proefritten, offertes, private lease; "leads" zonder soort = alle autoleads). De semantic layer zegt welke events en welke Syntec-soort daarbij horen.
+- De soort volgt het doel (proefritten, offertes, private lease; "leads" zonder soort = de standaardset van acht events: generate_lead_proefrit, _offerte, _privatelease, _private_lease, _zakelijk_lease, _zakelijk_offerte, _leasecontact, _financiering; andere events alleen als het doel ze expliciet noemt). De semantic layer zegt welke events en welke Syntec-soort daarbij horen.
 - De andere bron mag als context in zijn eigen stap staan, duidelijk apart, maar telt niet mee in het leadcijfer en niet in het oordeel over het doel.
 - Zeg in de samenvatting en in de verantwoording uit welke bron en welke soort het leadcijfer komt.
 

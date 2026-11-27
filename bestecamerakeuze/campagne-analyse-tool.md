@@ -429,9 +429,11 @@ staat, komt altijd uit precies één bron. Nooit opgeteld, nooit gemengd.
 - **Waar het staat**: semantic layer versie 3 (Algemeen "Leads bij een Campagne analyse", Google
   Analytics 4 "Leads tegen het doel", Data leads), de standaard-hoofdprompt ("Leads tegen het
   doel"), de skill, en de uitleg bij het doelveld in de briefing.
-- **Keuze van Claude, ter controle door de eigenaar**: bij een doel in "leads" zonder soort tellen
-  in GA4 alle lead-events behalve vacature, "Houd me op de hoogte" (HMODH) en de
-  werkplaatsplanner; die staan apart.
+- **Besluit van de eigenaar, 27 november 2026** (vervangt de eerdere keuze van Claude: alle
+  lead-events behalve vacature, HMODH en werkplaatsplanner): bij een doel in "leads" zonder soort
+  telt in GA4 alleen de standaardset: generate_lead_proefrit, _offerte, _privatelease,
+  _private_lease, _zakelijk_lease, _zakelijk_offerte, _leasecontact en _financiering. Andere events
+  tellen alleen als het doel ze expliciet noemt.
 
 ## 16. Orders uit Syntec, bron "Syntec orders" (verzoek van de eigenaar, 25 november 2026)
 

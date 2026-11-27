@@ -115,7 +115,12 @@ in de hoofdprompt.
 Besluit van de eigenaar, 27 november 2026; ook in de semantic layer (versie 12: Algemeen, Data
 leads, Syntec orders). De regel in het overzicht toont onder elkaar drie cijfers. Vul ze altijd:
 - `leadsGa4`: de lead-events van de soort uit het doel in sessies die op de campagnepagina('s)
-  begonnen (GA4). Bij elk bedrijf, ook als `leadBron` `"syntec"` is.
+  begonnen (GA4). Bij elk bedrijf, ook als `leadBron` `"syntec"` is. Zonder soort in het doel
+  ("leads", "alle vormen van leads") telt alleen de standaardset: generate_lead_proefrit, _offerte,
+  _privatelease, _private_lease, _zakelijk_lease, _zakelijk_offerte, _leasecontact en
+  _financiering (besluit van de eigenaar, 27 november 2026). Andere events (contact, overige,
+  inruilwaarde, onderhoudsofferte, verhuur, werkplaats, vacature, HMODH, nieuwsbrief) alleen als
+  het doel ze expliciet noemt.
 - `leadsInternet` + `leadsInternetSoort`: Syntec-leads met Kanaalgroep "Internet" (alle kanalen
   daarbinnen, niet alleen udenhout.nl) voor merk, modellen en periode; de soort volgt de briefing
   (anders alle soorten):

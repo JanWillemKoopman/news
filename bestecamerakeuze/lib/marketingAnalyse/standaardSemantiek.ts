@@ -46,7 +46,7 @@ Besluit van de eigenaar, 25 november 2026. Het leadcijfer van een Campagne analy
    - de soort uit het doel.
    Tel ze in de view **marketing_analyse_leads_website**: die past de eerste twee voorwaarden al toe en geeft de soort (zie het blok Data leads). Tel nooit rechtstreeks in marketing_analyse_leads.
 3. Syntec kan alleen bij een analyse die **uitsluitend over Van den Udenhout** gaat. Noemt het doel Syntec bij een ander bedrijf, tel dan in GA4 en meld dat bij de datakwaliteit.
-4. **De soort volgt het doel**: proefritten → alleen proefritleads; offertes → alleen offertes; private lease → alleen private lease; "leads" of geen soort → alle autoleads. Noem in de analyse welke soort en welke bron je hebt geteld (leadBron, leadsDoelSoort).
+4. **De soort volgt het doel**: proefritten → alleen proefritleads; offertes → alleen offertes; private lease → alleen private lease; "leads" of geen soort → de standaardset van acht lead-events (proefrit, offerte, private lease ×2, zakelijke lease, zakelijke offerte, leasecontact, financiering; zie het blok Google Analytics 4), andere events alleen als het doel ze expliciet noemt. Noem in de analyse welke soort en welke bron je hebt geteld (leadBron, leadsDoelSoort).
 5. De andere bron mag als **context** in zijn eigen stap staan (Conversies of Leads in Syntec), duidelijk apart. Hij telt nooit mee in het leadcijfer en nooit in het oordeel over het doel.
 
 ## Orders bij een Campagne analyse (harde regel)
@@ -195,7 +195,9 @@ Standaard komt het leadcijfer uit GA4 (zie Algemeen, "Leads bij een Campagne ana
 - **offertes**: generate_lead_offerte (generate_lead_zakelijk_offerte alleen als het doel over zakelijk gaat);
 - **private lease**: generate_lead_privatelease + generate_lead_private_lease;
 - **zakelijke lease**: generate_lead_zakelijk_lease + generate_lead_zakelijk_offerte + generate_lead_leasecontact;
-- **"leads" of geen soort (alle autoleads)**: alle lead-events uit de lijst hierboven, behalve generate_lead_vacature, generate_lead_HMODH ("Houd me op de hoogte"), generate_lead_nieuwsbrief en bedanktpagina_werkplaatsplanner; die noem je apart.
+- **"leads" of geen soort (standaardset, besluit van de eigenaar, 27 november 2026)**: alleen deze acht events tellen standaard als lead: generate_lead_proefrit, generate_lead_offerte, generate_lead_privatelease, generate_lead_private_lease, generate_lead_zakelijk_lease, generate_lead_zakelijk_offerte, generate_lead_leasecontact en generate_lead_financiering.
+- **Alle andere lead-events tellen niet mee** in het leadcijfer tegen het doel, ook niet als ze "lead" in de naam hebben: generate_lead_contact, generate_lead_overige, generate_lead_inruilwaarde, generate_lead_onderhoudsofferte, generate_lead_verhuur, generate_lead_werkplaats, bedanktpagina_werkplaatsplanner, generate_lead_vacature, generate_lead_HMODH ("Houd me op de hoogte"), generate_lead_nieuwsbrief en generate_lead (zonder achtervoegsel). Noem ze wel apart in de analyse als context, niet in het cijfer tegen het doel.
+- **Alleen als het doel expliciet iets anders zegt** tellen andere events mee: noemt het doel bijvoorbeeld werkplaatsafspraken, contactaanvragen, inruil of verhuur, of staat er "alle lead-events", dan tellen precies de events die het doel noemt (of bij "alle lead-events" alle events met "lead" in de naam behalve vacature, HMODH en nieuwsbrief). Noem in de analyse welke events je hebt geteld en dat het doel dat vroeg.
 - Vóór april 2026 heetten de events anders (generate_lead_proefrit_aanvraag, generate_lead_offerte_aanvraag): tel die mee als de periode daarvoor ligt.
 Passen de parameters customevent_car_brand en customevent_car_model niet bij het merk en model uit de briefing, dan tellen ze niet mee; noem hoeveel events geen model hadden.
 
