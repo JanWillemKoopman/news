@@ -6,6 +6,19 @@ import FilterSelect from "@/components/FilterSelect";
 import Inlogprompt from "@/components/Inlogprompt";
 import { getBrandLogo } from "@/components/brandLogos";
 import { IconArrowRight } from "@/components/icons";
+import HoverKaart from "@/components/campagneAnalyse/HoverKaart";
+import {
+  analyseDatumLabel,
+  kaartBezoekers,
+  kaartCtr,
+  kaartDoel,
+  kaartLeadsGa4,
+  kaartSyntecLeads,
+  kaartSyntecOrders,
+  kaartUitgaven,
+  type Kaart,
+  type KaartBron,
+} from "@/components/campagneAnalyse/hoverKaarten";
 import { LabelBadge } from "@/components/marketingAnalyse/onderdelen";
 import {
   filterOpOnline,
@@ -32,6 +45,7 @@ import {
   type OverzichtCijfers,
 } from "@/lib/marketingAnalyse/rekenen";
 import type { MaOpzet, MaOverzichtRegel } from "@/lib/marketingAnalyse/types";
+import { leesUitsplitsing } from "@/lib/marketingAnalyse/uitsplitsing";
 
 const LABELKOLOM = 196;
 const KOLOM_MIN = 280;
@@ -58,7 +72,16 @@ type Kolom = {
   geanalyseerd: boolean;
   online: boolean;
   tijd: TijdVoortgang | null;
+  /** Wat de kaartjes bij het hoveren nodig hebben. */
+  kaartBron: KaartBron;
 };
+
+/** "JJJJ-MM-DD" van de dag vóór een tijdstip; een analyse telt tot en met gisteren. */
+function dagErvoor(tijdstip: string): string {
+  const d = new Date(`${tijdstip.slice(0, 10)}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
 
 /** De link naar de analyse zelf: Marketing analyse opent hem uit de URL. */
 function analyseHref(id: string): string {
@@ -73,7 +96,7 @@ function analyseHref(id: string): string {
 function Groot({ children, toon = "neutraal" }: { children: ReactNode; toon?: Toon }) {
   const kleur = toon === "positief" ? "text-positive" : toon === "negatief" ? "text-negative" : "text-ink";
   return (
-    <span className={`font-sans-w7 text-[22px] font-bold leading-none tabular-nums tracking-tight ${kleur}`}>
+    <span className={`groot font-sans-w7 text-[22px] font-bold leading-none tabular-nums tracking-tight ${kleur}`}>
       {children}
     </span>
   );
@@ -118,8 +141,22 @@ function Meter({ pct, tijdPct, toon = "neutraal" }: { pct: number; tijdPct?: num
   );
 }
 
-function Cel({ children }: { children: ReactNode }) {
-  return <div className="flex flex-col items-start gap-2">{children}</div>;
+/**
+ * Een cel. Heeft hij een kaart, dan opent die bij de muis erboven en krijgt het grote getal een
+ * stippellijntje: zo zie je welke cijfers meer te vertellen hebben (`HoverKaart`).
+ */
+function Cel({ children, kaart }: { children: ReactNode; kaart?: Kaart | null }) {
+  const inhoud = <div className="flex flex-col items-start gap-2">{children}</div>;
+  if (!kaart) return inhoud;
+  return (
+    <HoverKaart
+      titel={kaart.titel}
+      kaart={kaart.inhoud}
+      className="-m-2 p-2 [&_.groot]:underline [&_.groot]:decoration-dotted [&_.groot]:decoration-ink-faint/60 [&_.groot]:underline-offset-[6px] hover:bg-surface-tint"
+    >
+      {inhoud}
+    </HoverKaart>
+  );
 }
 
 function StatusChip({ online }: { online: boolean }) {
@@ -251,7 +288,7 @@ function SyntecCel({
   const toelichting = soort === "leads" ? s.leadsSoort : s.ordersSoort;
   const vdu = s.alleenVdu ? " · alleen Van den Udenhout" : "";
   return (
-    <Cel>
+    <Cel kaart={soort === "leads" ? kaartSyntecLeads(k.kaartBron) : kaartSyntecOrders(k.kaartBron)}>
       {!k.geanalyseerd ? <Leeg /> : waarde === null ? <Leeg /> : <Groot>{formatWaarde(waarde)}</Groot>}
       <Meta>
         {k.geanalyseerd && waarde === null
@@ -269,11 +306,11 @@ const GROEPEN: Groep[] = [
       {
         label: "Uitgaven",
         uitleg: "Mediakosten uit Google Ads, Meta Ads en LinkedIn Ads, tegen het totaalbudget. Het streepje op de balk is het verstreken deel van de looptijd.",
-        render: ({ o, geanalyseerd, tijd }) => {
+        render: ({ o, geanalyseerd, tijd, kaartBron }) => {
           const tempo = budgetTempo(o.besteedPct, tijd?.pct ?? null);
           const boven = o.besteedPct !== null && o.besteedPct > 100;
           return (
-            <Cel>
+            <Cel kaart={kaartUitgaven(kaartBron)}>
               {geanalyseerd && o.kosten !== null ? <Groot toon={boven ? "negatief" : "neutraal"}>{formatWaarde(o.kosten, "euro")}</Groot> : <Leeg />}
               {o.besteedPct !== null && <Meter pct={o.besteedPct} tijdPct={tijd?.pct} toon={boven ? "negatief" : "neutraal"} />}
               <Meta toon={boven ? "negatief" : "neutraal"}>
@@ -296,8 +333,8 @@ const GROEPEN: Groep[] = [
       {
         label: "CTR",
         uitleg: "Alle klikken ÷ alle vertoningen van Google Ads, Meta Ads en LinkedIn Ads samen.",
-        render: ({ o, geanalyseerd }) => (
-          <Cel>
+        render: ({ o, geanalyseerd, kaartBron }) => (
+          <Cel kaart={kaartCtr(kaartBron)}>
             {geanalyseerd && o.ctr !== null ? <Groot>{formatWaarde(o.ctr, "procent")}</Groot> : <Leeg />}
             <Meta>{geanalyseerd && o.ctr === null ? "Bij de volgende analyse" : "Google, Meta en LinkedIn"}</Meta>
           </Cel>
@@ -306,8 +343,8 @@ const GROEPEN: Groep[] = [
       {
         label: "Bezoekers",
         uitleg: "Sessies die op de campagnepagina('s) begonnen, uit elk kanaal (GA4).",
-        render: ({ o, geanalyseerd }) => (
-          <Cel>
+        render: ({ o, geanalyseerd, kaartBron }) => (
+          <Cel kaart={kaartBezoekers(kaartBron)}>
             {geanalyseerd && o.bezoekers !== null ? <Groot>{formatWaarde(o.bezoekers)}</Groot> : <Leeg />}
             <Meta>Op de campagnepagina</Meta>
           </Cel>
@@ -321,8 +358,8 @@ const GROEPEN: Groep[] = [
       {
         label: "Google Analytics",
         uitleg: "Leads in Google Analytics: lead-events van de soort uit het doel, in sessies die op de campagnepagina('s) begonnen.",
-        render: ({ o, geanalyseerd }) => (
-          <Cel>
+        render: ({ o, geanalyseerd, kaartBron }) => (
+          <Cel kaart={kaartLeadsGa4(kaartBron)}>
             {geanalyseerd && o.ga4Leads !== null ? <Groot>{formatWaarde(o.ga4Leads)}</Groot> : <Leeg />}
             <Meta>{o.oudeTelling ? "Alle lead-events" : (o.ga4Soort ?? (geanalyseerd && o.ga4Leads === null ? "Bij de volgende analyse" : "Leads"))}</Meta>
           </Cel>
@@ -346,10 +383,10 @@ const GROEPEN: Groep[] = [
       {
         label: "Doel leads",
         uitleg: "Hoeveel van het leaddoel uit de briefing is gehaald, en uit welke bron dat gemeten is.",
-        render: ({ o, geanalyseerd }) => {
+        render: ({ o, geanalyseerd, kaartBron }) => {
           const gehaald = o.gehaaldPct !== null && o.gehaaldPct >= 100;
           return (
-            <Cel>
+            <Cel kaart={kaartDoel(kaartBron)}>
               {geanalyseerd && o.gehaaldPct !== null ? (
                 <Groot toon={gehaald ? "positief" : "neutraal"}>{formatWaarde(o.gehaaldPct, "procent")}</Groot>
               ) : (
@@ -490,13 +527,27 @@ export default function CampagneAnalyse({ ingelogd }: { ingelogd: boolean }) {
 
   const kolommen: Kolom[] = useMemo(
     () =>
-      zichtbaar.map((c) => ({
-        c,
-        o: overzichtCijfers(c, c.laatsteAnalyse?.kerncijfers),
-        geanalyseerd: Boolean(c.laatsteAnalyse),
-        online: isLive(c, vandaag),
-        tijd: tijdVoortgang(c.startdatum, c.einddatum, vandaag),
-      })),
+      zichtbaar.map((c) => {
+        const k = c.laatsteAnalyse?.kerncijfers ?? null;
+        const o = overzichtCijfers(c, k);
+        const op = c.laatsteAnalyse?.geanalyseerdOp ?? null;
+        return {
+          c,
+          o,
+          geanalyseerd: Boolean(c.laatsteAnalyse),
+          online: isLive(c, vandaag),
+          tijd: tijdVoortgang(c.startdatum, c.einddatum, vandaag),
+          kaartBron: {
+            c,
+            o,
+            k,
+            u: leesUitsplitsing(k),
+            // De analyse heeft cijfers tot en met de dag vóór haar eigen dag, net als de rest van het dashboard.
+            dataTot: op ? tijdVoortgang(c.startdatum, c.einddatum, dagErvoor(op)) : null,
+            analyseDatum: analyseDatumLabel(op),
+          },
+        };
+      }),
     [zichtbaar, vandaag],
   );
   const totaal = useMemo(() => samenvatting(zichtbaar, vandaag), [zichtbaar, vandaag]);
