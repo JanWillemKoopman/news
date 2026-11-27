@@ -13,7 +13,7 @@ import type { SemantiekInhoud } from "./types";
  * blok Syntec orders; verzoek van de eigenaar van dezelfde dag. Het overzicht van alle leads en
  * orders (views marketing_analyse_leads_soort en _orders_type) staat in Algemeen, Data leads en
  * Syntec orders, en de benchmarkgroep van campagnepagina's in GA4 (versie 5, plan §22). Het blok
- * Werving hoort bij de opzet HRM analyse (versie 7, 26 november 2026; hrm-analyse-onderzoek.md). Het blok
+ * Werving hoort bij de opzet HRM campagne (eerst HRM analyse; versie 7, 26 november 2026; hrm-analyse-onderzoek.md). Het blok
  * Google Analytics 4 is gelijk aan versie 11 (26 november 2026): tellen in Windsor, en e-mail als één
  * kanaal dat nooit per deel of per mailing wordt uitgesplitst.
  */

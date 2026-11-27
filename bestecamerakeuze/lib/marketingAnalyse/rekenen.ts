@@ -989,3 +989,43 @@ export function benchmarkSchaal(waarde: number, b: KerncijferBenchmark): Benchma
   const z = pos(b.p75);
   return { bandVan: Math.min(a, z), bandTot: Math.max(a, z), mediaan: pos(b.mediaan), waarde: pos(waarde) };
 }
+
+// ---------------------------------------------------------------------------
+// Vergelijking: een kerncijfer tegen de periode ervoor (maandrapport: de maand ervoor)
+// ---------------------------------------------------------------------------
+
+export type VergelijkingOordeel = "gunstig" | "ongunstig" | "neutraal";
+
+export interface VergelijkingVerschil {
+  /** "+12%", "−8%", "+1,5 procentpunt", of "gelijk". */
+  tekst: string;
+  richting: "hoger" | "lager" | "gelijk";
+  oordeel: VergelijkingOordeel;
+}
+
+/**
+ * Het verschil tussen een kerncijfer en zijn vergelijking, in procenten (bij een percentage in
+ * procentpunten). Null als het niet uit te rekenen is: geen getallen, tekst, of een vergelijking
+ * van nul (een stijging vanaf nul heeft geen percentage). Onder een half procent heet het "gelijk".
+ */
+export function vergelijkingVerschil(
+  waarde: number | string | null | undefined,
+  vergelijking: Kerncijfer["vergelijking"] | undefined,
+  eenheid: Eenheid,
+): VergelijkingVerschil | null {
+  if (!vergelijking || eenheid === "tekst") return null;
+  const nu = typeof waarde === "number" && Number.isFinite(waarde) ? waarde : null;
+  const toen = typeof vergelijking.waarde === "number" && Number.isFinite(vergelijking.waarde) ? vergelijking.waarde : null;
+  if (nu === null || toen === null) return null;
+  const punten = eenheid === "procent";
+  if (!punten && toen === 0) return null;
+  const verschil = punten ? nu - toen : ((nu - toen) / Math.abs(toen)) * 100;
+  if (Math.abs(verschil) < 0.5) return { tekst: "gelijk", richting: "gelijk", oordeel: "neutraal" };
+  const richting = verschil > 0 ? "hoger" : "lager";
+  const getal = new Intl.NumberFormat(NL, { maximumFractionDigits: Math.abs(verschil) < 10 ? 1 : 0 }).format(Math.abs(verschil));
+  const tekst = `${verschil > 0 ? "+" : "\u2212"}${getal}${punten ? " procentpunt" : "%"}`;
+  const h = vergelijking.hogerIsBeter;
+  const oordeel: VergelijkingOordeel =
+    h === undefined ? "neutraal" : (richting === "hoger") === h ? "gunstig" : "ongunstig";
+  return { tekst, richting, oordeel };
+}

@@ -653,3 +653,31 @@ test("bedrijfFilterKnoppen en filterOpBedrijf: lijst eerst, extra uit analyses, 
   assert.equal(filterOpBedrijf(analyses, "PGZ").length, 2);
   assert.equal(filterOpBedrijf(analyses, null).length, 4);
 });
+
+test("vergelijkingVerschil: procenten, procentpunten en het oordeel", async () => {
+  const { vergelijkingVerschil } = await import("./rekenen");
+  // Leads: stijging is gunstig.
+  assert.deepEqual(vergelijkingVerschil(560, { label: "september", waarde: 500, hogerIsBeter: true }, "aantal"), {
+    tekst: "+12%",
+    richting: "hoger",
+    oordeel: "gunstig",
+  });
+  // Kosten per lead: een daling is gunstig.
+  assert.deepEqual(vergelijkingVerschil(9.2, { label: "september", waarde: 10, hogerIsBeter: false }, "euro"), {
+    tekst: "\u22128%",
+    richting: "lager",
+    oordeel: "gunstig",
+  });
+  // Uitgaven: geen oordeel.
+  assert.equal(vergelijkingVerschil(6500, { label: "september", waarde: 5000 }, "euro")?.oordeel, "neutraal");
+  assert.equal(vergelijkingVerschil(6500, { label: "september", waarde: 5000 }, "euro")?.tekst, "+30%");
+  // Een percentage: verschil in procentpunten.
+  assert.equal(vergelijkingVerschil(12.5, { label: "september", waarde: 11, hogerIsBeter: true }, "procent")?.tekst, "+1,5 procentpunt");
+  // Onder een half procent: gelijk.
+  assert.equal(vergelijkingVerschil(1001, { label: "september", waarde: 1000, hogerIsBeter: true }, "aantal")?.tekst, "gelijk");
+  // Niet uit te rekenen.
+  assert.equal(vergelijkingVerschil(10, { label: "september", waarde: 0 }, "aantal"), null);
+  assert.equal(vergelijkingVerschil(null, { label: "september", waarde: 10 }, "aantal"), null);
+  assert.equal(vergelijkingVerschil("niet gemeten", { label: "september", waarde: 10 }, "tekst"), null);
+  assert.equal(vergelijkingVerschil(10, undefined, "aantal"), null);
+});

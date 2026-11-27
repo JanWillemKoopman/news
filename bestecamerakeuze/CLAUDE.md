@@ -1667,11 +1667,20 @@ campagne een full-funnel analyse die **Claude Code maakt** (skill
 zichtbaar. **Het plan en alle besluiten van de eigenaar staan in `campagne-analyse-tool.md`**;
 lees dat eerst voordat je hier iets verandert.
 
-- **HRM analyse** (26 november 2026, migratie 0053, verzoek van de eigenaar): een opzet `rapportage`
-  (vast id `...0006`) voor werving bij alle bedrijven, wekelijks: uitgaven aan vacaturecampagnes per
-  week, leads via social media en sollicitaties op de website. Prompt versie 1 bij de opzet, het blok
-  **Werving** in de semantic layer (`werving` in `standaardSemantiek.ts`, gelijk aan semantic layer
-  versie 7) en een eigen paragraaf in de skill. Onderzoek en besluiten: `hrm-analyse-onderzoek.md`.
+- **HRM campagne** (eerst "HRM analyse", 26 november 2026, migratie 0053; sinds 27 november 2026 een
+  maandrapport, migratie 0054, verzoek van de eigenaar): een opzet `rapportage` (vast id `...0006`) voor
+  werving bij alle bedrijven, **maandelijks**: 1 januari t/m de afgelopen maand, elke vergelijking tegen
+  de maand daarvoor, en elk hoofdcijfer apart voor Van den Udenhout en PGZ (Porsche, Bentley). Uitgaven
+  aan vacaturecampagnes, leads via social media (per maand én per week) en sollicitaties op de website.
+  Prompt versie 2 bij de opzet, het blok **Werving** in de semantic layer (`werving` in
+  `standaardSemantiek.ts`, gelijk aan semantic layer versie 7) en een eigen paragraaf in de skill.
+  Onderzoek en besluiten: `hrm-analyse-onderzoek.md`.
+- **Vergelijking onder een kerncijfer** (27 november 2026, voor de maandrapporten): staat er een
+  `vergelijking` bij een kerncijfer, dan toont `KerncijferRij` (`SectieBlok.tsx`) het verschil in
+  procenten (bij een percentage in procentpunten) vóór het cijfer van de vorige periode
+  ("+12% t.o.v. oktober: 500"). Het dashboard rekent het zelf uit (`vergelijkingVerschil` in
+  `rekenen.ts`, getest); de kleur zegt "gunstig" via `vergelijking.hogerIsBeter` (false bij kosten per
+  lead), en zonder die vlag (uitgaven) blijft het verschil neutraal.
 - **E-mail VDU** (26 november 2026, verzoek van de eigenaar, §23 van het plan): een opzet `rapportage`
   voor de e-mailmarketeers, maandelijks, met drie stappen in de groepen E-mail, Website en Resultaat
   (`Sectie.groep` zet bij een rapportage kopjes in de navigatie). **E-mail is altijd één kanaal**: het
@@ -1929,7 +1938,7 @@ ISO-weeknummers en een streep bij vandaag.
 
 - **Bron**: `GET /api/marketing-analyse` (dezelfde route als Marketing analyse, geen eigen tabel of
   route). Alleen analyses met een opzet met formulier `campagne`; rapportages (maand, kwartaal,
-  E-mail, HRM) staan er niet in. Naam, bedrijven, merk, start- en einddatum komen uit de briefing.
+  E-mail, HRM campagne) staan er niet in. Naam, bedrijven, merk, start- en einddatum komen uit de briefing.
 - **Filters**: alleen **Bedrijf** en **Merk** (keuze van de eigenaar). Merk gaat via `merkSleutel`,
   dus "Skoda" en "Škoda" zijn één merk en "Volkswagen, Audi" telt voor beide.
 - **Jaar**: bladeren met ‹ jaar ›, van het vroegste startjaar tot het laatste eindjaar (altijd met
