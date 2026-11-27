@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { forecastRegel, hoofdcijfers, bouwMaandrapportMail } from "@/lib/marketingAnalyse/mailMaandrapport";
+import { forecastRegel, hoofdcijfers, bouwMaandrapportMail, KLEUR } from "@/lib/marketingAnalyse/mailMaandrapport";
 import { leesMaandrapport } from "@/lib/marketingAnalyse/maandrapport";
 
 const x = ["2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10"];
@@ -33,11 +33,11 @@ test("hoofdcijfers: waarde, verschil en kleur per tegel", () => {
   assert.equal(c[0].waarde, "104");
   assert.equal(c[0].verschil, "↑ +167%");
   assert.equal(c[1].verschil, "↓ −1,5%");
-  assert.equal(c[1].kleur, "#b3312c");
-  assert.equal(c[0].kleur, "#17794a");
+  assert.equal(c[1].kleur, KLEUR.slecht);
+  assert.equal(c[0].kleur, KLEUR.goed);
   // uitgaven hebben geen oordeel
   assert.match(c[3].waarde, /^€\s7\.984$/);
-  assert.equal(c[3].kleur, "#6b707a");
+  assert.equal(c[3].kleur, KLEUR.gedempt);
 });
 
 test("een tegel zonder meting toont de reden in plaats van een cijfer", () => {
@@ -63,6 +63,7 @@ test("de mail heeft onderwerp, een blok per bedrijf, de punten en de links", () 
   assert.match(m.html, /tab=marketing-analyse&amp;analyse=abc/);
   assert.match(m.html, /Afmelden/);
   assert.match(m.tekst, /PORSCHE CENTRUM BRABANT/);
+  assert.match(m.tekst, /Ga naar rapportage: https:\/\/dashboard\.test/);
   assert.match(m.tekst, /- Tweede punt/);
   assert.match(m.tekst, /afmelden\?token=t1/);
 });
@@ -82,4 +83,15 @@ test("mailPunten: hoogstens zeven, lege weggelaten, ingekort", () => {
   assert.deepEqual(r.bedrijven[0].mailPunten, ["a", "b", "c", "d", "e", "f", "g"]);
   const lang = leesMaandrapport({ bedrijven: [{ naam: "A", mailPunten: ["x".repeat(900)] }] })!;
   assert.equal(lang.bedrijven[0].mailPunten?.[0].length, 600);
+});
+
+test("de knop Ga naar rapportage staat bovenaan én onderaan, zonder afgeronde hoeken", () => {
+  const m = bouwMaandrapportMail(invoer);
+  const knoppen = m.html.match(/Ga naar rapportage/g) ?? [];
+  assert.equal(knoppen.length, 2);
+  const eerste = m.html.indexOf("Ga naar rapportage");
+  assert.ok(eerste < m.html.indexOf("Porsche Centrum Brabant", m.html.indexOf("PGZ") > 0 ? 0 : 0) || eerste < m.html.indexOf("01 / 02"));
+  assert.ok(eerste < m.html.indexOf("01 / 02"), "de eerste knop staat vóór het eerste bedrijf");
+  assert.ok(m.html.lastIndexOf("Ga naar rapportage") > m.html.lastIndexOf("02 / 02"), "de tweede knop staat na het laatste bedrijf");
+  assert.doesNotMatch(m.html, /border-radius/);
 });

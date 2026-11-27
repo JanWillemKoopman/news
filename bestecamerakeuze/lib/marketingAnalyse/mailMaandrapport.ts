@@ -21,24 +21,29 @@ export interface MaandrapportMailInvoer {
   afmeldUrl: string;
 }
 
-const KLEUR = {
-  pagina: "#efece6",
+/**
+ * Porsche-stijl (verzoek van de eigenaar, 27 november 2026): zwart en wit, scherpe hoeken, dunne lijnen, veel ruimte,
+ * kleine hoofdletterkoppen met brede letterafstand en één spaarzaam rood accent. Alleen de stijl: geen logo of
+ * wapen. De kleuren volgen het Porsche Design System (zwart #010205, Guards Red #d5001c, succesgroen #018a16).
+ */
+export const KLEUR = {
+  pagina: "#eeeff2",
   kaart: "#ffffff",
-  inkt: "#14171c",
-  tekst: "#2b2f36",
-  gedempt: "#6b707a",
-  zacht: "#9a9ea6",
-  lijn: "#e9e5dc",
-  vlak: "#f7f5f0",
-  kop: "#0b1f4d",
-  kopTekst: "#b9c3dc",
-  accent: "#c8b27a",
-  knop: "#003da5",
-  goed: "#17794a",
-  slecht: "#b3312c",
+  zwart: "#010205",
+  inkt: "#010205",
+  tekst: "#27282d",
+  gedempt: "#6b6d70",
+  zacht: "#949498",
+  lijn: "#e3e4e8",
+  vlak: "#f6f6f8",
+  kopTekst: "#a9abb0",
+  accent: "#d5001c",
+  goed: "#018a16",
+  slecht: "#d5001c",
 } as const;
 
-const LETTERS = "font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;";
+// Porsche Next staat zelden in een mailprogramma; Helvetica en Arial komen er het dichtst bij.
+const LETTERS = "font-family:'Porsche Next','Helvetica Neue',Helvetica,Arial,sans-serif;";
 
 const VERSCHIL_KLEUR: Record<VergelijkingOordeel, string> = {
   gunstig: KLEUR.goed,
@@ -96,35 +101,44 @@ function volgendeMaandNaam(maand: string): string {
 function statsRij(cijfers: Cijfer[]): string {
   const cellen = cijfers
     .map(
-      (c, i) => `<td width="25%" valign="top" style="padding:${i === 0 ? "0 8px 0 0" : "0 8px"};${i > 0 ? `border-left:1px solid ${KLEUR.lijn};` : ""}">
-<div style="${LETTERS}font-size:10px;line-height:14px;letter-spacing:.09em;text-transform:uppercase;color:${KLEUR.zacht};">${ontsnap(c.label)}</div>
-<div style="${LETTERS}font-size:21px;line-height:28px;font-weight:700;color:${KLEUR.inkt};padding-top:3px;">${ontsnap(c.waarde)}</div>
-<div style="${LETTERS}font-size:12px;line-height:18px;font-weight:600;color:${c.kleur};">${c.verschil ? ontsnap(c.verschil) : "&nbsp;"}</div>
+      (c, i) => `<td width="25%" valign="top" style="padding:14px ${i === 3 ? "0" : "10px"} 14px ${i === 0 ? "0" : "14px"};${i > 0 ? `border-left:1px solid ${KLEUR.lijn};` : ""}">
+<div style="${LETTERS}font-size:10px;line-height:14px;letter-spacing:.14em;text-transform:uppercase;color:${KLEUR.zacht};">${ontsnap(c.label)}</div>
+<div style="${LETTERS}font-size:24px;line-height:30px;font-weight:700;color:${KLEUR.inkt};padding-top:4px;letter-spacing:-.01em;">${ontsnap(c.waarde)}</div>
+<div style="${LETTERS}font-size:12px;line-height:18px;font-weight:700;color:${c.kleur};">${c.verschil ? ontsnap(c.verschil) : "&nbsp;"}</div>
 </td>`,
     )
     .join("");
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;"><tr>${cellen}</tr></table>`;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border-top:1px solid ${KLEUR.lijn};border-bottom:1px solid ${KLEUR.lijn};"><tr>${cellen}</tr></table>`;
 }
 
-function bedrijfBlok(b: MrBedrijf, vorigeMaand: string, volgende: string, laatste: boolean): string {
+function bedrijfBlok(b: MrBedrijf, nr: number, totaal: number, vorigeMaand: string, volgende: string, laatste: boolean): string {
   const punten = (b.mailPunten ?? []).filter(Boolean);
   const forecast = forecastRegel(b, volgende);
   const lijst = punten
     .map(
-      (p) => `<tr><td width="18" valign="top" style="padding:0 0 9px 0;${LETTERS}font-size:15px;line-height:22px;color:${KLEUR.accent};font-weight:700;">&bull;</td>
-<td valign="top" style="padding:0 0 9px 0;${LETTERS}font-size:14.5px;line-height:22px;color:${KLEUR.tekst};">${ontsnap(p)}</td></tr>`,
+      (p) => `<tr><td width="20" valign="top" style="padding:0 0 11px 0;${LETTERS}font-size:9px;line-height:23px;color:${KLEUR.zwart};">&#9632;</td>
+<td valign="top" style="padding:0 0 11px 0;${LETTERS}font-size:14.5px;line-height:23px;color:${KLEUR.tekst};">${ontsnap(p)}</td></tr>`,
     )
     .join("");
-  return `<tr><td style="padding:30px 32px ${laatste ? "30px" : "28px"} 32px;${laatste ? "" : `border-bottom:1px solid ${KLEUR.lijn};`}">
+  return `<tr><td style="padding:36px 36px ${laatste ? "36px" : "34px"} 36px;${laatste ? "" : `border-bottom:1px solid ${KLEUR.lijn};`}">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
-<tr><td style="padding:0 0 16px 0;${LETTERS}font-size:19px;line-height:24px;font-weight:700;color:${KLEUR.inkt};letter-spacing:-.01em;">
-<span style="display:inline-block;width:4px;height:18px;background:${KLEUR.accent};vertical-align:-2px;margin-right:10px;border-radius:2px;"></span>${ontsnap(b.naam)}</td></tr>
-<tr><td style="padding:0 0 ${forecast ? "12px" : "18px"} 0;">${statsRij(hoofdcijfers(b, vorigeMaand))}</td></tr>
-${forecast ? `<tr><td style="padding:0 0 18px 0;"><span style="display:inline-block;background:${KLEUR.vlak};border:1px solid ${KLEUR.lijn};border-radius:999px;padding:4px 12px;${LETTERS}font-size:12px;line-height:16px;color:${KLEUR.gedempt};">${ontsnap(forecast)} <span style="color:${KLEUR.zacht};">· trend doorgezet</span></span></td></tr>` : ""}
-${lijst ? `<tr><td style="padding:4px 0 10px 0;border-top:1px solid ${KLEUR.lijn};"><div style="padding-top:16px;${LETTERS}font-size:10px;line-height:14px;letter-spacing:.14em;text-transform:uppercase;color:${KLEUR.accent};font-weight:700;">Analyse</div></td></tr>
+<tr><td style="padding:0 0 4px 0;${LETTERS}font-size:10px;line-height:14px;letter-spacing:.2em;text-transform:uppercase;color:${KLEUR.accent};font-weight:700;">${String(nr).padStart(2, "0")} / ${String(totaal).padStart(2, "0")}</td></tr>
+<tr><td style="padding:0 0 18px 0;${LETTERS}font-size:24px;line-height:30px;font-weight:700;color:${KLEUR.inkt};letter-spacing:-.015em;">${ontsnap(b.naam)}</td></tr>
+<tr><td>${statsRij(hoofdcijfers(b, vorigeMaand))}</td></tr>
+${forecast ? `<tr><td style="padding:14px 0 0 0;${LETTERS}font-size:12px;line-height:18px;color:${KLEUR.gedempt};"><span style="color:${KLEUR.inkt};font-weight:700;">${ontsnap(forecast)}</span> &nbsp;&middot;&nbsp; trend doorgezet</td></tr>` : ""}
+${lijst ? `<tr><td style="padding:26px 0 14px 0;${LETTERS}font-size:10px;line-height:14px;letter-spacing:.2em;text-transform:uppercase;color:${KLEUR.inkt};font-weight:700;">Analyse</td></tr>
 <tr><td><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">${lijst}</table></td></tr>` : ""}
 </table>
 </td></tr>`;
+}
+
+/** Een knop in Porsche-stijl: scherpe hoeken, zwart op licht en wit op donker. Bulletproof voor Outlook. */
+function knop(url: string, donker: boolean): string {
+  const bg = donker ? "#ffffff" : KLEUR.zwart;
+  const kleur = donker ? KLEUR.zwart : "#ffffff";
+  return `<table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:separate;"><tr><td bgcolor="${bg}" style="background:${bg};">
+<a href="${ontsnap(url)}" style="display:inline-block;padding:16px 34px;${LETTERS}font-size:14px;line-height:20px;font-weight:700;color:${kleur};text-decoration:none;letter-spacing:.02em;">Ga naar rapportage &nbsp;&rarr;</a>
+</td></tr></table>`;
 }
 
 /** De mail bij een nieuw Maandrapport: onderwerp, HTML en platte tekst. */
@@ -139,8 +153,10 @@ export function bouwMaandrapportMail(i: MaandrapportMailInvoer): Mail {
   const preheader = eerste ? `${r.bedrijven[0].naam}: ${eerste}` : `De resultaten van ${maand}, vergeleken met ${vorige}.`;
 
   const tekst = [
-    `${i.campagneNaam} — ${maand}`,
+    `${i.campagneNaam.toUpperCase()} — ${maand}`,
     `Resultaten van ${namen.join(", ")}, vergeleken met ${vorige}.`,
+    "",
+    `Ga naar rapportage: ${i.analyseUrl}`,
     "",
     ...r.bedrijven.flatMap((b) => {
       const c = hoofdcijfers(b, vorige);
@@ -149,42 +165,42 @@ export function bouwMaandrapportMail(i: MaandrapportMailInvoer): Mail {
         b.naam.toUpperCase(),
         c.map((x) => `${x.label}: ${x.waarde}${x.verschil ? ` (${x.verschil})` : ""}`).join(" · "),
         ...(forecast ? [forecast] : []),
+        ...(b.mailPunten ?? []).length > 0 ? ["Analyse:"] : [],
         ...(b.mailPunten ?? []).map((p) => `- ${p}`),
         "",
       ];
     }),
-    `Bekijk het volledige rapport: ${i.analyseUrl}`,
+    `Ga naar rapportage: ${i.analyseUrl}`,
     "",
     `Je krijgt deze mail omdat je dit rapport volgt in het marketing dashboard. Afmelden: ${i.afmeldUrl}`,
   ].join("\n");
 
-  const blokken = r.bedrijven.map((b, n) => bedrijfBlok(b, vorige, volgende, n === r.bedrijven.length - 1)).join("\n");
+  const blokken = r.bedrijven.map((b, n) => bedrijfBlok(b, n + 1, r.bedrijven.length, vorige, volgende, n === r.bedrijven.length - 1)).join("\n");
   const html = `<!doctype html>
 <html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>${ontsnap(onderwerp)}</title></head>
 <body style="margin:0;padding:0;background:${KLEUR.pagina};">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${ontsnap(preheader)}&#8199;&zwnj;&#8199;&zwnj;&#8199;&zwnj;&#8199;&zwnj;</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="${KLEUR.pagina}" style="background:${KLEUR.pagina};"><tr><td align="center" style="padding:32px 12px;">
-<table role="presentation" width="640" cellpadding="0" cellspacing="0" style="width:100%;max-width:640px;border-collapse:separate;">
-<tr><td bgcolor="${KLEUR.kop}" style="background:${KLEUR.kop};border-radius:16px 16px 0 0;padding:38px 32px 34px 32px;">
-<div style="${LETTERS}font-size:11px;line-height:16px;letter-spacing:.2em;text-transform:uppercase;color:${KLEUR.accent};font-weight:700;">${ontsnap(i.campagneNaam)}</div>
-<div style="${LETTERS}font-size:34px;line-height:40px;font-weight:700;color:#ffffff;letter-spacing:-.02em;padding-top:10px;">${ontsnap(maand)}</div>
-<div style="height:2px;width:44px;background:${KLEUR.accent};margin:18px 0 16px 0;font-size:0;line-height:0;">&nbsp;</div>
-<div style="${LETTERS}font-size:14px;line-height:22px;color:${KLEUR.kopTekst};">${ontsnap(namen.join("  ·  "))}</div>
-<div style="${LETTERS}font-size:13px;line-height:20px;color:${KLEUR.kopTekst};opacity:.8;padding-top:2px;">Alle cijfers vergeleken met ${ontsnap(vorige)}</div>
+<table role="presentation" width="640" cellpadding="0" cellspacing="0" style="width:100%;max-width:640px;border-collapse:collapse;">
+<tr><td height="4" bgcolor="${KLEUR.accent}" style="background:${KLEUR.accent};height:4px;font-size:0;line-height:0;">&nbsp;</td></tr>
+<tr><td bgcolor="${KLEUR.zwart}" style="background:${KLEUR.zwart};padding:44px 36px 40px 36px;">
+<div style="${LETTERS}font-size:11px;line-height:16px;letter-spacing:.26em;text-transform:uppercase;color:${KLEUR.kopTekst};font-weight:700;">${ontsnap(i.campagneNaam)}</div>
+<div style="${LETTERS}font-size:44px;line-height:48px;font-weight:700;color:#ffffff;letter-spacing:-.03em;padding-top:14px;">${ontsnap(maand)}</div>
+<div style="${LETTERS}font-size:14px;line-height:22px;color:${KLEUR.kopTekst};padding-top:20px;">${ontsnap(namen.join("  /  "))}</div>
+<div style="${LETTERS}font-size:13px;line-height:20px;color:${KLEUR.zacht};padding:2px 0 30px 0;">Alle cijfers vergeleken met ${ontsnap(vorige)}</div>
+${knop(i.analyseUrl, true)}
 </td></tr>
 <tr><td bgcolor="${KLEUR.kaart}" style="background:${KLEUR.kaart};">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
 ${blokken}
 </table>
 </td></tr>
-<tr><td bgcolor="${KLEUR.vlak}" align="center" style="background:${KLEUR.vlak};border-top:1px solid ${KLEUR.lijn};padding:30px 32px 32px 32px;">
-<table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:separate;"><tr><td bgcolor="${KLEUR.knop}" style="background:${KLEUR.knop};border-radius:999px;">
-<a href="${ontsnap(i.analyseUrl)}" style="display:inline-block;padding:14px 30px;${LETTERS}font-size:14px;line-height:20px;font-weight:700;color:#ffffff;text-decoration:none;letter-spacing:.01em;">Bekijk het volledige rapport &rarr;</a>
-</td></tr></table>
-<div style="${LETTERS}font-size:12px;line-height:18px;color:${KLEUR.gedempt};padding-top:14px;">Met grafieken, toppost, kanalen en alle campagnes per bedrijf.</div>
+<tr><td bgcolor="${KLEUR.vlak}" style="background:${KLEUR.vlak};border-top:1px solid ${KLEUR.lijn};padding:36px 36px 38px 36px;">
+${knop(i.analyseUrl, false)}
+<div style="${LETTERS}font-size:12px;line-height:18px;color:${KLEUR.gedempt};padding-top:16px;">Met grafieken, toppost, kanalen en alle campagnes per bedrijf.</div>
 </td></tr>
-<tr><td style="padding:18px 20px 0 20px;${LETTERS}font-size:11.5px;line-height:17px;color:${KLEUR.zacht};text-align:center;">
-Je krijgt deze mail omdat je dit rapport volgt in het marketing dashboard.<br><a href="${ontsnap(i.afmeldUrl)}" style="color:${KLEUR.zacht};text-decoration:underline;">Afmelden</a>
+<tr><td bgcolor="${KLEUR.zwart}" style="background:${KLEUR.zwart};padding:22px 36px 24px 36px;${LETTERS}font-size:11.5px;line-height:17px;color:${KLEUR.zacht};">
+Je krijgt deze mail omdat je dit rapport volgt in het marketing dashboard. <a href="${ontsnap(i.afmeldUrl)}" style="color:#ffffff;text-decoration:underline;">Afmelden</a>
 </td></tr>
 </table>
 </td></tr></table>

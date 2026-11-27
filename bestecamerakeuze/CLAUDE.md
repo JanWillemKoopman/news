@@ -1706,7 +1706,9 @@ lees dat eerst voordat je hier iets verandert.
   De accounts per tabblad, de leadregels en de keuzes (Porsche Groep Zuid-accounts bij Porsche Centrum Brabant,
   LinkedIn organisch zonder bereik, top content alleen Instagram) staan in het blok Maandrapport Jana en in de skill.
   **De mail bij een nieuw Maandrapport** (27 november 2026, `mailMaandrapport.ts`, getest) is een eigen, verzorgde
-  HTML-mail in plaats van de standaardmail: een navy kop met de maand, per bedrijf de vier hoofdcijfers naast die van
+  HTML-mail in plaats van de standaardmail, **in Porsche-stijl** (verzoek van de eigenaar: zwart en wit, scherpe hoeken, dunne lijnen,
+  hoofdletterkoppen, één rood accent; alleen de stijl, geen logo): een zwarte kop met de maand en een knop **Ga naar rapportage** (die
+  staat ook onderaan), per bedrijf de vier hoofdcijfers naast die van
   de maand ervoor, de forecast, een kopje Analyse met vijf tot zeven zinnen (`maandrapport.bedrijven[].mailPunten`,
   geschreven door de analyse, prompt versie 3, migratie 0058 en 0059) en een knop naar het rapport. **Het dashboard
   blijft puur beschrijvend** (geen interpretatie of advies); alleen de mail verklaart: welk soort lead stijgt of daalt,
