@@ -283,7 +283,7 @@ export default function CampagneZijbalk({
         </Veld>
         <Veld
           label="Doel van de campagne"
-          hint="In je eigen woorden, bijv. “20 proefritten”. De leads tellen standaard in Google Analytics (20 proefritten = 20 proefritleads op de website). Schrijf “uit Syntec” erbij om ze in Syntec te tellen: dan alleen leads met kanaalgroep Internet via udenhout.nl."
+          hint="In je eigen woorden, bijv. “20 proefritten”. De leads tellen standaard in Google Analytics (20 proefritten = 20 proefritleads op de website). Schrijf “uit Syntec” erbij om ze in Syntec te tellen: dan alleen leads met kanaalgroep Internet via udenhout.nl. Het doel gaat altijd over leads, niet over orders."
         >
           <textarea className={`${INVOER} min-h-16 resize-y`} value={v.doel} onChange={zet("doel")} disabled={bezig} />
         </Veld>
@@ -301,7 +301,14 @@ export default function CampagneZijbalk({
         </Veld>
         </>
         )}
-        <Veld label={rapportage ? "Omschrijving en aandachtspunten" : "Omschrijving"}>
+        <Veld
+          label={rapportage ? "Omschrijving en aandachtspunten" : "Omschrijving"}
+          hint={
+            rapportage
+              ? undefined
+              : "Bij Van den Udenhout tellen de orders uit Syntec standaard alle klantgroepen, nieuw en gebruikt. Wil je minder, schrijf het hier, bijv. “orders: alleen koop particulier, nieuw”."
+          }
+        >
           <textarea
             className={`${INVOER} min-h-28 resize-y`}
             value={v.omschrijving}

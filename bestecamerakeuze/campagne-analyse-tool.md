@@ -642,3 +642,25 @@ planning Maandelijks), prompt versie 2.
   Daarna maandelijks op de eerste vrijdag.
 - Staat in prompt versie 2, de semantic layer (versie 11, gelijk aan `standaardSemantiek.ts`) en de
   skill (paragraaf E-mail VDU).
+
+## 24. Leads en orders in het overzicht (besluit van de eigenaar, 27 november 2026)
+- **De leadkolom heet "Leads en orders"** en toont onder elkaar: de leads in **Google Analytics**
+  (altijd, bij elk bedrijf; `kerncijfers.leadsGa4`), de **internetleads in Syntec**
+  (`leadsInternet`: Kanaalgroep "Internet", alle kanalen daarbinnen, de soort uit de briefing of
+  anders alle soorten) en de **orders in Syntec** (`ordersSyntec`).
+- **Syntec alleen bij Van den Udenhout met merk en model.** Ontbreekt merk of model, dan staat er
+  een oranje knop "Vul model in voor Syntec-leads en orders" die de briefing opent. Bij een ander
+  bedrijf een grijze regel "Geen Syntec-data voor dit bedrijf". Van den Udenhout naast een ander
+  bedrijf: de Syntec-regels wel, met "(alleen VDU)"; het leadcijfer tegen het doel blijft dan GA4.
+  Rekenwerk: `syntecOverzicht` / `syntecInBriefing` in `rekenen.ts`, getest.
+- **Welke orders tellen, zegt de briefing.** Standaard alle klantgroepen van Nieuw én Gebruikt
+  (view `marketing_analyse_orders_klant`); de briefing (doel of omschrijving) kan het beperken
+  ("alleen koop particulier", "alleen nieuw"), en de LLM bepaalt het. Handel alleen als de
+  briefing erom vraagt. De verdeling van alle klantgroepen per ordertype, met aantallen Nieuw en
+  Gebruikt, staat in de semantic layer (blok Syntec orders, "Welke orders tellen: de verdeling").
+- **Het doel gaat altijd over leads**, nooit over orders. Onder het doel staat uit welke bron het
+  meet (GA4, of Syntec met het aantal websiteleads).
+- Staat in semantic layer versie 12 (migratie 0056, gelijk aan `standaardSemantiek.ts`), de
+  standaard-hoofdprompt, de skill en de hints in de briefing. Analyses van vóór deze datum hebben
+  de nieuwe kerncijfers nog niet: de Syntec-regels tonen dan "–" tot de volgende analyse, en
+  Google Analytics valt terug op het leadcijfer als dat uit GA4 kwam.

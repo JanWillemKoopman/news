@@ -42,7 +42,9 @@ analyses; jij maakt ze. Het plan en alle besluiten van de eigenaar staan in
    Voor het overzicht van alle leads de view **`dataloket.marketing_analyse_leads_soort`** (alle
    leads met `soort`, `internet`, `website`, `kanaalgroep_naam`).
    **Alleen voor Van den Udenhout**; voor elk ander bedrijf niet gebruiken. `leadsSyntec` alleen
-   invullen als de analyse uitsluitend over Van den Udenhout gaat, anders null.
+   invullen als de analyse uitsluitend over Van den Udenhout gaat, anders null. `leadsInternet`
+   en `ordersSyntec` ook bij Van den Udenhout naast een ander bedrijf (alleen dat deel; zie
+   "Leads en orders in het overzicht").
 3. **`dataloket.marketing_analyse_orders`** (bron **Syntec orders**): de orders-kopie van
    "Data orders" (vijf kolommen: Ordersoort, Klantgroep, Merk, Model, Orderdatum, plus
    `orderdatum_op`; één rij is één verkochte auto), en de view
@@ -82,8 +84,16 @@ Besluit van de eigenaar, 25 november 2026; ook in de semantic layer (Algemeen, G
 ## Harde regel: orders altijd per klantgroep (Syntec orders)
 Verzoek van de eigenaar, 25 november 2026; ook in de semantic layer (Algemeen, Syntec orders) en
 in de hoofdprompt.
-- Alleen als de analyse **uitsluitend over Van den Udenhout** gaat; anders geen orders en geen
-  sectie `orders`.
+- Alleen als **Van den Udenhout in de briefing** staat (bij meer bedrijven alleen dat deel, en
+  dan overal "alleen Van den Udenhout"; besluit van de eigenaar, 27 november 2026) **én** de
+  briefing een merk en minstens één model heeft. Anders geen orders en geen sectie `orders`;
+  ontbreekt merk of model bij Van den Udenhout, meld dat dan in `datakwaliteit`.
+- **Welke orders tellen, zegt de briefing** (besluit van de eigenaar, 27 november 2026; semantic
+  layer versie 12, blok Syntec orders, "Welke orders tellen: de verdeling"). Zegt de briefing
+  (doel of omschrijving) niets: alle klantgroepen van Nieuw én Gebruikt, dus de hele view
+  hieronder. Noemt de briefing een deel ("alleen koop particulier", "alleen nieuw"): filter dan
+  op die klantgroepen of die ordersoort. Handel alleen als de briefing erom vraagt. Zeg in
+  `ordersSoort` en in de sectie `orders` welke orders je telde.
 - Tel in de view, voor merk, modellen en periode, en **splits altijd uit per klantgroep**:
   ```sql
   select klantgroep_naam, ordersoort, count(*) as orders
@@ -97,15 +107,35 @@ in de hoofdprompt.
   ```
 - De uitsplitsing per klantgroep (aantal, aandeel, totaalregel) en Nieuw tegen Gebruikt staan
   **altijd** in de sectie `orders`; noem de grootste klantgroepen ook in de bevindingen.
-- Orders zijn nooit het leadcijfer (`leadsDoel`). Gaat het doel over verkochte auto's, dan
-  beoordeel je het doel op de orders. Er is geen koppeling lead → order: schrijf "orders voor
+- Orders zijn nooit het leadcijfer (`leadsDoel`), en het doel gaat altijd over leads (besluit
+  van de eigenaar, 27 november 2026). Er is geen koppeling lead → order: schrijf "orders voor
   <model> in de periode", niet "orders uit de campagne".
+
+## Harde regel: leads en orders in het overzicht (kerncijfers)
+Besluit van de eigenaar, 27 november 2026; ook in de semantic layer (versie 12: Algemeen, Data
+leads, Syntec orders). De regel in het overzicht toont onder elkaar drie cijfers. Vul ze altijd:
+- `leadsGa4`: de lead-events van de soort uit het doel in sessies die op de campagnepagina('s)
+  begonnen (GA4). Bij elk bedrijf, ook als `leadBron` `"syntec"` is.
+- `leadsInternet` + `leadsInternetSoort`: Syntec-leads met Kanaalgroep "Internet" (alle kanalen
+  daarbinnen, niet alleen udenhout.nl) voor merk, modellen en periode; de soort volgt de briefing
+  (anders alle soorten):
+  ```sql
+  select count(*) from dataloket.marketing_analyse_leads_soort
+  where internet and aangelegd_op >= '<start>' and aangelegd_op < '<eind + 1 dag>'
+    and merk ilike '%<merk>%' and model ilike '%<model>%'
+    -- and soort = '<soort uit de briefing>'   -- alleen als de briefing een soort noemt
+  ```
+- `ordersSyntec` + `ordersSoort`: de orders uit de regel hierboven (welke orders: de briefing).
+- `leadsInternet` en `ordersSyntec` alleen als Van den Udenhout in `bedrijven` staat én `merk` en
+  minstens één model gevuld zijn; anders null. Bij meer bedrijven alleen het deel Van den
+  Udenhout (het dashboard zet er zelf "alleen VDU" bij). Het dashboard rekent dit zelf na
+  (`syntecOverzicht` in `rekenen.ts`).
 
 ## Harde regel: altijd het overzicht van alle leads en orders (Van den Udenhout)
 Verzoek van de eigenaar, 25 november 2026; ook in de semantic layer (versie 5: Algemeen, Data
-leads, Syntec orders) en in de hoofdprompt. Bij elke analyse die uitsluitend over Van den
-Udenhout gaat staan in de sectie `syntec` en `orders` wat het merk en de modellen **in totaal**
-deden. Dit is context: het telt nooit mee in `leadsDoel`.
+leads, Syntec orders) en in de hoofdprompt. Bij elke analyse met Van den Udenhout (bij meer
+bedrijven alleen dat deel, sinds 27 november 2026) en met merk en model staan in de sectie
+`syntec` en `orders` wat het merk en de modellen **in totaal** deden. Dit is context: het telt nooit mee in `leadsDoel`.
 ```sql
 -- Leads: alles, Internet tegen offline, Internet per soort, en de websiteleads
 select kanaalgroep_naam, internet, soort, count(*) as leads, count(*) filter (where website) as website
@@ -448,6 +478,8 @@ die voor álle campagnes gelden; je past de semantic layer nooit zelf aan.
 ```json
 { "kosten": 1960.8, "vertoningen": 520000, "vertoningenAds": 410000, "klikken": 12000, "sessies": 8000, "leadEvents": 25,
   "leadsSyntec": 31, "leadBron": "ga4", "leadsDoel": 9, "leadsDoelSoort": "proefritten", "doelLeads": 20,
+  "leadsGa4": 9, "leadsInternet": 34, "leadsInternetSoort": "proefritten",
+  "ordersSyntec": 6, "ordersSoort": "alle orders, nieuw en gebruikt",
   "doel": { "status": "achter", "toelichting": "…" } }
 ```
 `vertoningen` = betaald + organisch. `vertoningenAds` = alleen de vertoningen van Google Ads,
@@ -462,6 +494,8 @@ soort ("proefritten", "alle autoleads"). Het overzicht zet `leadsDoel` tegen het
 kosten tegen het budget. `leadEvents` = alle lead-events op de campagnepagina (context).
 `leadsSyntec` = alle websiteleads in Syntec voor merk en model (uit de view, alle soorten), null
 tenzij de analyse uitsluitend over Van den Udenhout gaat; `leadsSyntecInternet` vervalt.
+`leadsGa4`, `leadsInternet`, `leadsInternetSoort`, `ordersSyntec` en `ordersSoort`: de drie
+cijfers van de leadkolom in het overzicht (harde regel "Leads en orders in het overzicht").
 `doelLeads`: het aantal leads uit het doel zoals jij het leest ("20 proefritten uit Syntec" → 20),
 null als het doel niet over een aantal leads gaat.
 Bij een **rapportage** toont het overzicht geen kerncijfers: geef `{}` mee (of vul in wat
@@ -474,7 +508,9 @@ geldige `tab` uit de stapsleutels hierboven; elke stap hoogstens één keer; hoo
 elke actie en aanbeveling heeft een `prioriteit`; staat er een sectie `orders`, dan heeft die
 een tabel per klantgroep met een totaalregel; bij een campagne staan `leadBron`, `leadsDoel`
 en `leadsDoelSoort` in de kerncijfers en is `leadBron` alleen `"syntec"` als het doel Syntec noemt
-en de analyse uitsluitend over Van den Udenhout gaat; geen tegel, regel of kolom met extra
+en de analyse uitsluitend over Van den Udenhout gaat; staat `leadsGa4` erin, en staan
+`leadsInternet` en `ordersSyntec` er (met hun soort) precies als Van den Udenhout in de briefing
+staat en merk en model gevuld zijn; geen tegel, regel of kolom met extra
 kanaalkosten bij een campagne-analyse; elke `benchmark` heeft `groep`, `aantal` (minstens 5),
 `mediaan`, `p25` en `p75` met p25 ≤ mediaan ≤ p75 (een onbruikbare benchmark laat het dashboard
 weg). Sla op met

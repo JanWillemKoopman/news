@@ -292,18 +292,90 @@ function BalkCel({
   );
 }
 
-const BRON_NAAM: Record<LeadBron, string> = { syntec: "Syntec", ga4: "Google Analytics" };
 const BRON_UITLEG: Record<LeadBron, string> = {
   syntec:
     "Syntec, omdat het doel dat zegt: alleen leads met kanaalgroep Internet en udenhout.nl in Kanaal of Onderwerp, van de soort uit het doel",
   ga4: "Google Analytics (standaard): lead-events van de soort uit het doel, in sessies die op de campagnepagina('s) begonnen",
 };
 
-/** De regel onder het leadcijfer: bron, en welke soort er geteld is. */
-function leadOnderschrift(o: { bron: LeadBron; leadSoort: string | null; oudeTelling: boolean; syntecNietMogelijk: boolean }): string {
-  if (o.syntecNietMogelijk) return "Google Analytics · Syntec n.v.t.";
-  if (o.oudeTelling) return "Google Analytics · alle lead-events";
-  return o.leadSoort ? `${BRON_NAAM[o.bron]} · ${o.leadSoort}` : BRON_NAAM[o.bron];
+/** Eén regel in de leadkolom: het getal, en ernaast wat het is. */
+function LeadRegel({ waarde, naam, soort, title }: { waarde: string; naam: string; soort: string | null; title: string }) {
+  return (
+    <div className="flex items-baseline gap-2.5" title={title}>
+      <span className="min-w-[2.5rem] text-right tabular-nums text-ink">{waarde}</span>
+      <span className="text-meta text-ink-faint">
+        {naam}
+        {soort ? ` · ${soort}` : ""}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * De leadkolom (besluit van de eigenaar, 27 november 2026): altijd de leads in Google Analytics,
+ * en bij Van den Udenhout met merk en model ook de internetleads en orders uit Syntec. Ontbreekt
+ * merk of model, dan een knop naar de briefing; bij een ander bedrijf een rustige regel.
+ */
+function LeadsCel({
+  o,
+  geanalyseerd,
+  c,
+  onBewerk,
+}: {
+  o: ReturnType<typeof overzichtCijfers>;
+  geanalyseerd: boolean;
+  c: MaOverzichtRegel;
+  onBewerk: (c: MaOverzichtRegel) => void;
+}) {
+  const getal = (n: number | null) => (!geanalyseerd ? "—" : n === null ? "–" : formatWaarde(n));
+  const s = o.syntec;
+  const vdu = s.stand === "cijfers" && s.alleenVdu ? " (alleen VDU)" : "";
+  return (
+    <div className="flex min-w-[230px] flex-col gap-1">
+      <LeadRegel
+        waarde={getal(o.ga4Leads)}
+        naam="Google Analytics"
+        soort={o.oudeTelling ? "alle lead-events" : o.ga4Soort}
+        title={
+          o.oudeTelling
+            ? "Uit een analyse van vóór de leadregel van 25 november 2026: alle lead-events in GA4. De volgende analyse telt alleen de soort uit het doel."
+            : BRON_UITLEG.ga4
+        }
+      />
+      {s.stand === "cijfers" ? (
+        <>
+          <LeadRegel
+            waarde={getal(s.leads)}
+            naam={`Syntec internet${vdu}`}
+            soort={s.leadsSoort}
+            title={`Leads in Syntec met kanaalgroep Internet, voor merk en model in de periode${s.alleenVdu ? ", alleen Van den Udenhout" : ""}${geanalyseerd && s.leads === null ? ". Komt bij de volgende analyse." : ""}`}
+          />
+          <LeadRegel
+            waarde={getal(s.orders)}
+            naam={`Syntec orders${vdu}`}
+            soort={s.ordersSoort}
+            title={`Orders in Syntec voor merk en model in de periode; welke orders tellen staat in de briefing (standaard alle klantgroepen, nieuw en gebruikt)${s.alleenVdu ? ", alleen Van den Udenhout" : ""}${geanalyseerd && s.orders === null ? ". Komt bij de volgende analyse." : ""}`}
+          />
+        </>
+      ) : s.stand === "briefing" ? (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onBewerk(c);
+          }}
+          title="Syntec zoekt leads en orders op merk en model. Vul ze in de briefing in; de volgende analyse haalt ze op."
+          className="mt-0.5 self-start text-left text-meta text-orange-dark underline decoration-dotted underline-offset-2 hover:text-ink"
+        >
+          Vul {s.mist} in voor Syntec-leads en orders
+        </button>
+      ) : (
+        <span className="text-meta text-ink-faint" title="Syntec-leads en -orders bestaan alleen voor Van den Udenhout.">
+          Geen Syntec-data voor dit bedrijf
+        </span>
+      )}
+    </div>
+  );
 }
 
 /**
@@ -328,8 +400,11 @@ function CampagneAnalyseTabel({ campagnes, opzetten, vandaag, planningBezig, onO
             <th className={KOP} title="Sessies die op de campagnepagina('s) begonnen, uit elk kanaal (GA4)">
               Bezoekers
             </th>
-            <th className={KOP} title="Syntec bij Van den Udenhout met opgegeven modellen, anders lead-events in Google Analytics">
-              Leads
+            <th
+              className={KOP}
+              title="Leads in Google Analytics; bij Van den Udenhout met merk en model ook de internetleads en orders uit Syntec"
+            >
+              Leads en orders
             </th>
             <th className={KOP} title="Het aantal leads uit het doel van de briefing, en hoeveel daarvan gehaald is">
               Doel leads
@@ -396,22 +471,17 @@ function CampagneAnalyseTabel({ campagnes, opzetten, vandaag, planningBezig, onO
                     <span className="text-meta text-ink-faint">Op de campagnepagina</span>
                   </div>
                 </td>
+                <td className="px-3 py-3">
+                  <LeadsCel o={o} geanalyseerd={geanalyseerd} c={c} onBewerk={onBewerk} />
+                </td>
                 <td
                   className="px-3 py-3"
                   title={
                     o.syntecNietMogelijk
-                      ? "Het doel noemt Syntec, maar Syntec geldt alleen voor een analyse die uitsluitend over Van den Udenhout gaat. Daarom Google Analytics."
-                      : o.oudeTelling
-                        ? "Uit een analyse van vóór de leadregel van 25 november 2026: alle lead-events in GA4. De volgende analyse telt alleen de soort uit het doel."
-                        : BRON_UITLEG[o.bron]
+                      ? "Het doel noemt Syntec, maar Syntec geldt alleen voor een analyse die uitsluitend over Van den Udenhout gaat. Daarom gemeten in Google Analytics."
+                      : BRON_UITLEG[o.bron]
                   }
                 >
-                  <div className="flex min-w-[120px] flex-col gap-1.5">
-                    <span className="tabular-nums text-ink">{geanalyseerd ? formatWaarde(o.leads) : "—"}</span>
-                    <span className="text-meta text-ink-faint">{leadOnderschrift(o)}</span>
-                  </div>
-                </td>
-                <td className="px-3 py-3">
                   <BalkCel
                     waarde={o.doelLeads !== null ? formatWaarde(o.doelLeads) : "—"}
                     pct={o.gehaaldPct}
@@ -421,7 +491,9 @@ function CampagneAnalyseTabel({ campagnes, opzetten, vandaag, planningBezig, onO
                         ? "Geen aantal in het doel"
                         : o.gehaaldPct === null
                           ? "Nog niet gemeten"
-                          : `${formatWaarde(o.gehaaldPct, "procent")} gehaald`
+                          : o.bron === "syntec"
+                            ? `${formatWaarde(o.gehaaldPct, "procent")} gehaald · Syntec (${formatWaarde(o.leads)} websiteleads)`
+                            : `${formatWaarde(o.gehaaldPct, "procent")} gehaald · GA4`
                     }
                   />
                 </td>

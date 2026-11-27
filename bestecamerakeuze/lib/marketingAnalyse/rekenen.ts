@@ -655,10 +655,22 @@ export interface AnalyseTab {
   reden: string | null;
 }
 
-/** Syntec-leads en -orders gelden alleen als de analyse uitsluitend over Van den Udenhout gaat. */
+/**
+ * Gaat de analyse uitsluitend over Van den Udenhout? Alleen dan kan het leadcijfer tegen het
+ * doel uit Syntec komen (`leadBron`).
+ */
 export function syntecVanToepassing(bedrijven: readonly string[] | null | undefined): boolean {
   const lijst = (bedrijven ?? []).filter(Boolean);
   return lijst.length > 0 && lijst.every((b) => b === BEDRIJF_MET_SYNTEC);
+}
+
+/**
+ * Staat Van den Udenhout in de briefing (alleen of naast andere bedrijven)? Dan horen de
+ * Syntec-leads en -orders erbij, bij meer bedrijven alleen voor het deel Van den Udenhout
+ * (besluit van de eigenaar, 27 november 2026).
+ */
+export function syntecInBriefing(bedrijven: readonly string[] | null | undefined): boolean {
+  return (bedrijven ?? []).some((b) => b === BEDRIJF_MET_SYNTEC);
 }
 
 function tabUitSecties(sleutel: string, naam: string, groep: string | null, secties: Sectie[], reden: string | null): AnalyseTab {
@@ -698,12 +710,12 @@ export function tabbladenVoor(
   const leadStap = resultaat.formaat === 3 ? "Conversies" : "Lead-events";
   const vast = lijst.map((t) => {
     const secties = resultaat.secties.filter((s) => s.tab === t.sleutel);
-    const nvt = !syntecVanToepassing(opties.bedrijven);
+    const nvt = !syntecInBriefing(opties.bedrijven);
     const reden =
       t.sleutel === "syntec" && nvt
-        ? `Niet van toepassing. Leads uit Syntec gelden alleen voor een analyse die uitsluitend over ${BEDRIJF_MET_SYNTEC} gaat; de leads staan bij ${leadStap}.`
+        ? `Niet van toepassing. Leads uit Syntec gelden alleen voor ${BEDRIJF_MET_SYNTEC}; de leads staan bij ${leadStap}.`
         : t.sleutel === "orders" && nvt
-          ? `Niet van toepassing. Orders uit Syntec gelden alleen voor een analyse die uitsluitend over ${BEDRIJF_MET_SYNTEC} gaat.`
+          ? `Niet van toepassing. Orders uit Syntec gelden alleen voor ${BEDRIJF_MET_SYNTEC}.`
           : "Deze analyse heeft hier geen onderdeel voor.";
     return tabUitSecties(t.sleutel, t.naam, t.groep, secties, reden);
   });
@@ -798,11 +810,63 @@ export interface OverzichtCijfers {
   doelLeads: number | null;
   /** Deel van het leaddoel dat is gehaald, in procenten; null zonder doel of leads. */
   gehaaldPct: number | null;
+  /** De leads in Google Analytics (altijd de eerste regel in de leadkolom); null als onbekend. */
+  ga4Leads: number | null;
+  /** Welke soort er in `ga4Leads` is geteld; null als onbekend. */
+  ga4Soort: string | null;
+  /** De Syntec-regels in de leadkolom: internetleads en orders, of waarom ze er niet zijn. */
+  syntec: SyntecOverzicht;
+}
+
+/**
+ * De Syntec-kant van een regel in het overzicht (besluit van de eigenaar, 27 november 2026):
+ *  - `nvt`: Van den Udenhout staat niet in de briefing, er is geen Syntec-data;
+ *  - `briefing`: wel Van den Udenhout, maar merk of model ontbreekt, dus niets op te zoeken;
+ *  - `cijfers`: internetleads en orders uit de laatste analyse (null = nog niet geteld).
+ */
+export type SyntecOverzicht =
+  | { stand: "nvt" }
+  | { stand: "briefing"; mist: "merk" | "model" | "merk en model" }
+  | {
+      stand: "cijfers";
+      leads: number | null;
+      leadsSoort: string | null;
+      orders: number | null;
+      ordersSoort: string | null;
+      /** De analyse gaat ook over andere bedrijven: de Syntec-cijfers zijn alleen Van den Udenhout. */
+      alleenVdu: boolean;
+    };
+
+/** Welke Syntec-regels een campagne in het overzicht krijgt. */
+export function syntecOverzicht(
+  c: { bedrijven: readonly string[]; merk?: string | null; modellen?: readonly string[] | null },
+  k: MaKerncijfers | null | undefined,
+): SyntecOverzicht {
+  if (!syntecInBriefing(c.bedrijven)) return { stand: "nvt" };
+  const geenMerk = !c.merk?.trim();
+  const geenModel = !(c.modellen ?? []).some((m) => m.trim());
+  if (geenMerk || geenModel) {
+    return { stand: "briefing", mist: geenMerk && geenModel ? "merk en model" : geenMerk ? "merk" : "model" };
+  }
+  return {
+    stand: "cijfers",
+    leads: k?.leadsInternet ?? null,
+    leadsSoort: k?.leadsInternetSoort?.trim() || null,
+    orders: k?.ordersSyntec ?? null,
+    ordersSoort: k?.ordersSoort?.trim() || null,
+    alleenVdu: c.bedrijven.some((b) => b && b !== BEDRIJF_MET_SYNTEC),
+  };
 }
 
 /** De cijfers voor één regel in het overzicht van campagne-analyses. */
 export function overzichtCijfers(
-  c: { bedrijven: readonly string[]; budget: number | null; doel: string | null },
+  c: {
+    bedrijven: readonly string[];
+    budget: number | null;
+    doel: string | null;
+    merk?: string | null;
+    modellen?: readonly string[] | null;
+  },
   k: MaKerncijfers | null | undefined,
 ): OverzichtCijfers {
   const kosten = k?.kosten ?? null;
@@ -821,7 +885,14 @@ export function overzichtCijfers(
     oudeTelling = true;
   }
   const doelLeads = k?.doelLeads ?? leesDoelGetal(c.doel);
+  // GA4 staat altijd in de leadkolom. Een analyse van vóór 27 november 2026 heeft geen
+  // `leadsGa4`: dan het leadcijfer als dat uit GA4 kwam (of de oude telling).
+  const ga4Leads = k?.leadsGa4 ?? (bron === "ga4" ? leads : null);
+  const ga4Soort = oudeTelling ? null : (k?.leadsDoelSoort ?? null);
   return {
+    ga4Leads,
+    ga4Soort,
+    syntec: syntecOverzicht(c, k),
     kosten,
     budget: c.budget,
     besteedPct: kosten !== null && c.budget ? (kosten / c.budget) * 100 : null,
