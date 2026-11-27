@@ -114,7 +114,7 @@ Verzoek van de eigenaar, 25 november 2026. Naast het leadcijfer tegen het doel w
 
 ## Naamgeving van campagnes
 - Actiecampagnes heten in de platforms meestal "Actie - …", "Acties - …" of "1. Acties - …", met het model erin (bijv. "1. Acties - Audi A2 e-tron -2026", "Demand Gen | Acties - Audi A2 e-tron - 2026").
-- Let op valse treffers: een korte modelnaam als "A2" komt ook in andere woorden voor. Controleer altijd merk, model en periode.
+- Let op valse treffers: een korte modelnaam als "A2" komt ook in andere woorden voor. Controleer altijd merk, model en periode. In Syntec zoek je een model op met een modelnaam die **begint met** de gezochte naam (bijv. model ilike 'A2%'), niet met de naam ergens in het model (ilike '%a2%'): 'A3 (A2)' en 'A3 Sportback (A2)' zijn anders een valse treffer voor de Audi A2.
 
 ## Campagnevoorstellen
 Aanvullingen van de eigenaar voor de zoekronde naar live actiecampagnes (skill campagne-voorstellen). De skill oordeelt zelf en leest dit als leidraad. Denk aan:
@@ -132,7 +132,8 @@ Aanvullingen van de eigenaar voor de zoekronde naar live actiecampagnes (skill c
 - UTM-opbouw: utm_source=facebook, utm_medium=paid, utm_campaign = campagnenaam, utm_content = advertentienaam, utm_term = advertentieset.
 - Meta-leads (actions_lead) zijn de eigen telling van Meta (leadformulieren, Messenger en pixel samen). GA4 en Syntec zijn leidend; laat verschillen zien.
 - Bereik is niet op te tellen over dagen of platforms: vraag het periodebereik op zonder dagindeling.
-- Tabel Per platform en campagne (stap Advertenties): Leads = actions_lead. Conversies = de websiteconversies van de pixel (offsite_conversion) die niet al onder lead vallen; zijn die er niet of niet te onderscheiden, dan "n.v.t." en meld je het bij de datakwaliteit. (Voorlopige keuze; de eigenaar kan hem aanpassen.)`,
+- Tabel Per platform en campagne (stap Advertenties): Leads = actions_lead. Conversies = de websiteconversies van de pixel (offsite_conversion) die niet al onder lead vallen; zijn die er niet of niet te onderscheiden, dan "n.v.t." en meld je het bij de datakwaliteit. (Voorlopige keuze; de eigenaar kan hem aanpassen.)
+- **Video-advertenties beoordeel je op sessies, niet op linkklikken** (Audi A2, november 2026): een linkklik is een klik in de advertentie, een sessie is dat iemand op de campagnepagina aankomt. Bij video telt Meta ook klikken die niet op de pagina uitkomen. Bij de A2 werd 77% van de linkklikken een sessie bij afbeeldingen (18 sep t/m 13 okt) en 12% bij video (9 t/m 17 nov); bij Skoda herfstvoordeel 29%. Reken kosten per sessie (kosten ÷ GA4-sessies uit facebook / paid op de campagnepagina) en noem het aandeel linkklikken dat een sessie werd. Dit is vooral een vergelijking tussen creatives; het mechanisme erachter is niet vastgesteld.`,
 
     linkedin_ads: `- LinkedIn Ads wordt weinig gebruikt (kleine budgetten).
 - De utm_campaign in GA4 is vaak een korte slug (bijv. "vriendenprijs") terwijl de campagne bij LinkedIn langer heet: koppel op inhoud en periode, niet alleen op exacte naam.
@@ -229,7 +230,7 @@ Passen de parameters customevent_car_brand en customevent_car_model niet bij het
 ## De kolommen
 - **Kanaal**: waar de lead binnenkwam ("Udenhout.nl", "Udenhout.nl proefritaanv.", "Volkswagen.nl", "CST" …). Tot april 2026 had elk formulier van udenhout.nl een eigen kanaal; sindsdien komt alles binnen onder "Udenhout.nl" en zegt Onderwerp wat het is.
 - **Kanaalgroep**: "Internet" = online lead; Showroom, Acquisitie, Mail en Telefoon = offline.
-- **Merk / Model**: het model staat op veel manieren geschreven ("A2", "A2 e-tron", "AUDI A2 E-TRON"). Zoek breed op het model, controleer het merk en noem welke modelwaarden je meetelt.
+- **Merk / Model**: het model staat op veel manieren geschreven ("A2", "A2 e-tron", "AUDI A2 E-TRON"). Zoek breed op het model, maar laat de modelnaam **beginnen met** de gezochte naam (model ilike 'A2%', niet ilike '%a2%'): 'A3 (A2)' is anders een valse treffer voor de Audi A2. Controleer het merk en noem welke modelwaarden je meetelt.
 - **Ordersoort**: Nieuw of Gebruikt.
 - **Onderwerp**: de omschrijving van de aanvraag ("Proefrit aanvraag", "Offerte private lease" …).
 
@@ -294,7 +295,7 @@ Alle klantgroepen per ordertype, met het aantal orders Nieuw / Gebruikt van 1 ja
 - **Ordersoort**: Nieuw, Gebruikt of Handel.
 - **Klantgroep**: aan welke klantgroep de auto is verkocht (zie hierboven).
 - **Merk**: de eigen merken staan netjes (Volkswagen, Škoda, Audi, CUPRA, Volkswagen Bedrijfswagens, SEAT, Porsche); andere merken in hoofdletters (FORD, TOYOTA …), vooral bij Gebruikt en Handel. "Onbekend", "Y" en "P" zijn opvulwaarden.
-- **Model**: staat op veel manieren geschreven ("Polo (6)", "up! (2) GP", "ID. Buzz"). Een model kan in de orders anders heten dan in de leads en de campagne: de Audi A2 e-tron staat in de orders als "A2 e-tron (A1)". Zoek breed op het model, controleer het merk en noem welke modelwaarden je meetelt.
+- **Model**: staat op veel manieren geschreven ("Polo (6)", "up! (2) GP", "ID. Buzz"). Een model kan in de orders anders heten dan in de leads en de campagne: de Audi A2 e-tron staat in de orders als "A2 e-tron (A1)". Zoek breed op het model, maar laat de modelnaam **beginnen met** de gezochte naam (model ilike 'A2%', niet ilike '%a2%'): 'A3 (A2)' en 'A3 Sportback (A2)' zijn anders een valse treffer voor de Audi A2. Controleer het merk en noem welke modelwaarden je meetelt.
 - **Orderdatum**: de datum van de order, zonder tijd.
 - Niet in de kopie (bewust): Brandstof, Uitvoering, de weeknummers, Autoline Magic en Campagnes. De kolom Campagnes is een formule in de sheet en zegt niet welke campagne de verkoop bracht.`,
 
