@@ -1,10 +1,24 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import GebruikersMenu from "@/components/GebruikersMenu";
 import NavigationItem from "@/components/NavigationItem";
 import { magTabbladZien } from "@/lib/beperkteTabbladen";
-import { IconBrain, IconTrophy } from "@/components/icons";
-import { NAV_GROEPEN, zichtbarePaginas } from "@/components/navigatie";
+import {
+  IconArrowRight,
+  IconBrain,
+  IconCalendarRange,
+  IconChartBar,
+  IconChevronDown,
+  IconTrophy,
+} from "@/components/icons";
+import { AnalyseIllustratie, TimelineIllustratie } from "@/components/home/Illustraties";
+import {
+  NAV_GROEPEN,
+  zichtbarePaginas,
+  type NavGroep,
+  type NavGroepId,
+} from "@/components/navigatie";
 
 export type DashboardView =
   | "home"
@@ -45,6 +59,36 @@ type Props = {
   profielAvatarUrl: string | null;
 };
 
+/**
+ * De twee pagina's waar de sidebar om draait (november 2026, op verzoek): Marketing analyse
+ * en Campagne timeline staan bovenaan als grote tegel met een illustratie, in plaats van
+ * als gewone rij. De rest van de groep Campagnes (Campagnes, Tijdlijn, Campagnebeheer)
+ * staat niet meer in de sidebar — wel nog op het startscherm, dat `NAV_GROEPEN` volledig
+ * toont. De groepen KPI's 2027, Kanalen en Tools staan eronder, standaard ingeklapt.
+ */
+const UITGELICHT: {
+  view: DashboardView;
+  label: string;
+  icon: React.ReactNode;
+  illustratie: React.ReactNode;
+}[] = [
+  {
+    view: "marketing-analyse",
+    label: "Marketing analyse",
+    icon: <IconChartBar />,
+    illustratie: <AnalyseIllustratie />,
+  },
+  {
+    view: "campagne-timeline",
+    label: "Campagne timeline",
+    icon: <IconCalendarRange />,
+    illustratie: <TimelineIllustratie />,
+  },
+];
+
+/** De groep Campagnes staat niet als groep in de sidebar: zie `UITGELICHT`. */
+const SIDEBAR_GROEPEN = NAV_GROEPEN.filter((g) => g.id !== "campagnes");
+
 /** Toon alleen het lokale deel van het werkadres als naam; het domein staat al in "Marketing" eronder. */
 function naamVoor(email: string | null): string {
   if (!email) return "Gast";
@@ -65,6 +109,22 @@ export default function Sidebar({
   // Budget beheer, Koppeltabel en Kosten niemand; Leads, Landingspagina en Instellingen
   // alleen de eigenaar.
   const zie = (view: DashboardView) => magTabbladZien(view, gebruikerEmail);
+
+  // Welke groepen zijn uitgeklapt? Standaard geen enkele. Kom je via het startscherm of
+  // een link (`?tab=…`) op een pagina uit een ingeklapte groep, dan klapt die groep open,
+  // zodat de actieve pagina altijd in de sidebar te zien is.
+  const [open, setOpen] = useState<Set<NavGroepId>>(() => new Set());
+  useEffect(() => {
+    const groep = SIDEBAR_GROEPEN.find((g) => g.paginas.some((pg) => pg.view === actief));
+    if (groep) setOpen((eerder) => (eerder.has(groep.id) ? eerder : new Set(eerder).add(groep.id)));
+  }, [actief]);
+  const wissel = (id: NavGroepId) =>
+    setOpen((eerder) => {
+      const nieuw = new Set(eerder);
+      if (nieuw.has(id)) nieuw.delete(id);
+      else nieuw.add(id);
+      return nieuw;
+    });
 
   return (
     // Staat standaard ingeklapt op een smalle icoon-rail (72px); bij hover klapt hij uit
@@ -123,29 +183,36 @@ export default function Sidebar({
             />
           )}
 
-          {/* De groepen zelf (Campagnes, KPI's 2027, Kanalen, Tools) staan in
-              `components/navigatie.tsx`, gedeeld met het startscherm. Een groep zonder
-              zichtbare pagina krijgt ook geen kopje. */}
-          {NAV_GROEPEN.map((groep) => {
-            const paginas = zichtbarePaginas(groep, gebruikerEmail);
-            if (paginas.length === 0) return null;
-            return (
-              <div key={groep.id} className="flex flex-col gap-0.5">
-                <p className="label-theme mb-1 mt-4 hidden px-3 text-label text-sidebar-ink-muted group-hover:block">
-                  {groep.naam}
-                </p>
-                {paginas.map((pg) => (
-                  <NavigationItem
-                    key={pg.view}
-                    icon={pg.icon}
-                    label={pg.label}
-                    active={actief === pg.view}
-                    onClick={() => onNavigate(pg.view)}
-                  />
-                ))}
-              </div>
-            );
-          })}
+          {/* De twee hoofdpagina's als tegels. */}
+          <div className="flex flex-col gap-2 group-hover:gap-2.5">
+            {UITGELICHT.filter((t) => zie(t.view)).map((t) => (
+              <SidebarTegel
+                key={t.view}
+                label={t.label}
+                icon={t.icon}
+                illustratie={t.illustratie}
+                active={actief === t.view}
+                onClick={() => onNavigate(t.view)}
+              />
+            ))}
+          </div>
+
+          {/* De groepen zelf (KPI's 2027, Kanalen, Tools) staan in `components/navigatie.tsx`,
+              gedeeld met het startscherm. Een groep zonder zichtbare pagina krijgt ook geen
+              kopje. */}
+          <div className="mt-3">
+            {SIDEBAR_GROEPEN.map((groep) => (
+              <InklapGroep
+                key={groep.id}
+                groep={groep}
+                gebruikerEmail={gebruikerEmail}
+                actief={actief}
+                open={open.has(groep.id)}
+                onWissel={() => wissel(groep.id)}
+                onNavigate={onNavigate}
+              />
+            ))}
+          </div>
         </nav>
       </div>
 
@@ -166,5 +233,119 @@ export default function Sidebar({
         />
       </div>
     </aside>
+  );
+}
+
+/**
+ * Een uitgelichte pagina als tegel. Ingeklapt (rail op 72px) is het een vierkantje met
+ * alleen het icoon, net zo groot als een gewone rij; klapt de sidebar uit, dan groeit hij
+ * tot een blok met de isometrische illustratie (zelfde stijl als het startscherm) en de
+ * titel eronder. De kleuren staan in `.sidebar-tegel` (globals.css): die zet de kaart- en
+ * inktkleur van de illustratie op die van de sidebar, zodat hij in elk theme klopt.
+ */
+function SidebarTegel({
+  label,
+  icon,
+  illustratie,
+  active,
+  onClick,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  illustratie: React.ReactNode;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-current={active ? "page" : undefined}
+      aria-label={label}
+      title={label}
+      className={`sidebar-tegel iso-blok group/tegel relative block h-10 w-full overflow-hidden rounded-control border text-left transition-[height,background-color,border-color] duration-[var(--duur)] ease-merk group-hover:h-[140px] ${
+        active ? "nav-item-actief" : ""
+      }`}
+    >
+      {/* Rail: alleen het icoon, gecentreerd. */}
+      <span className="absolute inset-0 flex items-center justify-center transition-opacity duration-[var(--duur-snel)] group-hover:opacity-0 [&>svg]:h-[18px] [&>svg]:w-[18px]">
+        {icon}
+      </span>
+
+      {/* Uitgeklapt: illustratie met de titel eronder. */}
+      <span className="absolute inset-0 flex flex-col opacity-0 transition-opacity duration-[var(--duur)] ease-merk group-hover:opacity-100 group-hover:delay-75">
+        <span className="sidebar-tegel-gloed pointer-events-none absolute inset-0" aria-hidden="true" />
+        <span className="relative flex min-h-0 flex-1 items-center justify-center px-6 pt-3">
+          <span className="block h-full w-full">{illustratie}</span>
+        </span>
+        <span className="relative flex items-center justify-between gap-2 whitespace-nowrap px-3.5 pb-3 pt-1">
+          <span className="text-sm font-semibold">{label}</span>
+          <IconArrowRight className="h-3.5 w-3.5 shrink-0 -translate-x-1 opacity-0 transition-all duration-[var(--duur-snel)] ease-merk group-hover/tegel:translate-x-0 group-hover/tegel:opacity-70" />
+        </span>
+      </span>
+    </button>
+  );
+}
+
+/**
+ * Een navigatiegroep die je in- en uitklapt met het kopje. Standaard ingeklapt; het pijltje
+ * rechts van het kopje wijst naar rechts (dicht) of omlaag (open). In de smalle rail staat
+ * er in plaats van het kopje een kort streepje, en alleen de iconen van open groepen.
+ */
+function InklapGroep({
+  groep,
+  gebruikerEmail,
+  actief,
+  open,
+  onWissel,
+  onNavigate,
+}: {
+  groep: NavGroep;
+  gebruikerEmail: string | null;
+  actief: DashboardView;
+  open: boolean;
+  onWissel: () => void;
+  onNavigate: (view: DashboardView) => void;
+}) {
+  const paginas = zichtbarePaginas(groep, gebruikerEmail);
+  if (paginas.length === 0) return null;
+  const lijstId = `nav-groep-${groep.id}`;
+  return (
+    <div className="flex flex-col">
+      <div aria-hidden="true" className="mx-auto mb-2 mt-3 h-px w-5 bg-sidebar-ink/15 group-hover:hidden" />
+      <button
+        type="button"
+        onClick={onWissel}
+        aria-expanded={open}
+        aria-controls={lijstId}
+        className="nav-item mt-1 hidden w-full items-center justify-between px-3 py-2 text-sidebar-ink-muted transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-sidebar-hover hover:text-sidebar-ink group-hover:flex"
+      >
+        <span className="label-theme whitespace-nowrap text-label">{groep.naam}</span>
+        <IconChevronDown
+          className={`h-3.5 w-3.5 shrink-0 transition-transform duration-[var(--duur)] ease-merk ${
+            open ? "" : "-rotate-90"
+          }`}
+        />
+      </button>
+      <div
+        id={lijstId}
+        inert={!open}
+        className={`grid transition-[grid-template-rows,opacity] duration-[var(--duur)] ease-merk ${
+          open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="flex min-h-0 flex-col gap-0.5 overflow-hidden">
+          {paginas.map((pg) => (
+            <NavigationItem
+              key={pg.view}
+              icon={pg.icon}
+              label={pg.label}
+              active={actief === pg.view}
+              onClick={() => onNavigate(pg.view)}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }

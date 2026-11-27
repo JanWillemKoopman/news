@@ -417,3 +417,82 @@ export function CampagnesIllustratie() {
     </Tekening>
   );
 }
+
+/**
+ * Marketing analyse: een trechter van vier platen die van boven naar beneden smaller
+ * worden (de full funnel: van bereik naar lead), met onderaan het blokje dat eruit komt.
+ * Bij hover waaieren de platen uit en valt het blokje een stukje verder.
+ * Staat in de sidebar (`components/Sidebar.tsx`), niet op het startscherm.
+ */
+export function AnalyseIllustratie() {
+  const s = 15;
+  const p = maakProjectie(150, 70, s);
+  const dikte = 0.3;
+  const tussen = 1.55;
+  // Van onder naar boven getekend, zodat elke bredere plaat over de smallere eronder valt.
+  const maten = [1.6, 3.0, 4.4, 5.8];
+  const midden = 3;
+
+  return (
+    <Tekening label="Een trechter van platen met onderaan een lead" viewBox="71 -17 159 173">
+      <g className="iso-beweeg" style={beweeg(0, 6, 160)}>
+        <Blok p={p} x={midden - 0.45} y={midden - 0.45} z={-1.6} b={0.9} d={0.9} h={0.9} />
+      </g>
+      {maten.map((m, i) => (
+        <g key={m} className="iso-beweeg" style={beweeg(0, -i * 3)}>
+          <Blok
+            p={p}
+            x={midden - m / 2}
+            y={midden - m / 2}
+            z={i * tussen}
+            b={m}
+            d={m}
+            h={dikte}
+          />
+        </g>
+      ))}
+    </Tekening>
+  );
+}
+
+/**
+ * Campagne timeline: een grondplaat met vier balken als in een Gantt-planning, langs de
+ * tijdas (x). Bij hover schuiven de balken elk een eigen stukje op in de tijd.
+ * Staat in de sidebar (`components/Sidebar.tsx`), niet op het startscherm.
+ */
+export function TimelineIllustratie() {
+  const s = 15;
+  const p = maakProjectie(140, 60, s);
+  const lengte = 8.4;
+  const diepte = 5;
+  const balken = [
+    { y: 0.5, x: 0.5, b: 3.4, h: 0.45, schuif: 0.5 },
+    { y: 1.6, x: 2.4, b: 4.2, h: 0.7, schuif: -0.4 },
+    { y: 2.7, x: 1.1, b: 2.6, h: 0.45, schuif: 0.7 },
+    { y: 3.8, x: 3.6, b: 3.8, h: 0.6, schuif: -0.3 },
+  ];
+  // Een stap langs de tijdas (+x) in px.
+  const langs = (eenheden: number, vertraging: number) =>
+    beweeg(eenheden * 0.866 * s, eenheden * 0.5 * s, vertraging);
+
+  return (
+    <Tekening label="Een planning met balken langs een tijdas" viewBox="71 54 182 115">
+      <Blok p={p} x={0} y={0} z={-0.3} b={lengte} d={diepte} h={0.3} />
+      {/* maandstrepen op de grondplaat */}
+      {[2.1, 4.2, 6.3].map((x) => (
+        <polyline
+          key={x}
+          fill="none"
+          strokeOpacity={0.5}
+          strokeDasharray="2 3"
+          points={pts([p(x, 0.15, 0), p(x, diepte - 0.15, 0)])}
+        />
+      ))}
+      {balken.map((bk, i) => (
+        <g key={i} className="iso-beweeg" style={langs(bk.schuif, i * 50)}>
+          <Blok p={p} x={bk.x} y={bk.y} z={0} b={bk.b} d={0.7} h={bk.h} />
+        </g>
+      ))}
+    </Tekening>
+  );
+}
