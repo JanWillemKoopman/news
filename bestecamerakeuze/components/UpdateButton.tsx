@@ -37,7 +37,7 @@ export default function UpdateButton({ label = "Data updaten", variant = "header
       disabled={isPending}
       className={`flex shrink-0 items-center gap-1.5 rounded-control text-sm font-medium text-ink transition-colors duration-[var(--duur-snel)] disabled:cursor-wait disabled:opacity-70 ${
         variant === "header"
-          ? "border border-line bg-card px-3 py-1.5 shadow-card hover:bg-surface"
+          ? "border border-line bg-card px-3 py-1.5 shadow-card hover:bg-surface vdu:text-ink-muted vdu:hover:border-ink-faint vdu:hover:text-ink"
           : "px-3 py-2 text-ink-muted hover:bg-surface hover:text-ink"
       }`}
     >

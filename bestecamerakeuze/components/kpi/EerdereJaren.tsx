@@ -58,16 +58,16 @@ export default function EerdereJarenSchakelaar() {
       aria-checked={aan}
       onClick={() => wissel(!aan)}
       title={aan ? "Verberg de lijnen van de jaren vóór 2026" : "Toon ook de lijnen van de jaren vóór 2026"}
-      className="flex shrink-0 items-center gap-2 rounded-control border border-line bg-card px-3 py-1.5 text-sm font-medium text-ink shadow-card transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-surface"
+      className="flex shrink-0 items-center gap-2 rounded-control border border-line bg-card px-3 py-1.5 text-sm font-medium text-ink vdu:text-ink-muted shadow-card transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-surface vdu:hover:border-ink-faint vdu:hover:text-ink"
     >
       <span
         aria-hidden="true"
         className={`relative inline-block h-4 w-7 rounded-pill transition-colors duration-[var(--duur-snel)] ease-merk ${
-          aan ? "bg-primary" : "bg-ink-faint/40"
+          aan ? "bg-primary vdu:bg-ink" : "bg-ink-faint/40"
         }`}
       >
         <span
-          className={`absolute top-0.5 h-3 w-3 rounded-pill bg-card shadow-subtle transition-[left] duration-[var(--duur-snel)] ease-merk ${
+          className={`absolute top-0.5 h-3 w-3 rounded-pill bg-card shadow-subtle vdu:ring-1 vdu:ring-ink/15 transition-[left] duration-[var(--duur-snel)] ease-merk ${
             aan ? "left-3.5" : "left-0.5"
           }`}
         />

@@ -228,7 +228,7 @@ export function OptinStrip({
               onClick={() => onStand(s.id)}
               aria-pressed={s.id === stand}
               className={`rounded-control px-2.5 py-1 text-sm transition-colors duration-[var(--duur-snel)] ease-merk ${
-                s.id === stand ? "bg-primary text-on-primary" : "text-ink-muted hover:bg-surface"
+                s.id === stand ? "bg-primary text-on-primary vdu:bg-ink vdu:text-card" : "text-ink-muted hover:bg-surface vdu:hover:text-ink"
               }`}
             >
               {s.label}
@@ -277,7 +277,7 @@ function OptinTegel({
         onClick={() => onKies(!aan)}
         aria-pressed={aan}
         className={`w-full rounded-card border px-3 py-2.5 text-left transition-colors duration-[var(--duur-snel)] ease-merk ${
-          aan ? "border-primary bg-primary-light" : "border-line hover:bg-surface"
+          aan ? "border-primary bg-primary-light vdu:border-ink vdu:bg-surface" : "border-line vdu:hover:border-ink-faint hover:bg-surface"
         }`}
       >
         <span className="label-theme block truncate text-label text-ink-faint" title={kolom}>

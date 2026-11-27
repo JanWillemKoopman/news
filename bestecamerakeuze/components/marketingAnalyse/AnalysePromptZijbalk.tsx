@@ -28,7 +28,7 @@ export function opgeslagenRegel(
 const INVOER =
   "w-full rounded-control border border-line bg-card px-3 py-2 text-sm text-ink outline-none placeholder:text-ink-faint focus:border-primary disabled:opacity-60";
 const KNOP_LICHT =
-  "rounded-button border border-line bg-card px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-surface disabled:opacity-60";
+  "rounded-button border border-line bg-card px-4 py-2 text-sm font-medium text-ink vdu:text-ink-muted transition-colors vdu:hover:border-ink-faint hover:bg-surface vdu:hover:text-ink disabled:opacity-60";
 const KNOP =
   "rounded-button bg-primary px-4 py-2 text-sm font-medium text-on-primary transition-colors hover:bg-primary-dark disabled:opacity-50";
 

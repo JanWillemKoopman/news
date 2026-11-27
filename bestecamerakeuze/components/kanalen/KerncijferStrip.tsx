@@ -100,10 +100,10 @@ export default function KerncijferStrip({
             aria-pressed={actief}
             title={statistiek.uitleg}
             className={`flex flex-col gap-1 px-4 py-3 text-left transition-colors duration-[var(--duur-snel)] ease-merk ${
-              actief ? "bg-primary-light" : "bg-card hover:bg-surface"
+              actief ? "bg-primary-light vdu:bg-surface vdu:shadow-[inset_0_-2px_0_var(--color-ink)]" : "bg-card hover:bg-surface"
             }`}
           >
-            <span className={`label-theme text-label ${actief ? "text-primary" : "text-ink-faint"}`}>
+            <span className={`label-theme text-label ${actief ? "text-primary vdu:text-ink" : "text-ink-faint"}`}>
               {statistiek.label}
             </span>
             <span className="font-sans-w7 text-cell font-semibold text-ink">

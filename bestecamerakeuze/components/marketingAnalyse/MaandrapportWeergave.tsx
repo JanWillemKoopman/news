@@ -535,7 +535,7 @@ export default function MaandrapportWeergave({
               aria-selected={i === actief}
               onClick={() => setActief(i)}
               className={`rounded-button px-4 py-2 text-sm transition-colors ${
-                i === actief ? "bg-primary font-semibold text-on-primary" : "text-ink-muted hover:bg-surface hover:text-ink"
+                i === actief ? "bg-primary vdu:bg-ink font-semibold text-on-primary vdu:text-card" : "text-ink-muted hover:bg-surface hover:text-ink"
               }`}
             >
               {x.naam}

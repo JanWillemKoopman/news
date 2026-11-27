@@ -283,9 +283,9 @@ export default function TijdGrafiek({
                   title={kan ? undefined : "Niet beschikbaar bij deze periode"}
                   className={`rounded-control px-2.5 py-1 text-sm capitalize transition-colors duration-[var(--duur-snel)] ease-merk ${
                     k === actieveKorrel
-                      ? "bg-primary text-on-primary"
+                      ? "bg-primary text-on-primary vdu:bg-ink vdu:text-card"
                       : kan
-                        ? "text-ink-muted hover:bg-surface"
+                        ? "text-ink-muted hover:bg-surface vdu:hover:text-ink"
                         : "cursor-not-allowed text-ink-faint opacity-50"
                   }`}
                 >

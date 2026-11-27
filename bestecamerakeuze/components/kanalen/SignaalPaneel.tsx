@@ -123,7 +123,7 @@ function SignaalRegel({
           : `Filter de hele pagina op ${signaal.onderwerp}`
       }
       className={`flex w-full items-start gap-3 px-5 py-2.5 text-left transition-colors duration-[var(--duur-snel)] ${
-        actief ? "bg-primary-light" : "hover:bg-surface"
+        actief ? "bg-primary-light vdu:bg-surface vdu:shadow-[inset_2px_0_0_var(--color-ink)]" : "hover:bg-surface"
       }`}
     >
       {/* De pijl zegt welke kant het cijfer op ging, de kleur of dat goed of slecht is.

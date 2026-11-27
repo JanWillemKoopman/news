@@ -236,6 +236,54 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
   `text-on-logo` voor het "AI"-beeldmerk. Niet elk merk heeft een donkere primaire
   kleur: op Škoda's Electric Green en CUPRA's koper hoort juist donkere tekst.
 
+### Rustig en vlak (de design principes, november 2026)
+
+Op verzoek eerst op Marketing analyse en daarna op **alle zichtbare pagina's** toegepast: een
+rustige, platte Apple-stijl in de huisstijl van Udenhout. Alleen kleur, lijn en schaduw; geen
+maat, gewicht of afstand. Voor en na gemeten op alle negentien zichtbare tabbladen: elk element
+staat op dezelfde plek en is even groot.
+
+**Alleen in de huisstijl van Udenhout (het standaardtheme), niet in de merkthemes** (besluit van
+de eigenaar, 27 november 2026): Volkswagen, Audi, Škoda, SEAT, CUPRA, Porsche, Pink Porsche en
+Bentley houden precies hun eigen look, met textuur, verloop, schaduwen, grijstinten en
+selectiekleuren (pixel voor pixel gelijk aan daarvoor). Zo werkt het:
+- Globaal (globals.css): de regels staan onder `[data-theme="udenhout"]`.
+- In componenten de Tailwind-variant **`vdu:`** (`@custom-variant vdu` in globals.css): de
+  klassen zonder `vdu:` zijn de oude stijl en gelden voor de merkthemes; de `vdu:`-klassen gelden
+  alleen in de huisstijl en winnen daar. Voorbeeld van een gekozen periodeknop:
+  `"bg-primary text-on-primary vdu:bg-ink vdu:text-card"`. Haal dus geen klasse zonder `vdu:` weg
+  om de huisstijl te veranderen: daarmee verander je de merkthemes mee. Waar de huisstijl iets
+  weghaalt (een hover-vlak), zet `vdu:` het terug (`hover:bg-surface vdu:hover:bg-card`).
+
+Houd je in de huisstijl aan deze principes bij nieuwe UI:
+
+- **Egale ondergrond.** Geen korrel op het paginavlak en geen verloop over de sidebar
+  (`--theme-page-patroon` en `--theme-sidebar-verloop` op none, alleen in de huisstijl).
+- **Vlakke panelen.** Geen slagschaduw: bij `.shadow-subtle`, `.shadow-card` en `.shadow-raised`
+  staat het schaduwdeel (`--tw-shadow`) ongelaagd op nul, zodat een `ring` blijft werken. Let op:
+  Tailwind v4 zet de waarde van een `--shadow-*`-token letterlijk in de utility, dus het token
+  zelf aanpassen werkt niet (de schaduwen per theme bereikten daardoor eigenlijk alleen
+  `.kaart-hover`). Zwevende lagen houden hun schaduw:
+  `shadow-dropdown`, `shadow-modal` en de uitgeklapte sidebar. Een schakelaar-knopje krijgt een
+  haarlijn (`ring-1 ring-ink/15`) in plaats van een schaduw. Geen glas, geen gradients.
+- **Leesbaar grijs.** `--color-ink-muted` (74%) en `--color-ink-faint` (60%) zijn op `body`
+  afgeleid van `--color-ink`, ± 5:1 op wit; `--color-line-soft` 8%. Zo zijn bronlabels,
+  budgetregels en planningsregels ook op een laptop leesbaar. Op body, zodat pop-ups en zijbalken
+  (portals) meedoen.
+- **Een gekozen filter is direct herkenbaar**: een vol vlak in de inktkleur (`vdu:bg-ink vdu:text-card`,
+  met `vdu:border-ink` als de knop een rand heeft), in elk filter, periodeknop, segment en schakelaar.
+  Tabbladen krijgen een streep in de inktkleur (`border-ink`). Een gekozen tegel (kerncijferstrip,
+  Selligent-opt-ins, signaal) krijgt `bg-surface` met een streep of rand in de inktkleur. Houd het
+  lettergewicht van gekozen en niet-gekozen gelijk aan wat het was, anders verschuiven de knoppen.
+- **Primair blauw alleen voor de hoofdactie** (Nieuwe analyse, Opslaan, Analyseer …). Een selectie
+  is nooit blauw; secundaire acties (E-mail settings, Nu bijwerken, Data updaten, Annuleren) zijn
+  omrand met gedempte tekst (`text-ink-muted`), bij hover een donkerdere rand en tekst.
+- **Hover en focus zonder beweging**: alleen een kleur- of randwissel. `.kaart-hover` tilt niet meer
+  op maar krijgt een donkerdere rand. Uitzondering: de illustraties op het startscherm en de
+  sidebar-tegels bewegen bij hover zoals eerder gevraagd.
+- **Kerncijfers dragen gewicht** (Marketing analyse: `vdu:font-semibold` op de cijfers in de tabel).
+  Controleer bij een gewicht- of maatwijziging in een tabel altijd of de rijen even hoog blijven.
+
 ### Themes (het oogje rechtsboven)
 
 Rechtsboven in het scherm staat een oog-icoon (`components/ThemeSwitcher.tsx`) waarmee
@@ -1934,6 +1982,9 @@ lees dat eerst voordat je hier iets verandert.
   analyse. Analyse prompts, Semantic layer en (alleen voor de eigenaar) Verzonden e-mails staan achter het schildje (vooral voor beheerders, maar
   iedereen kan ze openen); open of dicht wordt per browser onthouden. De open analyse staat in de URL
   (`?analyse=<campagne-id>`).
+- **Stijl van het overzicht** (27 november 2026): rustig en vlak, zie "Rustig en vlak" onder de
+  designvisie; hier begonnen en daarna op het hele dashboard toegepast. Alleen **Nieuwe analyse** is
+  primair blauw; kerncijfers in de tabel zijn `vdu:font-semibold` (alleen in de huisstijl).
 - **Filterbalk op soort analyse** (25–26 november 2026, op verzoek; `OpzetFilterBalk.tsx`). Tussen de
   filter op bedrijf en het blok met analyses een rij knoppen, met links het statusfilter (Live / Niet
   live): precies twee **soorten**, met het aantal analyses binnen de andere filters (27 november 2026,

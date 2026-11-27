@@ -184,7 +184,7 @@ export default function Kpi2027Paneel({ ingelogd }: { ingelogd: boolean }) {
               aria-selected={aan}
               onClick={() => setGekozen(w.sleutel)}
               className={`-mb-px border-b-2 px-1 pb-2.5 text-sm transition-colors duration-[var(--duur-snel)] ease-merk ${
-                aan ? "border-primary font-medium text-ink" : "border-transparent text-ink-muted hover:text-ink"
+                aan ? "border-primary vdu:border-ink font-medium text-ink" : "border-transparent text-ink-muted hover:text-ink"
               }`}
             >
               {w.naam}
@@ -226,7 +226,7 @@ export default function Kpi2027Paneel({ ingelogd }: { ingelogd: boolean }) {
                 setIndelingOpen(true);
               }}
               title="Alle sessiebron/media met de kanaalgroep waarin ze in de kanaalgrafieken tellen; met de hand aan te passen."
-              className="flex shrink-0 items-center gap-1.5 rounded-control border border-line bg-card px-3 py-1.5 text-sm font-medium text-ink shadow-card transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-surface"
+              className="flex shrink-0 items-center gap-1.5 rounded-control border border-line bg-card px-3 py-1.5 text-sm font-medium text-ink vdu:text-ink-muted shadow-card transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-surface vdu:hover:border-ink-faint vdu:hover:text-ink"
             >
               <IconTable className="h-3.5 w-3.5" />
               Kanaalgroepindeling
@@ -238,7 +238,7 @@ export default function Kpi2027Paneel({ ingelogd }: { ingelogd: boolean }) {
             onClick={werkBij}
             disabled={bijwerken}
             title="Haalt 2026 voor alle websites opnieuw op bij Google Analytics, t/m de laatste zaterdag — dezelfde stand als de update op zondag."
-            className="flex shrink-0 items-center gap-1.5 rounded-control border border-line bg-card px-3 py-1.5 text-sm font-medium text-ink shadow-card transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-surface disabled:cursor-wait disabled:opacity-70"
+            className="flex shrink-0 items-center gap-1.5 rounded-control border border-line bg-card px-3 py-1.5 text-sm font-medium text-ink vdu:text-ink-muted shadow-card transition-colors duration-[var(--duur-snel)] ease-merk vdu:hover:border-ink-faint hover:bg-surface vdu:hover:text-ink disabled:cursor-wait disabled:opacity-70"
           >
             <IconRefresh className={`h-3.5 w-3.5 ${bijwerken ? "animate-spin" : ""}`} />
             {bijwerken ? "Bezig… (± 1–2 min)" : "Nu bijwerken"}

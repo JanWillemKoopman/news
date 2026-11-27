@@ -110,7 +110,7 @@ export default function Kpi2027CrmPaneel({ ingelogd }: { ingelogd: boolean }) {
           onClick={haalOpnieuw}
           disabled={verversen || bezig}
           title="Haalt de Selligent-export opnieuw op bij Azure, ook als hij niet is veranderd."
-          className="flex shrink-0 items-center gap-1.5 rounded-control border border-line bg-card px-3 py-1.5 text-sm font-medium text-ink shadow-card transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-surface disabled:cursor-wait disabled:opacity-70"
+          className="flex shrink-0 items-center gap-1.5 rounded-control border border-line bg-card px-3 py-1.5 text-sm font-medium text-ink vdu:text-ink-muted shadow-card transition-colors duration-[var(--duur-snel)] ease-merk vdu:hover:border-ink-faint hover:bg-surface vdu:hover:text-ink disabled:cursor-wait disabled:opacity-70"
         >
           <IconRefresh className={`h-3.5 w-3.5 ${verversen ? "animate-spin" : ""}`} />
           {verversen ? "Bezig…" : "Opnieuw ophalen"}
