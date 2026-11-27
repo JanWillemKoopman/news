@@ -482,13 +482,13 @@ test("voorstellen op Live sinds, nieuw naar oud, zonder datum achteraan", () => 
   assert.deepEqual(sorteerVoorstellen(lijst).map((v) => v.naam), ["A", "B", "D", "C"]);
 });
 
-test("opzetSoort: afkortingen van bedrijven eruit, over de bedrijven heen dezelfde sleutel", () => {
-  assert.deepEqual(opzetSoort("VDU maandrapportage"), { sleutel: "maandrapportage", naam: "Maandrapportage" });
-  assert.deepEqual(opzetSoort("PGZ maandrapportage").sleutel, "maandrapportage");
-  assert.deepEqual(opzetSoort("PGZ kwartaalrapportage"), { sleutel: "kwartaalrapportage", naam: "Kwartaalrapportage" });
-  assert.deepEqual(opzetSoort("E-mail VDU"), { sleutel: "e-mail", naam: "E-mail" });
+test("opzetSoort: Campagne analyse of Maatwerk rapportage", () => {
+  const maatwerk = { sleutel: "maatwerk rapportage", naam: "Maatwerk rapportage" };
   assert.deepEqual(opzetSoort("Campagne analyse"), { sleutel: "campagne analyse", naam: "Campagne analyse" });
-  assert.deepEqual(opzetSoort("VDU"), { sleutel: "vdu", naam: "VDU" });
+  assert.deepEqual(opzetSoort("VDU maandrapportage"), maatwerk);
+  assert.deepEqual(opzetSoort("PGZ kwartaalrapportage"), maatwerk);
+  assert.deepEqual(opzetSoort("E-mail VDU"), maatwerk);
+  assert.deepEqual(opzetSoort("HRM campagne"), maatwerk);
 });
 
 test("opzetFilterKnoppen: gegroepeerd per soort, telt alleen lopend, uitgezet alleen met analyses", () => {
@@ -510,10 +510,13 @@ test("opzetFilterKnoppen: gegroepeerd per soort, telt alleen lopend, uitgezet al
   ];
   assert.deepEqual(opzetFilterKnoppen(opzetten, analyses), [
     { id: "campagne analyse", naam: "Campagne analyse", aantal: 1, opzetIds: ["c"], startOpzetId: "c" },
-    { id: "kwartaalrapportage", naam: "Kwartaalrapportage", aantal: 0, opzetIds: ["vk"], startOpzetId: "vk" },
-    { id: "maandrapportage", naam: "Maandrapportage", aantal: 2, opzetIds: ["vm", "pm"], startOpzetId: null },
-    { id: "e-mail", naam: "E-mail", aantal: 0, opzetIds: ["ev"], startOpzetId: "ev" },
-    { id: "oude opzet", naam: "Oude opzet", aantal: 0, opzetIds: ["oud"], startOpzetId: null },
+    {
+      id: "maatwerk rapportage",
+      naam: "Maatwerk rapportage",
+      aantal: 2,
+      opzetIds: ["vk", "vm", "pm", "ev", "oud", "weg"],
+      startOpzetId: null,
+    },
   ]);
 });
 

@@ -315,16 +315,14 @@ export function sorteerOpzetten<T extends { volgorde: number; naam: string; acti
 }
 
 /**
- * De soort van een opzet over de bedrijven heen: de naam zonder afkortingen in hoofdletters
- * ("VDU maandrapportage" en "PGZ maandrapportage" → "Maandrapportage", "E-mail VDU" → "E-mail").
- * Een opzet zonder zo'n afkorting is zijn eigen soort ("Campagne analyse").
+ * De soort van een opzet: er zijn er twee. "Campagne analyse" is zijn eigen soort; elke andere
+ * opzet (maand-, kwartaalrapportage, e-mail, HRM campagne, …) valt onder "Maatwerk rapportage".
  */
 export function opzetSoort(naam: string): { sleutel: string; naam: string } {
-  const woorden = naam.trim().split(/\s+/).filter(Boolean);
-  const zonder = woorden.filter((w) => !/^[A-Z0-9]{2,5}$/.test(w));
-  const tekst = (zonder.length > 0 ? zonder : woorden).join(" ");
-  const netjes = tekst.charAt(0).toLocaleUpperCase("nl") + tekst.slice(1);
-  return { sleutel: netjes.toLocaleLowerCase("nl"), naam: netjes };
+  if (naam.trim().toLocaleLowerCase("nl") === "campagne analyse") {
+    return { sleutel: "campagne analyse", naam: "Campagne analyse" };
+  }
+  return { sleutel: "maatwerk rapportage", naam: "Maatwerk rapportage" };
 }
 
 /** Een knop in de filterbalk boven het overzicht: één per soort analyse. */

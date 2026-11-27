@@ -1905,13 +1905,13 @@ lees dat eerst voordat je hier iets verandert.
   (`?analyse=<campagne-id>`).
 - **Filterbalk op soort analyse** (25–26 november 2026, op verzoek; `OpzetFilterBalk.tsx`). Tussen de
   filter op bedrijf en het blok met analyses een rij knoppen, met links het statusfilter (Live / Niet
-  live): **Alle** en één per **soort**, met het aantal analyses binnen de andere filters. Een soort is de naam van de opzet
-  zonder afkortingen in hoofdletters (`opzetSoort` in `rekenen.ts`, getest): VDU en PGZ
-  maandrapportage vallen samen onder **Maandrapportage**, kwartaal onder **Kwartaalrapportage**,
-  "E-mail VDU" wordt **E-mail** (besluit van de eigenaar: over de bedrijven heen, niet per bedrijf).
-  De knoppen komen uit de opzetten (`opzetFilterKnoppen`, `filterOpOpzet`), dus een nieuwe opzet krijgt
-  vanzelf een knop of valt in een bestaande soort; een soort met alleen uitgezette opzetten staat er
-  alleen zolang er analyses van zijn. Een soort zonder analyses (binnen de andere filters) staat
+  live): precies twee **soorten**, met het aantal analyses binnen de andere filters (27 november 2026,
+  op verzoek): **Campagne analyse** en **Maatwerk rapportage**. Alles wat geen Campagne analyse is
+  (maand-, kwartaalrapportage, E-mail, HRM campagne, nieuwe opzetten) valt onder Maatwerk rapportage
+  (`opzetSoort` in `rekenen.ts`, getest). Er zijn dus geen knoppen Kwartaalrapportage, Maandrapportage,
+  E-mail en Campagne meer; Nieuwe analyse onder Maatwerk begint niet met een vaste opzet.
+  De knoppen komen uit de opzetten (`opzetFilterKnoppen`, `filterOpOpzet`); een soort met alleen
+  uitgezette opzetten staat er alleen zolang er analyses van zijn. Een soort zonder analyses (binnen de andere filters) staat
   **grijs** maar is klikbaar. Eén keuze tegelijk, nog eens klikken = terug naar Alle. Het filter staat in de URL (`?soort=maandrapportage`), en Nieuwe
   analyse begint met de opzet van de soort als daar precies één actieve opzet onder valt.
 - **Voorgestelde campagne analyses** (25 november 2026, migratie 0046, plan en besluiten in
