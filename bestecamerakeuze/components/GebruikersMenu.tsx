@@ -37,7 +37,11 @@ export default function GebruikersMenu({
   onKoppeltabel,
   onKosten,
   onInstellingen,
-}: Props) {
+  uitgeklapt = false,
+}: Props & {
+  /** Naam en chevron altijd zichtbaar (de doorlopende zijbalk van Marketing analyse), niet pas bij hover. */
+  uitgeklapt?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [positie, setPositie] = useState<{ left: number; bottom: number } | null>(null);
   const knopRef = useRef<HTMLButtonElement>(null);
@@ -80,11 +84,15 @@ export default function GebruikersMenu({
         className="flex w-full items-center gap-2.5 rounded-control px-2 py-2 text-left transition-colors duration-[var(--duur-snel)] hover:bg-sidebar-hover"
       >
         <Avatar naam={naam} avatarUrl={avatarUrl} size={32} />
-        <span className="min-w-0 max-w-0 flex-1 overflow-hidden opacity-0 transition-all duration-[var(--duur)] group-hover:max-w-[160px] group-hover:opacity-100">
+        <span
+          className={`min-w-0 flex-1 overflow-hidden transition-all duration-[var(--duur)] ${
+            uitgeklapt ? "max-w-[160px] opacity-100" : "max-w-0 opacity-0 group-hover:max-w-[160px] group-hover:opacity-100"
+          }`}
+        >
           <span className="block truncate text-sm font-medium text-sidebar-ink">{naam}</span>
           <span className="block truncate text-xs text-sidebar-ink-muted">Udenhout</span>
         </span>
-        <IconChevronUpDown className="hidden h-4 w-4 shrink-0 text-sidebar-ink-muted group-hover:block" />
+        <IconChevronUpDown className={`${uitgeklapt ? "block" : "hidden group-hover:block"} h-4 w-4 shrink-0 text-sidebar-ink-muted`} />
       </button>
 
       {open &&

@@ -9,7 +9,7 @@ import type { Aanbeveling } from "@/lib/marketingAnalyse/types";
 
 export type Buur = { sleutel: string; naam: string };
 
-const KAART = "rounded-panel border border-line bg-card shadow-subtle";
+const KAART = "rounded-[14px] border border-line bg-[var(--ma-ondergrond)] shadow-subtle";
 
 /**
  * Eén stap van de funnel, altijd in dezelfde volgorde: eerst het oordeel in één zin met de
@@ -24,7 +24,11 @@ export default function StapPagina({
   vorige,
   volgende,
   onKies,
+  periodeVan = null,
+  periodeTot = null,
 }: {
+  periodeVan?: string | null;
+  periodeTot?: string | null;
   tab: AnalyseTab;
   nr: number;
   aantal: number;
@@ -41,17 +45,17 @@ export default function StapPagina({
   const uitleg = tab.secties.filter((s) => s.tekst?.trim());
 
   return (
-    <div className="flex flex-col gap-5" aria-label={tab.naam}>
-      <section className={`${KAART} px-8 py-6`}>
-        <p className="text-meta text-ink-muted">
+    <div className="ma-in flex flex-col gap-5" aria-label={tab.naam}>
+      <section className={`${KAART} px-5 py-5 lg:px-6`}>
+        <p className="text-[12px] text-ink-muted">
           Stap {nr} van {aantal}
           {tab.groep ? ` · ${tab.groep}` : ""}
         </p>
         <div className="mt-1 flex flex-wrap items-center gap-3">
-          <h2 className="font-sans-w7 text-title font-bold text-ink">{tab.naam}</h2>
+          <h2 className="font-sans-w7 text-[22px] font-semibold tracking-[-0.015em] text-ink">{tab.naam}</h2>
           <OordeelBadge oordeel={tab.oordeel} />
         </div>
-        {kop && <p className="mt-2.5 max-w-[72ch] text-base leading-relaxed text-ink">{kop}</p>}
+        {kop && <p className="mt-2 max-w-[72ch] text-[14.5px] leading-relaxed text-ink">{kop}</p>}
         {!kop && tab.secties[0]?.ondertitel && <p className="mt-2 text-sm text-ink-muted">{tab.secties[0].ondertitel}</p>}
         {kerncijfers.length > 0 && (
           <div className="mt-5">
@@ -68,21 +72,21 @@ export default function StapPagina({
       ) : (
         <>
           {formaat !== 1 && (
-            <div className="grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] items-start gap-5">
-              <section className={`${KAART} px-6 py-5`}>
-                <h3 className="text-sm font-semibold text-ink">Wat we zien</h3>
+            <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+              <section className={`${KAART} px-5 py-4 lg:px-6`}>
+                <h3 className="ma-kop text-ink">Wat we zien</h3>
                 {bevindingen.length === 0 ? (
                   <p className="mt-2 text-sm text-ink-muted">Geen bevindingen voor deze stap.</p>
                 ) : (
-                  <ul className="mt-3 flex list-disc flex-col gap-2 pl-5 text-sm text-ink">
+                  <ul className="mt-2.5 flex list-disc flex-col gap-1.5 pl-5 text-[13px] leading-relaxed text-ink marker:text-ink-faint">
                     {bevindingen.map((b, i) => (
                       <li key={i}>{b}</li>
                     ))}
                   </ul>
                 )}
               </section>
-              <section className="rounded-panel border border-primary/15 bg-primary-light px-6 py-5">
-                <h3 className="text-sm font-semibold text-primary">Wat nu te doen</h3>
+              <section className="rounded-[14px] border border-primary/15 bg-primary-light px-5 py-4 lg:px-6">
+                <h3 className="ma-kop text-primary">Wat nu te doen</h3>
                 {acties.length === 0 ? (
                   <p className="mt-2 text-sm text-ink-muted">Geen actie nodig voor deze stap.</p>
                 ) : (
@@ -90,10 +94,10 @@ export default function StapPagina({
                     {acties.map((a, i) => (
                       <li key={i}>
                         <div className="flex items-start justify-between gap-3">
-                          <p className="text-sm font-semibold text-ink">{a.titel}</p>
+                          <p className="text-[13px] font-semibold text-ink">{a.titel}</p>
                           <PrioriteitLabel prioriteit={a.prioriteit} />
                         </div>
-                        {a.toelichting && <p className="mt-0.5 text-sm text-ink-muted">{a.toelichting}</p>}
+                        {a.toelichting && <p className="mt-0.5 text-[13px] leading-snug text-ink-muted">{a.toelichting}</p>}
                       </li>
                     ))}
                   </ol>
@@ -110,21 +114,19 @@ export default function StapPagina({
               <div key={`${s.stap}-${i}`} className="flex flex-col gap-5">
                 {metTitels && (
                   <div className="px-1">
-                    <h3 className="font-sans-w7 text-base font-bold text-ink">{s.titel}</h3>
+                    <h3 className="ma-kop text-ink">{s.titel}</h3>
                     {s.ondertitel && <p className="text-meta text-ink-muted">{s.ondertitel}</p>}
                   </div>
                 )}
                 {grafieken.length > 0 && (
                   <div className={`grid gap-5 ${grafieken.length > 1 ? "xl:grid-cols-2" : ""}`}>
                     {grafieken.map((g, j) => (
-                      <div key={j} className="rounded-panel bg-card shadow-subtle">
-                        <AnalyseGrafiek grafiek={g} />
-                      </div>
+                      <AnalyseGrafiek key={j} grafiek={g} periodeVan={periodeVan} periodeTot={periodeTot} />
                     ))}
                   </div>
                 )}
                 {tabellen.map((t, j) => (
-                  <section key={j} className={`${KAART} px-6 py-5`}>
+                  <section key={j} className={`${KAART} px-4 py-4 lg:px-5`}>
                     <AnalyseTabel tabel={t} />
                   </section>
                 ))}
@@ -133,9 +135,9 @@ export default function StapPagina({
           })}
 
           {uitleg.length > 0 && (
-            <details className={`${KAART} px-6 py-4`}>
-              <summary className="cursor-pointer text-sm font-semibold text-ink-muted">Hoe is dit gemeten?</summary>
-              <div className="mt-3 flex max-w-[90ch] flex-col gap-3 text-sm text-ink-muted">
+            <details className={`${KAART} px-5 py-3.5 lg:px-6`}>
+              <summary className="cursor-pointer text-[13px] font-semibold text-ink-muted">Hoe is dit gemeten?</summary>
+              <div className="mt-3 flex max-w-[90ch] flex-col gap-3 text-[13px] text-ink-muted">
                 {uitleg.map((s, i) => (
                   <div key={i}>
                     {metTitels && <p className="font-semibold text-ink">{s.titel}</p>}
@@ -152,14 +154,14 @@ export default function StapPagina({
         <button
           type="button"
           onClick={() => onKies(vorige.sleutel)}
-          className="rounded-button border border-line bg-card px-4 py-2 text-sm text-ink transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-surface"
+          className="ma-knop border border-line bg-[var(--ma-ondergrond)]"
         >
           ← {vorige.naam}
         </button>
         <button
           type="button"
           onClick={() => onKies(volgende.sleutel)}
-          className="rounded-button bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-primary-dark"
+          className="ma-knop ma-knop-primair"
         >
           {volgende.naam} →
         </button>

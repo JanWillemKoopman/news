@@ -14,6 +14,8 @@ import { ActieveWeergaveProvider } from "@/lib/kanalen/actieveWeergave";
 import { wisUrlStand } from "@/lib/kanalen/urlstand";
 import { useTeamData } from "@/lib/teamData";
 import { magTabbladZien } from "@/lib/beperkteTabbladen";
+import WerkruimteZijbalk from "@/components/marketingAnalyse/werkruimte/WerkruimteZijbalk";
+import { WerkruimteProvider, useMobieleViewport } from "@/components/marketingAnalyse/werkruimte/WerkruimteContext";
 
 type Props = {
   gebruikerEmail: string | null;
@@ -307,41 +309,51 @@ export default function AppShell({
     wisUrlStand();
   }
   const { title, subtitle } = TITLES[actief];
-  // Een geopende marketinganalyse heeft zijn eigen kop (kruimelrij + titel); de pagina-header past dan niet.
-  const [analyseOpen, setAnalyseOpen] = useState(false);
-  useEffect(() => {
-    const luister = (e: Event) => setAnalyseOpen(Boolean((e as CustomEvent<boolean>).detail));
-    window.addEventListener("ma-detail", luister);
-    return () => window.removeEventListener("ma-detail", luister);
-  }, []);
   const { zijbalkOpen, openZijbalk, melding, wisMelding } = useTeamData();
+  // Marketing analyse heeft sinds de redesign van november 2026 een eigen werkruimte: een
+  // doorlopende lichte zijbalk en een glazen knoppenbalk die de pagina zelf rendert. Alleen voor
+  // dit tabblad; de andere pagina's houden de rail en de PageHeader (uitrol na akkoord).
+  const werkruimte = actief === "marketing-analyse";
+  useMobieleViewport(werkruimte);
 
   return (
     <ActieveWeergaveProvider value={actief}>
+      <WerkruimteProvider>
       <div className="flex min-h-screen pagina-vlak">
       {/* Het oogje staat helemaal rechtsboven in het scherm en blijft daar op elk
-          tabblad staan — het hoort bij het venster, niet bij één pagina. */}
-      <ThemeSwitcher />
+          tabblad staan — het hoort bij het venster, niet bij één pagina. In de werkruimte
+          staat hij midden in de knoppenbalk, die er rechts ruimte voor vrijhoudt. */}
+      <ThemeSwitcher plek={werkruimte ? "right-2.5 top-[10px]" : undefined} />
 
       {/* z-40: moet boven de sticky tabelkoppen (z-30/z-20/z-10 in CampaignTable/
           CampagneTijdlijn) uitkomen. Bij gelijke z-index wint DOM-volgorde, en de tabel
           staat ná de sidebar in de boom — zonder deze hogere waarde priemt de sticky
           "Campagne"-kolomkop dwars door de uitgeklapte sidebar heen. */}
-      <div className="sticky top-0 z-40 h-screen w-[72px] shrink-0">
-        <Sidebar
+      {werkruimte ? (
+        <WerkruimteZijbalk
           actief={actief}
           onNavigate={navigeer}
           gebruikerEmail={gebruikerEmail}
           profielNaam={profielNaam}
           profielAvatarUrl={profielAvatarUrl}
         />
-      </div>
+      ) : (
+        <div className="sticky top-0 z-40 h-screen w-[72px] shrink-0">
+          <Sidebar
+            actief={actief}
+            onNavigate={navigeer}
+            gebruikerEmail={gebruikerEmail}
+            profielNaam={profielNaam}
+            profielAvatarUrl={profielAvatarUrl}
+          />
+        </div>
+      )}
 
       {/* pr-28: ruimte voor het vaste oogje rechtsboven én, op de Kanalen-pagina's, het
           lampje ernaast (`KanaalPagina.tsx`), zodat de status-/updateknop in de
           PageHeader er niet onder verdwijnt. */}
-      <main className="min-w-0 flex-1 py-6 pl-8 pr-28">
-        {actief !== "chat" && actief !== "home" && !(actief === "marketing-analyse" && analyseOpen) && (
+      <main className={werkruimte ? "min-w-0 flex-1" : "min-w-0 flex-1 py-6 pl-8 pr-28"}>
+        {actief !== "chat" && actief !== "home" && !werkruimte && (
           <PageHeader
             title={title}
             subtitle={subtitle}
@@ -373,7 +385,7 @@ export default function AppShell({
         <div className="mt-6" role="tabpanel" hidden={actief !== "campagne-analyse"}>
           {bezocht.has("campagne-analyse") ? campagneAnalyse : null}
         </div>
-        <div className="mt-6" role="tabpanel" hidden={actief !== "marketing-analyse"}>
+        <div className={werkruimte ? "" : "mt-6"} role="tabpanel" hidden={actief !== "marketing-analyse"}>
           {bezocht.has("marketing-analyse") ? marketingAnalyse : null}
         </div>
         <div className="mt-6" role="tabpanel" hidden={actief !== "campagne-timeline"}>
@@ -477,6 +489,7 @@ export default function AppShell({
       {magTabbladZien("scores", gebruikerEmail) && <WeekwinnaarPopup />}
       <Toast melding={melding} onWeg={wisMelding} />
       </div>
+      </WerkruimteProvider>
     </ActieveWeergaveProvider>
   );
 }

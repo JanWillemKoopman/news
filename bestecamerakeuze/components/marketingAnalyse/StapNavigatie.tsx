@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { OordeelStip } from "@/components/marketingAnalyse/onderdelen";
 import { formatWaarde, type AnalyseTab } from "@/lib/marketingAnalyse/rekenen";
+import { TAB_OORDEEL_NAAM } from "@/lib/marketingAnalyse/types";
 
 /** De vaste plekken in de navigatie naast de stappen van de funnel. */
 export const SAMENVATTING = "samenvatting";
@@ -22,90 +24,124 @@ function groepeer(tabs: AnalyseTab[]): Groep[] {
   return groepen;
 }
 
-function knopKlasse(actief: boolean, leeg = false) {
-  return `flex w-full items-center gap-3 rounded-control px-2.5 py-2 text-left transition-colors duration-[var(--duur-snel)] ease-merk ${
-    actief ? "bg-primary-light" : "hover:bg-surface-tint"
-  } ${leeg && !actief ? "opacity-60" : ""}`;
-}
-
-function Vak({ actief, children }: { actief: boolean; children: React.ReactNode }) {
+function Regel({
+  actief,
+  leeg,
+  onClick,
+  nr,
+  naam,
+  rechts,
+  titel,
+}: {
+  actief: boolean;
+  leeg?: boolean;
+  onClick: () => void;
+  nr: React.ReactNode;
+  naam: string;
+  rechts?: React.ReactNode;
+  titel?: string;
+}) {
   return (
-    <span
-      aria-hidden="true"
-      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-control text-meta font-semibold tabular-nums ${
-        actief ? "bg-primary text-on-primary" : "bg-surface text-ink-muted"
-      }`}
+    <button
+      type="button"
+      onClick={onClick}
+      aria-current={actief ? "page" : undefined}
+      title={titel}
+      className={`ma-nav-item flex h-[28px] w-full items-center gap-2 pl-2 pr-2 text-left text-[12.5px] ${
+        actief ? "font-semibold text-ink" : "text-ink-muted hover:text-ink"
+      } ${leeg && !actief ? "opacity-55" : ""}`}
     >
-      {children}
-    </span>
+      <span aria-hidden="true" className={`ma-getal w-4 shrink-0 text-center text-[11px] ${actief ? "text-primary" : "text-ink-faint"}`}>
+        {nr}
+      </span>
+      <span className="min-w-0 flex-1 truncate">{naam}</span>
+      {rechts}
+    </button>
   );
 }
 
 /**
- * De navigatie links op de analysepagina: bovenaan de samenvatting, dan de stappen van de
- * funnel in hun groepen (Media, Content, Website, Resultaat), elk met het hoofdgetal en het
- * stipje met het oordeel, en onderaan de verantwoording.
+ * De stappen van een geopende analyse, als geneste lijst onder "Marketing analyse" in de zijbalk
+ * (redesign november 2026): zo is er één navigatiekolom en zegt de zijbalk precies waar je bent.
+ * Elke stap met zijn oordeelstip; het hoofdgetal staat in de tooltip en op de stap zelf.
  */
 export default function StapNavigatie({
   tabs,
   actief,
   onKies,
+  naam,
 }: {
   tabs: AnalyseTab[];
   actief: string;
   onKies: (sleutel: string) => void;
+  /** De campagne, als kopje boven de stappen. */
+  naam: string;
 }) {
   return (
-    <nav
-      aria-label="Onderdelen van de analyse"
-      className="sticky top-6 flex flex-col gap-0.5 rounded-panel border border-line bg-card p-3 shadow-subtle"
-    >
-      <button type="button" onClick={() => onKies(SAMENVATTING)} aria-current={actief === SAMENVATTING ? "page" : undefined} className={knopKlasse(actief === SAMENVATTING)}>
-        <Vak actief={actief === SAMENVATTING}>✓</Vak>
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span className="text-sm font-semibold text-ink">Samenvatting</span>
-          <span className="text-meta text-ink-muted">Conclusie en wat nu te doen</span>
-        </span>
-      </button>
-
+    <nav aria-label={`Onderdelen van de analyse ${naam}`} className="mb-1 ml-[18px] mt-0.5 border-l border-[var(--ma-zijbalk-lijn)] pl-1.5">
+      <p className="truncate px-2 pb-0.5 pt-1 text-[11.5px] font-semibold text-ink" title={naam}>
+        {naam}
+      </p>
+      <Regel actief={actief === SAMENVATTING} onClick={() => onKies(SAMENVATTING)} nr="•" naam="Samenvatting" />
       {groepeer(tabs).map((g, gi) => (
-        <div key={`${g.naam}-${gi}`} className="flex flex-col gap-0.5">
-          {g.naam && <p className="label-theme mt-3 px-2.5 pb-1 text-label text-ink-faint">{g.naam}</p>}
-          {!g.naam && gi === 0 && <span className="my-2 h-px bg-line-soft" />}
+        <div key={`${g.naam}-${gi}`}>
+          {g.naam && <p className="px-2 pb-0.5 pt-1.5 text-[10.5px] font-semibold uppercase tracking-[0.05em] text-ink-faint">{g.naam}</p>}
           {g.tabs.map(({ tab, nr }) => {
-            const isActief = actief === tab.sleutel;
             const cijfer = tab.hoofdcijfer ? formatWaarde(tab.hoofdcijfer.waarde, tab.hoofdcijfer.eenheid) : null;
             return (
-              <button
+              <Regel
                 key={tab.sleutel}
-                type="button"
+                actief={actief === tab.sleutel}
+                leeg={tab.leeg}
                 onClick={() => onKies(tab.sleutel)}
-                aria-current={isActief ? "page" : undefined}
-                title={tab.hoofdcijfer ? `${tab.hoofdcijfer.label}: ${cijfer}` : (tab.reden ?? undefined)}
-                className={knopKlasse(isActief, tab.leeg)}
-              >
-                <Vak actief={isActief}>{nr}</Vak>
-                <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-sm font-semibold text-ink">{tab.naam}</span>
-                  <span className="truncate text-meta tabular-nums text-ink-muted">
-                    {cijfer ? `${cijfer} · ${tab.hoofdcijfer?.label.toLowerCase()}` : tab.leeg ? "geen data" : " "}
-                  </span>
-                </span>
-                <OordeelStip oordeel={tab.oordeel} />
-              </button>
+                nr={nr}
+                naam={tab.naam}
+                titel={`${tab.naam}${tab.oordeel ? ` · ${TAB_OORDEEL_NAAM[tab.oordeel]}` : ""}${cijfer ? ` · ${cijfer} ${tab.hoofdcijfer?.label.toLowerCase()}` : tab.leeg ? " · geen data" : ""}`}
+                rechts={<OordeelStip oordeel={tab.oordeel} className="!h-[7px] !w-[7px]" />}
+              />
             );
           })}
         </div>
       ))}
-
-      <span className="mx-1.5 my-2 h-px bg-line-soft" />
-      <button type="button" onClick={() => onKies(VERANTWOORDING)} aria-current={actief === VERANTWOORDING ? "page" : undefined} className={knopKlasse(actief === VERANTWOORDING)}>
-        <Vak actief={actief === VERANTWOORDING}>i</Vak>
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span className="text-sm font-semibold text-ink">Verantwoording</span>
-          <span className="text-meta text-ink-muted">Bronnen, herkenning, datakwaliteit</span>
-        </span>
-      </button>
+      <Regel actief={actief === VERANTWOORDING} onClick={() => onKies(VERANTWOORDING)} nr="i" naam="Verantwoording" />
     </nav>
+  );
+}
+
+/**
+ * Dezelfde stappen als schuifbare rij bovenaan de inhoud, voor een smal scherm (daar is de
+ * zijbalk een lade). De gekozen stap schuift vanzelf in beeld.
+ */
+export function StapChips({ tabs, actief, onKies }: { tabs: AnalyseTab[]; actief: string; onKies: (sleutel: string) => void }) {
+  const rij = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    rij.current?.querySelector<HTMLElement>('[aria-current="page"]')?.scrollIntoView({ block: "nearest", inline: "center" });
+  }, [actief]);
+  const alle = [
+    { sleutel: SAMENVATTING, naam: "Samenvatting", oordeel: null, nr: null as number | null },
+    ...tabs.map((t, i) => ({ sleutel: t.sleutel, naam: t.naam, oordeel: t.oordeel, nr: i + 1 })),
+    { sleutel: VERANTWOORDING, naam: "Verantwoording", oordeel: null, nr: null },
+  ];
+  return (
+    <div ref={rij} role="navigation" aria-label="Stappen van de analyse" className="-mx-3 flex gap-1.5 overflow-x-auto px-3 pb-0.5 [scrollbar-width:none] sm:-mx-4 sm:px-4">
+      {alle.map((s) => {
+        const isActief = actief === s.sleutel;
+        return (
+          <button
+            key={s.sleutel}
+            type="button"
+            aria-current={isActief ? "page" : undefined}
+            onClick={() => onKies(s.sleutel)}
+            className={`flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-[12.5px] transition-colors duration-[var(--ma-duur-klein)] ${
+              isActief ? "border-transparent bg-ink text-card" : "border-line bg-[var(--ma-ondergrond)] text-ink-muted"
+            }`}
+          >
+            {s.nr !== null && <span className={`ma-getal text-[11px] ${isActief ? "opacity-70" : "text-ink-faint"}`}>{s.nr}</span>}
+            {s.naam}
+            {s.oordeel && <OordeelStip oordeel={s.oordeel} className="!h-1.5 !w-1.5" />}
+          </button>
+        );
+      })}
+    </div>
   );
 }

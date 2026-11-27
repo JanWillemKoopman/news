@@ -16,7 +16,12 @@ import { THEMES } from "@/lib/themes";
  * knop. Staat `fixed` in de hoek zodat hij op elk tabblad en tijdens scrollen op
  * dezelfde plek blijft.
  */
-export default function ThemeSwitcher() {
+export default function ThemeSwitcher({
+  plek = "right-4 top-4",
+}: {
+  /** Waar het oogje staat; Marketing analyse zet hem midden in zijn eigen knoppenbalk. */
+  plek?: string;
+} = {}) {
   const { theme, kiesTheme } = useTheme();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -37,7 +42,7 @@ export default function ThemeSwitcher() {
   }, []);
 
   return (
-    <div ref={ref} className="fixed right-4 top-4 z-50">
+    <div ref={ref} className={`fixed z-50 ${plek}`}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}

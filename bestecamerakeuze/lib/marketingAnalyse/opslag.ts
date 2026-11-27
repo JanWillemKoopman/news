@@ -99,7 +99,7 @@ export async function lijstOverzicht(supabase: SupabaseClient): Promise<MaOverzi
     supabase
       .schema(SCHEMA)
       .from(VERSIES)
-      .select("id, campagne_id, versie, label, geanalyseerd_op, kerncijfers")
+      .select("id, campagne_id, versie, label, geanalyseerd_op, periode_van, periode_tot, kerncijfers")
       .order("versie", { ascending: false }),
     // Alleen tellen; het afmeldtoken is voor ingelogde gebruikers niet eens leesbaar (0043).
     supabase.schema(SCHEMA).from("marketing_analyse_volgers").select("campagne_id"),
@@ -133,6 +133,8 @@ export async function lijstOverzicht(supabase: SupabaseClient): Promise<MaOverzi
             versie: laatste.versie as number,
             label: (laatste.label as Label | null) ?? null,
             geanalyseerdOp: laatste.geanalyseerd_op as string,
+            periodeVan: tekst(laatste.periode_van),
+            periodeTot: tekst(laatste.periode_tot),
             kerncijfers: (laatste.kerncijfers as MaKerncijfers) ?? {},
           }
         : null,
@@ -207,7 +209,7 @@ export async function lijstVersies(supabase: SupabaseClient, campagneId: string)
   const { data, error } = await supabase
     .schema(SCHEMA)
     .from(VERSIES)
-    .select("id, versie, label, geanalyseerd_op")
+    .select("id, versie, label, geanalyseerd_op, periode_van, periode_tot")
     .eq("campagne_id", campagneId)
     .order("versie", { ascending: false });
   if (error) throw new Error(error.message);
@@ -216,6 +218,8 @@ export async function lijstVersies(supabase: SupabaseClient, campagneId: string)
     versie: r.versie as number,
     label: (r.label as Label | null) ?? null,
     geanalyseerdOp: r.geanalyseerd_op as string,
+    periodeVan: tekst(r.periode_van),
+    periodeTot: tekst(r.periode_tot),
   }));
 }
 

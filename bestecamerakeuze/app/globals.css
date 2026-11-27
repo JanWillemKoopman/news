@@ -556,6 +556,305 @@ body {
 }
 
 /* ════════════════════════════════════════════════════════════════════════════════
+   MARKETING ANALYSE — WERKRUIMTE (redesign november 2026, alleen deze pagina)
+   Een rustige Mac-werkruimte: een doorlopende lichte zijbalk, één glazen knoppenbalk en
+   een egale ondergrond voor alle cijfers. Alle waarden zijn afgeleid van de bestaande
+   tokens (color-mix), zodat elk theme vanzelf meegaat; alleen de donkere themes zetten de
+   glanslijn zachter. Liquid Glass staat uitsluitend op bediening (knoppenbalk, popovers,
+   zwevende knoppen), nooit onder KPI's, grafieken of tabelcellen.
+   ════════════════════════════════════════════════════════════════════════════════ */
+:root {
+  --ma-zijbalk-breedte: 248px;
+  --ma-balk-hoogte: 56px;
+  --ma-zijbalk: color-mix(in srgb, var(--color-surface) 62%, var(--color-page));
+  --ma-zijbalk-lijn: var(--color-line);
+  --ma-selectie: color-mix(in srgb, var(--color-brand) 8%, transparent);
+  --ma-selectie-actief: color-mix(in srgb, var(--color-brand) 13%, transparent);
+  --ma-ondergrond: var(--color-card);
+  --ma-glas: color-mix(in srgb, var(--color-card) 70%, transparent);
+  --ma-glas-gescrold: color-mix(in srgb, var(--color-card) 84%, transparent);
+  --ma-glas-paneel: color-mix(in srgb, var(--color-card) 90%, transparent);
+  --ma-glas-lijn: color-mix(in srgb, var(--color-ink) 9%, transparent);
+  --ma-glas-glans: rgb(255 255 255 / 0.7);
+  --ma-glas-vervaging: blur(22px) saturate(175%);
+  --ma-duur-klein: 150ms;
+  --ma-duur-paneel: 220ms;
+  --ma-ease-uit: cubic-bezier(0.22, 1, 0.36, 1);
+  --ma-ease-in: cubic-bezier(0.4, 0, 0.9, 0.6);
+}
+[data-theme="audi"],
+[data-theme="cupra"] {
+  --ma-glas-glans: rgb(255 255 255 / 0.08);
+  --ma-glas-lijn: rgb(255 255 255 / 0.1);
+}
+
+/* In een laag, zodat een Tailwind-utility (px-2, max-sm:hidden, …) een werkruimteklasse kan bijsturen. */
+@layer components {
+  /* De zijbalk: een licht, dekkend navigatievlak. De bestaande sidebar-tokens worden hier
+     naar inkt omgezet, zodat het profielmenu (GebruikersMenu) ongewijzigd meekan. */
+  .ma-zijbalk {
+    --color-sidebar-ink: var(--color-ink);
+    --color-sidebar-ink-muted: var(--color-ink-muted);
+    --color-sidebar-line: var(--color-line);
+    --color-sidebar-hover: var(--ma-selectie);
+    --color-sidebar-active: var(--ma-selectie-actief);
+    --color-sidebar: var(--ma-zijbalk);
+    background-color: var(--ma-zijbalk);
+    border-right: 1px solid var(--ma-zijbalk-lijn);
+  }
+  .ma-nav-item {
+    border-radius: 7px;
+    transition: background-color var(--ma-duur-klein) var(--ma-ease-uit), color var(--ma-duur-klein) var(--ma-ease-uit);
+  }
+  .ma-nav-item:hover {
+    background-color: var(--ma-selectie);
+  }
+  .ma-nav-item[aria-current="page"] {
+    background-color: var(--ma-selectie-actief);
+    color: var(--color-ink);
+  }
+
+  /* Liquid Glass: licht getint, beperkt transparant, fijne rand, subtiele vervaging. */
+  .ma-glas {
+    background-color: var(--ma-glas);
+    -webkit-backdrop-filter: var(--ma-glas-vervaging);
+    backdrop-filter: var(--ma-glas-vervaging);
+    box-shadow:
+      inset 0 1px 0 var(--ma-glas-glans),
+      0 0 0 0.5px var(--ma-glas-lijn);
+  }
+  .ma-balk {
+    transition: background-color var(--ma-duur-paneel) var(--ma-ease-uit), box-shadow var(--ma-duur-paneel) var(--ma-ease-uit);
+  }
+  /* Zodra er inhoud onder de balk door schuift: meer dekking en een haarlijn eronder, zodat
+     tekst en gekleurde grafieklijnen nooit door de bediening heen lezen. */
+  .ma-balk[data-gescrold="true"] {
+    background-color: var(--ma-glas-gescrold);
+    box-shadow:
+      inset 0 -1px 0 var(--ma-glas-lijn),
+      0 6px 18px -12px rgb(15 23 42 / 0.18);
+  }
+  .ma-glas-paneel {
+    background-color: var(--ma-glas-paneel);
+    -webkit-backdrop-filter: var(--ma-glas-vervaging);
+    backdrop-filter: var(--ma-glas-vervaging);
+    box-shadow:
+      inset 0 1px 0 var(--ma-glas-glans),
+      0 0 0 0.5px var(--ma-glas-lijn),
+      0 18px 44px -12px rgb(15 23 42 / 0.28),
+      0 2px 6px rgb(15 23 42 / 0.06);
+  }
+  /* Eén oppervlak voor een groep bedieningen (periode + vergelijking, of de acties). */
+  .ma-groep {
+    background-color: color-mix(in srgb, var(--color-ink) 4.5%, transparent);
+    box-shadow: inset 0 0 0 0.5px var(--ma-glas-lijn);
+  }
+  /* Dekkende terugval: geen vervaging in de browser, of de gebruiker wil minder transparantie. */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .ma-glas,
+    .ma-balk[data-gescrold="true"],
+    .ma-glas-paneel {
+      background-color: var(--color-card);
+    }
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .ma-glas,
+    .ma-balk[data-gescrold="true"],
+    .ma-glas-paneel {
+      background-color: var(--color-card);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+  }
+
+  /* Bediening: één knophoogte (30px), één icoongrootte (16px). */
+  .ma-knop {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 30px;
+    padding: 0 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-ink);
+    white-space: nowrap;
+    transition: background-color var(--ma-duur-klein) var(--ma-ease-uit), transform var(--ma-duur-klein) var(--ma-ease-uit);
+  }
+  .ma-knop:hover {
+    background-color: color-mix(in srgb, var(--color-ink) 6%, transparent);
+  }
+  .ma-knop:active {
+    transform: scale(0.97);
+  }
+  .ma-knop[aria-expanded="true"],
+  .ma-knop[aria-pressed="true"] {
+    background-color: color-mix(in srgb, var(--color-ink) 9%, transparent);
+  }
+  .ma-knop svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+  .ma-knop-primair {
+    background-color: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+  .ma-knop-primair:hover {
+    background-color: var(--color-primary-dark);
+  }
+  .ma-segment {
+    position: relative;
+    height: 26px;
+    padding: 0 10px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--color-ink-muted);
+    white-space: nowrap;
+    transition: color var(--ma-duur-klein) var(--ma-ease-uit), background-color var(--ma-duur-klein) var(--ma-ease-uit), box-shadow var(--ma-duur-klein) var(--ma-ease-uit);
+  }
+  .ma-segment:hover {
+    color: var(--color-ink);
+  }
+  .ma-segment[aria-pressed="true"],
+  .ma-segment[aria-selected="true"] {
+    background-color: var(--color-card);
+    color: var(--color-ink);
+    box-shadow:
+      0 0 0 0.5px var(--ma-glas-lijn),
+      0 1px 2px rgb(15 23 42 / 0.08);
+  }
+
+  /* Typografie van de werkruimte: vijf stijlen, cijfers van gelijke breedte. */
+  .ma-titel {
+    font-family: var(--font-sans-w7);
+    font-size: 15px;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+  }
+  .ma-kop {
+    font-family: var(--font-sans-w7);
+    font-size: 14px;
+    font-weight: 650;
+    letter-spacing: -0.005em;
+  }
+  .ma-kpi {
+    font-family: var(--font-sans-w7);
+    font-size: 26px;
+    line-height: 1.1;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .ma-kolomkop {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-ink-faint);
+  }
+  .ma-getal {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Beweging ────────────────────────────────────────────────────────────────────
+     Drie patronen: een popover uit zijn knop, een paneel uit zijn zijde, en inhoud die
+     rustig verschijnt. Alles via transitions, dus onderbreekbaar: de laatste keuze wint. */
+  .ma-pop {
+    transform-origin: var(--ma-oorsprong, top left);
+    transition:
+      opacity var(--ma-duur-klein) var(--ma-ease-uit),
+      transform 180ms var(--ma-ease-uit),
+      filter var(--ma-duur-klein) var(--ma-ease-uit);
+  }
+  .ma-pop[data-stand="dicht"] {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.965);
+    filter: blur(4px);
+    transition-duration: 120ms;
+    transition-timing-function: var(--ma-ease-in);
+  }
+  .ma-paneel {
+    transition:
+      transform var(--ma-duur-paneel) var(--ma-ease-uit),
+      opacity var(--ma-duur-paneel) var(--ma-ease-uit);
+  }
+  .ma-paneel[data-stand="dicht"] {
+    opacity: 0;
+    transform: translateX(32px);
+    transition-duration: 160ms;
+    transition-timing-function: var(--ma-ease-in);
+  }
+  .ma-lade {
+    transition: transform 240ms var(--ma-ease-uit);
+  }
+  .ma-lade[data-stand="dicht"] {
+    transform: translateX(-102%);
+    transition-duration: 180ms;
+    transition-timing-function: var(--ma-ease-in);
+  }
+  /* Vanaf 1024px is de zijbalk geen lade maar een vaste kolom. */
+  @media (min-width: 1024px) {
+    .ma-lade,
+    .ma-lade[data-stand="dicht"] {
+      transform: none;
+      opacity: 1;
+      visibility: visible;
+      transition: none;
+    }
+  }
+  .ma-scherm {
+    transition: opacity var(--ma-duur-paneel) var(--ma-ease-uit);
+  }
+  .ma-scherm[data-stand="dicht"] {
+    opacity: 0;
+  }
+  @keyframes ma-verschijn {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+  .ma-in {
+    animation: ma-verschijn var(--ma-duur-paneel) var(--ma-ease-uit) both;
+  }
+  /* Een cijfer dat nog bij de vorige selectie hoort: gedimd, met de laadstatus erbij. */
+  .ma-oud {
+    opacity: 0.45;
+    filter: saturate(0.4);
+    transition: opacity var(--ma-duur-klein) var(--ma-ease-uit), filter var(--ma-duur-klein) var(--ma-ease-uit);
+  }
+  .ma-rij-gekozen {
+    background-color: var(--ma-selectie);
+    box-shadow: inset 2px 0 0 var(--color-primary);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ma-pop,
+    .ma-pop[data-stand="dicht"],
+    .ma-paneel,
+    .ma-paneel[data-stand="dicht"],
+    .ma-lade,
+    .ma-lade[data-stand="dicht"] {
+      transform: none;
+      filter: none;
+      transition-property: opacity;
+      transition-duration: 90ms;
+    }
+    .ma-lade[data-stand="dicht"] {
+      opacity: 0;
+      visibility: hidden;
+    }
+    .ma-in {
+      animation: none;
+    }
+    .ma-knop:active {
+      transform: none;
+    }
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════════
    VOLKSWAGEN
    Licht, kalm en toegankelijk. Deep Space Blue (#001e50) is bij Volkswagen niet alleen
    de merkkleur maar ook de tekstkleur: het hele scherm staat in blauwzwart in plaats

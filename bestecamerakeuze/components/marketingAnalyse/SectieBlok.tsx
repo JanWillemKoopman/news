@@ -83,13 +83,13 @@ function VergelijkingRegel({ cijfer }: { cijfer: Kerncijfer }) {
 export function KerncijferRij({ cijfers }: { cijfers: Kerncijfer[] }) {
   if (cijfers.length === 0) return null;
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[12px] border border-line-soft bg-line-soft lg:grid-cols-4">
       {cijfers.map((c, i) => (
-        <div key={`${c.label}-${i}`} className="rounded-card border border-line-soft bg-surface-tint px-4 py-3">
-          <p className="label-theme text-label text-ink-faint">{c.label}</p>
-          <p className="mt-1 font-sans-w7 text-xl font-bold tabular-nums text-ink">{formatWaarde(c.waarde, c.eenheid)}</p>
+        <div key={`${c.label}-${i}`} className="bg-[var(--ma-ondergrond,var(--color-card))] px-4 py-3">
+          <p className="text-[12px] font-medium leading-snug text-ink-muted">{c.label}</p>
+          <p className="ma-getal mt-1 font-sans-w7 text-[20px] font-semibold tracking-[-0.01em] text-ink">{formatWaarde(c.waarde, c.eenheid)}</p>
           <VergelijkingRegel cijfer={c} />
-          {c.toelichting && <p className="mt-1 text-meta text-ink-muted">{c.toelichting}</p>}
+          {c.toelichting && <p className="mt-1 text-[11.5px] leading-snug text-ink-faint">{c.toelichting}</p>}
           <BenchmarkRegel cijfer={c} />
         </div>
       ))}
@@ -107,7 +107,9 @@ export function AnalyseTabel({ tabel }: { tabel: Tabel }) {
     return (
       <td
         key={k}
-        className={`px-3 py-2 ${rechts ? "text-right tabular-nums" : ""} ${k === 0 ? "font-medium text-ink" : getal ? "text-ink" : "text-ink-muted"}`}
+        className={`px-3 py-2 ${rechts ? "whitespace-nowrap text-right tabular-nums" : ""} ${
+          k === 0 ? "sticky left-0 z-[1] min-w-[180px] bg-[var(--ma-ondergrond,var(--color-card))] font-medium text-ink" : getal ? "text-ink" : "text-ink-muted"
+        }`}
       >
         {getal ? formatWaarde(waarde, kolom?.eenheid ?? "aantal") : (waarde ?? "—")}
       </td>
@@ -115,15 +117,15 @@ export function AnalyseTabel({ tabel }: { tabel: Tabel }) {
   };
   return (
     <div>
-      {tabel.titel && <p className="mb-2 text-sm font-semibold text-ink">{tabel.titel}</p>}
-      <div className="overflow-x-auto rounded-card border border-line-soft">
-        <table className="w-full border-separate border-spacing-0 text-sm">
+      {tabel.titel && <p className="ma-kop mb-2 text-[13.5px] text-ink">{tabel.titel}</p>}
+      <div className="relative overflow-x-auto rounded-[12px] border border-line-soft">
+        <table className="w-full border-separate border-spacing-0 text-[13px]">
           <thead>
             <tr>
               {tabel.kolommen.map((k, i) => (
                 <th
                   key={i}
-                  className={`label-theme border-b border-line-soft bg-surface-tint px-3 py-2 text-label font-normal text-ink-faint ${
+                  className={`ma-kolomkop border-b border-line-soft bg-surface-tint px-3 py-2 ${i === 0 ? "sticky left-0 z-[1]" : ""} ${
                     i === 0 || k.eenheid === "tekst" ? "text-left" : "text-right"
                   }`}
                 >
@@ -144,7 +146,7 @@ export function AnalyseTabel({ tabel }: { tabel: Tabel }) {
           )}
         </table>
       </div>
-      {tabel.voetnoot && <p className="mt-1.5 text-meta text-ink-faint">{tabel.voetnoot}</p>}
+      {tabel.voetnoot && <p className="mt-1.5 text-[11.5px] leading-snug text-ink-faint">{tabel.voetnoot}</p>}
     </div>
   );
 }

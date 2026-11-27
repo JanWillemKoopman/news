@@ -1,10 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Inlogprompt from "@/components/Inlogprompt";
 import AnalyseWeergave, { LabelBadge } from "@/components/marketingAnalyse/AnalyseWeergave";
-import ProgressBar from "@/components/ProgressBar";
 import CampagneZijbalk from "@/components/marketingAnalyse/CampagneZijbalk";
 import AnalysePromptZijbalk from "@/components/marketingAnalyse/AnalysePromptZijbalk";
 import SemantiekZijbalk from "@/components/marketingAnalyse/SemantiekZijbalk";
@@ -12,14 +10,31 @@ import VolgersZijbalk from "@/components/marketingAnalyse/VolgersZijbalk";
 import MerkMailZijbalk from "@/components/marketingAnalyse/MerkMailZijbalk";
 import MailLogZijbalk from "@/components/marketingAnalyse/MailLogZijbalk";
 import VoorstellenBalk from "@/components/marketingAnalyse/VoorstellenBalk";
-import OpzetFilterBalk, { BedrijfFilterBalk } from "@/components/marketingAnalyse/OpzetFilterBalk";
 import PlanningKeuze from "@/components/marketingAnalyse/PlanningKeuze";
+import Knoppenbalk from "@/components/marketingAnalyse/werkruimte/Knoppenbalk";
+import Inspector from "@/components/marketingAnalyse/werkruimte/Inspector";
+import { OverzichtKpis, VoortgangLijst } from "@/components/marketingAnalyse/werkruimte/Overzicht";
+import { MenuKop, MenuRegel, MenuScheiding, PopoverKnop, Segmenten } from "@/components/marketingAnalyse/werkruimte/Bediening";
+import { SectieKop } from "@/components/marketingAnalyse/werkruimte/Visueel";
 import { dagNL, type PlanningInvoer } from "@/lib/marketingAnalyse/planning";
 import { getBrandLogo } from "@/components/brandLogos";
-import { IconBook, IconBrain, IconChevronDown, IconMail, IconNotes, IconPencil, IconPlus, IconShield } from "@/components/icons";
+import {
+  IconBook,
+  IconBrain,
+  IconCalendar,
+  IconChevronDown,
+  IconClose,
+  IconDots,
+  IconFilter,
+  IconMail,
+  IconNotes,
+  IconPencil,
+  IconPlus,
+} from "@/components/icons";
 import {
   bedrijfFilterKnoppen,
   bedrijvenLabel,
+  datumKort,
   filterOpBedrijf,
   filterOpOpzet,
   isLive,
@@ -33,6 +48,7 @@ import {
   type LeadBron,
   type StatusFilter,
 } from "@/lib/marketingAnalyse/rekenen";
+import { portefeuille } from "@/lib/marketingAnalyse/portefeuille";
 import { STANDAARD_SEMANTIEK } from "@/lib/marketingAnalyse/standaardSemantiek";
 import type { MaCampagne, MaOpzet, MaOverzichtRegel, MaVoorstel, MaZoekronde, Planning } from "@/lib/marketingAnalyse/types";
 
@@ -47,8 +63,6 @@ const STANDAARD_SOORT = "campagne analyse";
 const STATUS_PARAM = "status";
 /** Het filter op bedrijf staat ook in de URL. */
 const BEDRIJF_PARAM = "bedrijf";
-
-const BEHEER_SLEUTEL = "marketing-analyse-beheer";
 
 function zetUrl(id: string | null, param: string = URL_PARAM) {
   const params = new URLSearchParams(window.location.search);
@@ -69,110 +83,66 @@ function planningInvoer(c: MaOverzichtRegel, opzet: MaOpzet | undefined): Planni
   };
 }
 
-function AnalysePromptsMenu({
+/**
+ * Het menu "Meer" rechts in de knoppenbalk: alles wat je niet bij elke analyse nodig hebt (E-mail
+ * settings, Analyse prompts per opzet, Semantic layer en, voor de eigenaar, Verzonden e-mails).
+ * Vervangt het schildje Beheer en de losse knoppen: één vaste, voorspelbare plek.
+ */
+function MeerMenu({
   opzetten,
   isEigenaar,
-  onKies,
-  onNieuw,
+  onPrompt,
+  onNieuweOpzet,
+  onSemantiek,
+  onMerkMail,
+  onMails,
 }: {
   opzetten: MaOpzet[];
   isEigenaar: boolean;
-  onKies: (opzet: MaOpzet) => void;
-  onNieuw: () => void;
+  onPrompt: (o: MaOpzet) => void;
+  onNieuweOpzet: () => void;
+  onSemantiek: () => void;
+  onMerkMail: () => void;
+  onMails: () => void;
 }) {
-  const [plek, setPlek] = useState<{ top: number; right: number } | null>(null);
-  const open = plek !== null;
-  const knopRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  function wissel() {
-    const r = knopRef.current?.getBoundingClientRect();
-    setPlek((huidig) => (huidig || !r ? null : { top: r.bottom + 8, right: window.innerWidth - r.right }));
-  }
-
-  useEffect(() => {
-    if (!open) return;
-    const sluit = () => setPlek(null);
-    function buiten(e: MouseEvent) {
-      const doel = e.target as Node;
-      if (!knopRef.current?.contains(doel) && !menuRef.current?.contains(doel)) sluit();
-    }
-    function toets(e: KeyboardEvent) {
-      if (e.key === "Escape") sluit();
-    }
-    document.addEventListener("mousedown", buiten);
-    document.addEventListener("keydown", toets);
-    // Vaste positie: bij scrollen of een ander venstermaat klopt hij niet meer, dus dicht.
-    window.addEventListener("scroll", sluit, true);
-    window.addEventListener("resize", sluit);
-    return () => {
-      document.removeEventListener("mousedown", buiten);
-      document.removeEventListener("keydown", toets);
-      window.removeEventListener("scroll", sluit, true);
-      window.removeEventListener("resize", sluit);
-    };
-  }, [open]);
-
   const zichtbaar = opzetten.filter((o) => o.actief || isEigenaar);
-
   return (
-    <>
-      <button
-        ref={knopRef}
-        type="button"
-        onClick={wissel}
-        aria-expanded={open}
-        aria-haspopup="menu"
-        className="flex items-center gap-2 rounded-button border border-line bg-card px-4 py-2 text-sm font-medium text-ink transition-colors duration-[var(--duur-snel)] hover:bg-surface"
-      >
-        <IconBrain className="h-4 w-4 text-ink-muted" />
-        Analyse prompts
-        <IconChevronDown className={`h-4 w-4 text-ink-faint transition-transform duration-[var(--duur-snel)] ${open ? "rotate-180" : ""}`} />
-      </button>
-      {plek &&
-        createPortal(
-        <div
-          ref={menuRef}
-          role="menu"
-          style={{ top: plek.top, right: plek.right }}
-          className="fixed z-50 max-h-[70vh] w-80 overflow-y-auto rounded-card border border-line bg-card py-1 shadow-dropdown"
-        >
-          {zichtbaar.length === 0 && <p className="px-4 py-2 text-sm text-ink-muted">Laden…</p>}
+    <PopoverKnop label="Meer acties" titel="Meer: e-mail, prompts, semantic layer" rol="menu" uitlijning="rechts" breedte={300} inhoud={<IconDots />} className="px-2">
+      {(sluit) => (
+        <>
+          <MenuRegel icoon={<IconMail />} onClick={() => (sluit(), onMerkMail())}>
+            E-mail settings
+          </MenuRegel>
+          {isEigenaar && (
+            <MenuRegel icoon={<IconNotes />} onClick={() => (sluit(), onMails())}>
+              Verzonden e-mails
+            </MenuRegel>
+          )}
+          <MenuRegel icoon={<IconBook />} onClick={() => (sluit(), onSemantiek())}>
+            Semantic layer
+          </MenuRegel>
+          <MenuScheiding />
+          <MenuKop>Analyse prompts</MenuKop>
+          {zichtbaar.length === 0 && <p className="px-2.5 py-1.5 text-[13px] text-ink-muted">Laden…</p>}
           {zichtbaar.map((o) => (
-            <button
+            <MenuRegel
               key={o.id}
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                setPlek(null);
-                onKies(o);
-              }}
-              className="flex w-full items-center justify-between gap-3 px-4 py-2 text-left text-sm transition-colors hover:bg-surface"
+              icoon={<IconBrain />}
+              uit={!o.actief}
+              onClick={() => (sluit(), onPrompt(o))}
+              rechts={!o.actief ? "uitgezet" : !o.heeftPrompt ? "geen prompt" : o.standaard ? "standaard" : ""}
             >
-              <span className={o.actief ? "text-ink" : "text-ink-faint"}>{o.naam}</span>
-              <span className="whitespace-nowrap text-meta text-ink-faint">
-                {!o.actief ? "uitgezet" : !o.heeftPrompt ? "nog geen prompt" : o.standaard ? "standaard" : ""}
-              </span>
-            </button>
+              {o.naam}
+            </MenuRegel>
           ))}
           {isEigenaar && (
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                setPlek(null);
-                onNieuw();
-              }}
-              className="flex w-full items-center gap-2 border-t border-line-soft px-4 py-2.5 text-left text-sm font-medium text-ink transition-colors hover:bg-surface"
-            >
-              <IconPlus className="h-4 w-4 text-ink-muted" />
+            <MenuRegel icoon={<IconPlus />} onClick={() => (sluit(), onNieuweOpzet())}>
               Nieuwe opzet
-            </button>
+            </MenuRegel>
           )}
-        </div>,
-          document.body,
-        )}
-    </>
+        </>
+      )}
+    </PopoverKnop>
   );
 }
 
@@ -181,15 +151,17 @@ type TabelProps = {
   opzetten: Map<string, MaOpzet>;
   vandaag: string;
   planningBezig: Set<string>;
-  onOpen: (id: string) => void;
+  gekozen: string | null;
+  onKies: (id: string, knop: HTMLElement) => void;
   onBewerk: (c: MaOverzichtRegel) => void;
   onPlanning: (c: MaOverzichtRegel, planning: Planning) => void;
   onVolgers: (c: MaOverzichtRegel) => void;
 };
 
-const KOP = "label-theme whitespace-nowrap px-3 py-2.5 font-normal";
-const RIJ =
-  "cursor-pointer align-top transition-colors duration-[var(--duur-snel)] hover:bg-surface [&>td]:border-t [&>td]:border-line-soft";
+const KOP = "ma-kolomkop whitespace-nowrap px-3 py-2.5 text-left font-semibold";
+const KOP_R = "ma-kolomkop whitespace-nowrap px-3 py-2.5 text-right font-semibold";
+/** De eerste kolom blijft staan bij horizontaal scrollen: een bedrag hoort altijd bij zijn campagne. */
+const VAST = "sticky left-0 z-[1] bg-[var(--ma-ondergrond)]";
 
 /** Groen ademend stipje als de analyse live is (vandaag tussen start en eind), anders grijs. */
 function StatusStip({ c, vandaag }: { c: MaOverzichtRegel; vandaag: string }) {
@@ -200,16 +172,10 @@ function StatusStip({ c, vandaag }: { c: MaOverzichtRegel; vandaag: string }) {
       role="img"
       aria-label={titel}
       title={titel}
-      className={`mt-1.5 block h-2 w-2 rounded-full ${live ? "live-stip bg-open" : "bg-closed opacity-70"}`}
+      className={`mt-[7px] block h-[7px] w-[7px] shrink-0 rounded-full ${live ? "live-stip bg-open" : "bg-closed opacity-70"}`}
     />
   );
 }
-
-const STIP_KOP = (
-  <th className="w-4 py-2.5 pl-6 pr-0">
-    <span className="sr-only">Status</span>
-  </th>
-);
 
 /** De laatste analyse als korte regel onder de naam. */
 function LaatsteAnalyse({ c, opzet }: { c: MaOverzichtRegel; opzet: MaOpzet | undefined }) {
@@ -231,63 +197,35 @@ function LaatsteAnalyse({ c, opzet }: { c: MaOverzichtRegel; opzet: MaOpzet | un
   return <span>Nog niet geanalyseerd</span>;
 }
 
-function BewerkKnop({ c, onBewerk }: { c: MaOverzichtRegel; onBewerk: (c: MaOverzichtRegel) => void }) {
-  return (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        onBewerk(c);
-      }}
-      title="Briefing bewerken"
-      aria-label={`Briefing van ${c.naam} bewerken`}
-      className="inline-flex h-7 w-7 items-center justify-center rounded-control text-ink-faint transition-colors hover:bg-card hover:text-ink"
-    >
-      <IconPencil className="h-4 w-4" />
-    </button>
-  );
-}
-
-/** Het mail-icoontje: opent de zijbalk met wie een mail krijgt bij een nieuwe versie. */
-function MailKnop({ c, onVolgers }: { c: MaOverzichtRegel; onVolgers: (c: MaOverzichtRegel) => void }) {
+function RijActies({ c, onBewerk, onVolgers }: { c: MaOverzichtRegel; onBewerk: (c: MaOverzichtRegel) => void; onVolgers: (c: MaOverzichtRegel) => void }) {
   const titel = c.aantalVolgers > 0 ? `${c.aantalVolgers} ${c.aantalVolgers === 1 ? "adres krijgt" : "adressen krijgen"} een mail bij een nieuwe analyse` : "Mail bij een nieuwe analyse";
   return (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        onVolgers(c);
-      }}
-      title={titel}
-      aria-label={`${titel} — ${c.naam}`}
-      className="inline-flex h-7 items-center gap-1 rounded-control px-1.5 text-ink-faint transition-colors hover:bg-card hover:text-ink"
-    >
-      <IconMail className="h-4 w-4" />
-      {c.aantalVolgers > 0 && <span className="text-meta tabular-nums">{c.aantalVolgers}</span>}
-    </button>
-  );
-}
-
-/** Een cel met een bedrag of aantal, een balkje en een regel eronder. */
-function BalkCel({
-  waarde,
-  pct,
-  onder,
-  toon = "neutraal",
-}: {
-  waarde: string;
-  pct: number | null;
-  onder: string;
-  /** Kleur van de regel eronder: rood bij boven budget, groen bij een gehaald doel. */
-  toon?: "neutraal" | "positief" | "negatief";
-}) {
-  return (
-    <div className="flex min-w-[150px] flex-col gap-1.5">
-      <span className="tabular-nums text-ink">{waarde}</span>
-      {pct !== null ? <ProgressBar percent={pct} className="h-1 max-w-40" /> : null}
-      <span className={`text-meta ${toon === "negatief" ? "text-negative" : toon === "positief" ? "text-positive" : "text-ink-faint"}`}>
-        {onder}
-      </span>
+    <div className="flex items-center justify-end gap-0.5">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onBewerk(c);
+        }}
+        title="Briefing bewerken"
+        aria-label={`Briefing van ${c.naam} bewerken`}
+        className="ma-knop px-1.5 text-ink-faint hover:text-ink"
+      >
+        <IconPencil />
+      </button>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onVolgers(c);
+        }}
+        title={titel}
+        aria-label={`${titel} — ${c.naam}`}
+        className="ma-knop gap-1 px-1.5 text-ink-faint hover:text-ink"
+      >
+        <IconMail />
+        {c.aantalVolgers > 0 && <span className="ma-getal text-[12px]">{c.aantalVolgers}</span>}
+      </button>
     </div>
   );
 }
@@ -298,12 +236,12 @@ const BRON_UITLEG: Record<LeadBron, string> = {
   ga4: "Google Analytics (standaard): lead-events van de soort uit het doel, in sessies die op de campagnepagina('s) begonnen",
 };
 
-/** Eén regel in de leadkolom: het getal, en ernaast wat het is. */
+/** Eén regel in de leadkolom: het getal rechts uitgelijnd, en ernaast wat het is en de bron. */
 function LeadRegel({ waarde, naam, soort, title }: { waarde: string; naam: string; soort: string | null; title: string }) {
   return (
-    <div className="flex items-baseline gap-2.5" title={title}>
-      <span className="min-w-[2.5rem] text-right tabular-nums text-ink">{waarde}</span>
-      <span className="text-meta text-ink-faint">
+    <div className="grid grid-cols-[44px_minmax(0,1fr)] items-baseline gap-2.5" title={title}>
+      <span className="ma-getal text-right text-ink">{waarde}</span>
+      <span className="text-[11.5px] leading-snug text-ink-faint">
         {naam}
         {soort ? ` · ${soort}` : ""}
       </span>
@@ -331,7 +269,7 @@ function LeadsCel({
   const s = o.syntec;
   const vdu = s.stand === "cijfers" && s.alleenVdu ? " (alleen VDU)" : "";
   return (
-    <div className="flex min-w-[230px] flex-col gap-1">
+    <div className="flex min-w-[210px] flex-col gap-1">
       <LeadRegel
         waarde={getal(o.ga4Leads)}
         naam="Google Analytics"
@@ -365,12 +303,12 @@ function LeadsCel({
             onBewerk(c);
           }}
           title="Syntec zoekt leads en orders op merk en model. Vul ze in de briefing in; de volgende analyse haalt ze op."
-          className="mt-0.5 self-start text-left text-meta text-orange-dark underline decoration-dotted underline-offset-2 hover:text-ink"
+          className="ml-[54px] mt-0.5 self-start text-left text-[11.5px] text-orange-dark underline decoration-dotted underline-offset-2 hover:text-ink"
         >
           Vul {s.mist} in voor Syntec-leads en orders
         </button>
       ) : (
-        <span className="text-meta text-ink-faint" title="Syntec-leads en -orders bestaan alleen voor Van den Udenhout.">
+        <span className="ml-[54px] text-[11.5px] text-ink-faint" title="Syntec-leads en -orders bestaan alleen voor Van den Udenhout.">
           Geen Syntec-data voor dit bedrijf
         </span>
       )}
@@ -378,98 +316,123 @@ function LeadsCel({
   );
 }
 
-/**
- * Campagne-analyses: status, campagne, uitgaven tegen budget, gezamenlijke CTR van de
- * advertentiekanalen, bezoekers op de campagnepagina, leads (met bron) en het leaddoel met
- * hoeveel er gehaald is, en rechts de planning. De cijfers komen uit de laatste analyse.
- */
-function CampagneAnalyseTabel({ campagnes, opzetten, vandaag, planningBezig, onOpen, onBewerk, onPlanning, onVolgers }: TabelProps) {
+/** Een getal met een regel eronder, rechts uitgelijnd. */
+function GetalCel({ waarde, onder, toon = "neutraal" }: { waarde: string; onder: string; toon?: "neutraal" | "positief" | "negatief" }) {
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full border-separate border-spacing-0 text-sm">
+    <div className="flex flex-col items-end gap-0.5 whitespace-nowrap">
+      <span className="ma-getal text-[13px] text-ink">{waarde}</span>
+      <span className={`text-[11.5px] ${toon === "negatief" ? "text-negative" : toon === "positief" ? "text-positive" : "text-ink-faint"}`}>{onder}</span>
+    </div>
+  );
+}
+
+function rijKlasse(gekozen: boolean) {
+  return `cursor-pointer align-top transition-colors duration-[var(--ma-duur-klein)] [&>td]:border-t [&>td]:border-line-soft ${
+    gekozen ? "ma-rij-gekozen [&>td:first-child]:bg-[color-mix(in_srgb,var(--color-brand)_8%,var(--ma-ondergrond))]" : "hover:bg-[color-mix(in_srgb,var(--color-ink)_2.5%,transparent)]"
+  }`;
+}
+
+/** De naam van een campagne als knop: zo is elke regel met het toetsenbord te openen. */
+function NaamKnop({ c, onKies }: { c: MaOverzichtRegel; onKies: (id: string, knop: HTMLElement) => void }) {
+  const Logo = c.merk ? getBrandLogo(c.merk) : null;
+  return (
+    <button
+      type="button"
+      data-campagne={c.id}
+      onClick={(e) => {
+        e.stopPropagation();
+        onKies(c.id, e.currentTarget);
+      }}
+      className="flex items-center gap-1.5 rounded-[4px] text-left text-[13.5px] font-semibold leading-snug text-ink hover:underline hover:underline-offset-2"
+    >
+      {Logo && <Logo role="img" aria-label={c.merk ?? undefined} className="h-3.5 w-3.5 shrink-0 text-ink-muted" />}
+      <span className="line-clamp-2">{c.naam}</span>
+    </button>
+  );
+}
+
+/**
+ * Alle cijfers per campagne-analyse, exact: uitgaven, CTR, bezoekers, leads en orders met hun bron,
+ * het leaddoel en de planning. Getallen rechts uitgelijnd; de campagnekolom blijft staan.
+ */
+function CijferTabel({ campagnes, opzetten, vandaag, planningBezig, gekozen, onKies, onBewerk, onPlanning, onVolgers }: TabelProps) {
+  return (
+    <div className="relative overflow-x-auto rounded-[14px] border border-line bg-[var(--ma-ondergrond)] shadow-subtle">
+      <table className="w-full min-w-[940px] border-separate border-spacing-0 text-[13px]">
         <thead>
-          <tr className="text-left text-label text-ink-faint">
-            {STIP_KOP}
-            <th className={`${KOP} pl-3`}>Campagne</th>
-            <th className={KOP} title="Mediakosten uit Google Ads, Meta Ads en LinkedIn Ads, tegen het totaalbudget">
+          <tr>
+            <th className={`${KOP} ${VAST} w-[230px] pl-5 max-sm:w-[150px] max-sm:pl-3`}>Campagne</th>
+            <th className={KOP_R} title="Mediakosten uit Google Ads, Meta Ads en LinkedIn Ads, tegen het totaalbudget">
               Uitgaven
             </th>
-            <th className={KOP} title="Alle klikken ÷ alle vertoningen van Google Ads, Meta Ads en LinkedIn Ads samen">
+            <th className={KOP_R} title="Alle klikken ÷ alle vertoningen van Google Ads, Meta Ads en LinkedIn Ads samen">
               CTR
             </th>
-            <th className={KOP} title="Sessies die op de campagnepagina('s) begonnen, uit elk kanaal (GA4)">
+            <th className={KOP_R} title="Sessies die op de campagnepagina('s) begonnen, uit elk kanaal (GA4)">
               Bezoekers
             </th>
-            <th
-              className={KOP}
-              title="Leads in Google Analytics; bij Van den Udenhout met merk en model ook de internetleads en orders uit Syntec"
-            >
+            <th className={KOP} title="Leads in Google Analytics; bij Van den Udenhout met merk en model ook de internetleads en orders uit Syntec">
               Leads en orders
             </th>
-            <th className={KOP} title="Het aantal leads uit het doel van de briefing, en hoeveel daarvan gehaald is">
+            <th className={KOP_R} title="Het aantal leads uit het doel van de briefing, en hoeveel daarvan gehaald is">
               Doel leads
             </th>
-            <th className="px-3 py-2.5" title="Hoe vaak “voer de analyseronde uit” deze campagne maakt">
-              <span className="label-theme font-normal">Planning</span>
+            <th className={KOP} title="Hoe vaak “voer de analyseronde uit” deze campagne maakt">
+              Planning
             </th>
-            <th className="w-24 px-4 py-2.5">
+            <th className="w-20 px-3 py-2.5">
               <span className="sr-only">Briefing en mail</span>
             </th>
           </tr>
         </thead>
         <tbody>
           {campagnes.map((c) => {
-            const Logo = c.merk ? getBrandLogo(c.merk) : null;
             const opzet = opzetten.get(c.opzetId);
             const o = overzichtCijfers(c, c.laatsteAnalyse?.kerncijfers);
             const geanalyseerd = Boolean(c.laatsteAnalyse);
+            const isGekozen = gekozen === c.id;
             return (
-              <tr key={c.id} onClick={() => onOpen(c.id)} className={RIJ}>
-                <td className="py-3 pl-6 pr-0">
-                  <StatusStip c={c} vandaag={vandaag} />
-                </td>
-                <td className="max-w-[340px] px-3 py-3">
-                  <div className="flex items-center gap-2">
-                    {Logo && <Logo role="img" aria-label={c.merk ?? undefined} className="h-4 w-4 shrink-0 text-ink-muted" />}
-                    <p className="truncate font-semibold text-ink" title={c.naam}>
-                      {c.naam}
-                    </p>
+              <tr
+                key={c.id}
+                onClick={(e) => onKies(c.id, (e.currentTarget.querySelector("[data-campagne]") as HTMLElement) ?? e.currentTarget)}
+                className={rijKlasse(isGekozen)}
+              >
+                <td className={`${VAST} max-w-[250px] py-3 pl-5 pr-3 max-sm:max-w-[160px] max-sm:pl-3`}>
+                  <div className="flex items-start gap-2.5">
+                    <StatusStip c={c} vandaag={vandaag} />
+                    <div className="min-w-0">
+                      <NaamKnop c={c} onKies={onKies} />
+                      <p className="mt-0.5 text-[11.5px] text-ink-faint">
+                        {opzet && !opzet.standaard && `${opzet.naam} · `}
+                        {bedrijvenLabel(c.bedrijven)} · {looptijdLabel(c.startdatum, c.einddatum)}
+                      </p>
+                      <p className="mt-0.5 text-[11.5px] text-ink-faint max-sm:hidden">
+                        <LaatsteAnalyse c={c} opzet={opzet} />
+                      </p>
+                    </div>
                   </div>
-                  <p className="mt-0.5 text-meta text-ink-faint">
-                    {opzet && !opzet.standaard && `${opzet.naam} · `}
-                    {bedrijvenLabel(c.bedrijven)} · {looptijdLabel(c.startdatum, c.einddatum)}
-                  </p>
-                  <p className="mt-1 text-meta text-ink-faint">
-                    <LaatsteAnalyse c={c} opzet={opzet} />
-                  </p>
                 </td>
                 <td className="px-3 py-3">
-                  <BalkCel
+                  <GetalCel
                     waarde={geanalyseerd ? formatWaarde(o.kosten, "euro") : "—"}
-                    pct={o.besteedPct}
                     toon={o.besteedPct !== null && o.besteedPct > 100 ? "negatief" : "neutraal"}
                     onder={
                       o.budget === null
-                        ? "Geen budget opgegeven"
+                        ? "geen budget"
                         : o.besteedPct === null
-                          ? `Budget ${formatWaarde(o.budget, "euro")}`
+                          ? `budget ${formatWaarde(o.budget, "euro")}`
                           : `${formatWaarde(o.besteedPct, "procent")} van ${formatWaarde(o.budget, "euro")}`
                     }
                   />
                 </td>
-                <td className="px-3 py-3" title="Alle klikken ÷ alle vertoningen van Google Ads, Meta Ads en LinkedIn Ads samen">
-                  <div className="flex min-w-[110px] flex-col gap-1.5">
-                    <span className="tabular-nums text-ink">{geanalyseerd ? formatWaarde(o.ctr, "procent") : "—"}</span>
-                    <span className="text-meta text-ink-faint">
-                      {geanalyseerd && o.ctr === null ? "Bij de volgende analyse" : "Google, Meta en LinkedIn"}
-                    </span>
-                  </div>
+                <td className="px-3 py-3">
+                  <GetalCel
+                    waarde={geanalyseerd ? formatWaarde(o.ctr, "procent") : "—"}
+                    onder={geanalyseerd && o.ctr === null ? "volgende analyse" : "advertenties"}
+                  />
                 </td>
-                <td className="px-3 py-3" title="Sessies die op de campagnepagina('s) begonnen, uit elk kanaal (GA4)">
-                  <div className="flex min-w-[110px] flex-col gap-1.5">
-                    <span className="tabular-nums text-ink">{geanalyseerd ? formatWaarde(o.bezoekers) : "—"}</span>
-                    <span className="text-meta text-ink-faint">Op de campagnepagina</span>
-                  </div>
+                <td className="px-3 py-3">
+                  <GetalCel waarde={geanalyseerd ? formatWaarde(o.bezoekers) : "—"} onder="campagnepagina" />
                 </td>
                 <td className="px-3 py-3">
                   <LeadsCel o={o} geanalyseerd={geanalyseerd} c={c} onBewerk={onBewerk} />
@@ -482,22 +445,19 @@ function CampagneAnalyseTabel({ campagnes, opzetten, vandaag, planningBezig, onO
                       : BRON_UITLEG[o.bron]
                   }
                 >
-                  <BalkCel
+                  <GetalCel
                     waarde={o.doelLeads !== null ? formatWaarde(o.doelLeads) : "—"}
-                    pct={o.gehaaldPct}
                     toon={o.gehaaldPct !== null && o.gehaaldPct >= 100 ? "positief" : "neutraal"}
                     onder={
                       o.doelLeads === null
-                        ? "Geen aantal in het doel"
+                        ? "geen aantal in doel"
                         : o.gehaaldPct === null
-                          ? "Nog niet gemeten"
-                          : o.bron === "syntec"
-                            ? `${formatWaarde(o.gehaaldPct, "procent")} gehaald · Syntec (${formatWaarde(o.leads)} websiteleads)`
-                            : `${formatWaarde(o.gehaaldPct, "procent")} gehaald · GA4`
+                          ? "nog niet gemeten"
+                          : `${formatWaarde(o.gehaaldPct, "procent")} gehaald · ${o.bron === "syntec" ? "Syntec" : "GA4"}`
                     }
                   />
                 </td>
-                <td className="px-3 py-3">
+                <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
                   <PlanningKeuze
                     regel={planningInvoer(c, opzet)}
                     naam={c.naam}
@@ -507,9 +467,8 @@ function CampagneAnalyseTabel({ campagnes, opzetten, vandaag, planningBezig, onO
                     compact
                   />
                 </td>
-                <td className="whitespace-nowrap px-4 py-3 text-right">
-                  <BewerkKnop c={c} onBewerk={onBewerk} />
-                  <MailKnop c={c} onVolgers={onVolgers} />
+                <td className="px-3 py-3">
+                  <RijActies c={c} onBewerk={onBewerk} onVolgers={onVolgers} />
                 </td>
               </tr>
             );
@@ -520,20 +479,19 @@ function CampagneAnalyseTabel({ campagnes, opzetten, vandaag, planningBezig, onO
   );
 }
 
-/** Rapportages en andere opzetten zonder funnel: alleen naam, laatste analyse en planning. */
-function RapportageTabel({ campagnes, opzetten, vandaag, planningBezig, onOpen, onBewerk, onPlanning, onVolgers }: TabelProps) {
+/** Rapportages en andere opzetten zonder funnel: naam, laatste analyse en planning. */
+function RapportageTabel({ campagnes, opzetten, vandaag, planningBezig, gekozen, onKies, onBewerk, onPlanning, onVolgers }: TabelProps) {
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full border-separate border-spacing-0 text-sm">
+    <div className="relative overflow-x-auto rounded-[14px] border border-line bg-[var(--ma-ondergrond)] shadow-subtle">
+      <table className="w-full min-w-[720px] border-separate border-spacing-0 text-[13px]">
         <thead>
-          <tr className="text-left text-label text-ink-faint">
-            {STIP_KOP}
-            <th className={`${KOP} pl-3`}>Rapportage</th>
+          <tr>
+            <th className={`${KOP} ${VAST} pl-5`}>Rapportage</th>
             <th className={KOP}>Laatste analyse</th>
-            <th className="w-48 px-3 py-2.5" title="Hoe vaak “voer de analyseronde uit” deze rapportage maakt">
-              <span className="label-theme font-normal">Planning</span>
+            <th className={`${KOP} w-48`} title="Hoe vaak “voer de analyseronde uit” deze rapportage maakt">
+              Planning
             </th>
-            <th className="w-24 px-4 py-2.5">
+            <th className="w-20 px-3 py-2.5">
               <span className="sr-only">Briefing en mail</span>
             </th>
           </tr>
@@ -542,23 +500,30 @@ function RapportageTabel({ campagnes, opzetten, vandaag, planningBezig, onOpen, 
           {campagnes.map((c) => {
             const opzet = opzetten.get(c.opzetId);
             return (
-              <tr key={c.id} onClick={() => onOpen(c.id)} className={RIJ}>
-                <td className="py-3 pl-6 pr-0">
-                  <StatusStip c={c} vandaag={vandaag} />
-                </td>
-                <td className="max-w-[420px] px-3 py-3">
-                  <p className="truncate font-semibold text-ink" title={c.naam}>
-                    {c.naam}
-                  </p>
-                  <p className="mt-0.5 text-meta text-ink-faint">
-                    {opzet ? `${opzet.naam} · ` : ""}
-                    {bedrijvenLabel(c.bedrijven)} · {c.periodeTekst || "Geen periode"}
-                  </p>
+              <tr
+                key={c.id}
+                onClick={(e) => onKies(c.id, (e.currentTarget.querySelector("[data-campagne]") as HTMLElement) ?? e.currentTarget)}
+                className={rijKlasse(gekozen === c.id)}
+              >
+                <td className={`${VAST} max-w-[460px] py-3 pl-5 pr-3`}>
+                  <div className="flex items-start gap-2.5">
+                    <StatusStip c={c} vandaag={vandaag} />
+                    <div className="min-w-0">
+                      <NaamKnop c={c} onKies={onKies} />
+                      <p className="mt-0.5 text-[11.5px] text-ink-faint">
+                        {opzet ? `${opzet.naam} · ` : ""}
+                        {bedrijvenLabel(c.bedrijven)} · {c.periodeTekst || "Geen periode"}
+                      </p>
+                    </div>
+                  </div>
                 </td>
                 <td className="px-3 py-3 text-ink">
                   <LaatsteAnalyse c={c} opzet={opzet} />
+                  {c.laatsteAnalyse?.periodeVan && (
+                    <p className="mt-0.5 text-[11.5px] text-ink-faint">periode {looptijdLabel(c.laatsteAnalyse.periodeVan, c.laatsteAnalyse.periodeTot)}</p>
+                  )}
                 </td>
-                <td className="px-3 py-3">
+                <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
                   <PlanningKeuze
                     regel={planningInvoer(c, opzet)}
                     naam={c.naam}
@@ -567,9 +532,8 @@ function RapportageTabel({ campagnes, opzetten, vandaag, planningBezig, onOpen, 
                     onKies={(p) => onPlanning(c, p)}
                   />
                 </td>
-                <td className="whitespace-nowrap px-4 py-3 text-right">
-                  <BewerkKnop c={c} onBewerk={onBewerk} />
-                  <MailKnop c={c} onVolgers={onVolgers} />
+                <td className="px-3 py-3">
+                  <RijActies c={c} onBewerk={onBewerk} onVolgers={onVolgers} />
                 </td>
               </tr>
             );
@@ -580,20 +544,15 @@ function RapportageTabel({ campagnes, opzetten, vandaag, planningBezig, onOpen, 
   );
 }
 
-/** Campagne-analyses en rapportages onder elkaar, elk met hun eigen kolommen. */
-function OverzichtTabellen(props: TabelProps) {
-  const isRapportage = (c: MaOverzichtRegel) => props.opzetten.get(c.opzetId)?.formulier === "rapportage";
-  const campagnes = props.campagnes.filter((c) => !isRapportage(c));
-  const rapportages = props.campagnes.filter(isRapportage);
+/** Een actief filter in de knoppenbalk, met een kruisje om het te wissen. */
+function FilterChip({ naam, onWis }: { naam: string; onWis: () => void }) {
   return (
-    <>
-      {campagnes.length > 0 && <CampagneAnalyseTabel {...props} campagnes={campagnes} />}
-      {rapportages.length > 0 && (
-        <div className={campagnes.length > 0 ? "border-t border-line-soft pt-2" : ""}>
-          <RapportageTabel {...props} campagnes={rapportages} />
-        </div>
-      )}
-    </>
+    <span className="ma-groep inline-flex h-[26px] shrink-0 items-center gap-1 rounded-[7px] pl-2.5 pr-1 text-[12.5px] font-medium text-ink">
+      {naam}
+      <button type="button" onClick={onWis} aria-label={`Filter ${naam} wissen`} title="Filter wissen" className="flex h-5 w-5 items-center justify-center rounded-[5px] text-ink-muted hover:bg-[color-mix(in_srgb,var(--color-ink)_8%,transparent)] hover:text-ink">
+        <IconClose className="h-3 w-3" />
+      </button>
+    </span>
   );
 }
 
@@ -611,12 +570,16 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
   const [paneel, setPaneel] = useState<
     { soort: "prompt"; opzetId: string | null } | { soort: "semantiek" } | { soort: "merk-mail" } | { soort: "mails" } | null
   >(null);
-  // Analyse prompts en Semantic layer staan achter het schildje: ze zijn vooral voor beheerders.
-  const [beheerOpen, setBeheerOpen] = useState(false);
   const [status, setStatus] = useState<StatusFilter | null>(null);
   const [bedrijfFilter, setBedrijfFilter] = useState<string | null>(null);
   const [planningBezig, setPlanningBezig] = useState<Set<string>>(new Set());
   const [volgersVan, setVolgersVan] = useState<MaOverzichtRegel | null>(null);
+  // Het detailpaneel: welke campagne, en welk element het opende (daar gaat de focus naar terug).
+  const [inspectorId, setInspectorId] = useState<string | null>(null);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+  const inspectorAnker = useRef<HTMLElement | null>(null);
+  // Waar je was in het overzicht toen je een analyse opende: daar kom je bij terugkeren weer uit.
+  const terug = useRef<{ scrollY: number; id: string } | null>(null);
 
   const laad = useCallback(() => {
     fetch("/api/marketing-analyse")
@@ -652,24 +615,6 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
   }, []);
 
   useEffect(() => {
-    try {
-      if (window.localStorage.getItem(BEHEER_SLEUTEL) === "open") setBeheerOpen(true);
-    } catch {
-      // Geen opslag (privévenster): dan gewoon dicht.
-    }
-  }, []);
-
-  function wisselBeheer() {
-    const open = !beheerOpen;
-    setBeheerOpen(open);
-    try {
-      window.localStorage.setItem(BEHEER_SLEUTEL, open ? "open" : "dicht");
-    } catch {
-      // Niet erg: alleen een gemak.
-    }
-  }
-
-  useEffect(() => {
     if (!ingelogd) return;
     laad();
     const params = new URLSearchParams(window.location.search);
@@ -683,19 +628,39 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
     if (bf) setBedrijfFilter(bf);
   }, [ingelogd, laad]);
 
-  // De pagina-header van AppShell (titel + ondertitel) wijkt voor de kruimelrij zodra een analyse openstaat.
+  // Terug uit een analyse: dezelfde scrollpositie, en de focus op de regel waar je vandaan kwam.
   useEffect(() => {
-    window.dispatchEvent(new CustomEvent("ma-detail", { detail: Boolean(openId) }));
-    return () => {
-      window.dispatchEvent(new CustomEvent("ma-detail", { detail: false }));
-    };
+    if (openId || !terug.current) return;
+    const { scrollY, id } = terug.current;
+    terug.current = null;
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: scrollY });
+      document.querySelector<HTMLElement>(`[data-campagne="${CSS.escape(id)}"]`)?.focus({ preventScroll: true });
+    });
   }, [openId]);
 
   function open(id: string | null) {
+    if (id) {
+      terug.current = { scrollY: window.scrollY, id };
+      setInspectorOpen(false);
+    }
     setOpenId(id);
     zetUrl(id);
-    window.scrollTo({ top: 0 });
+    if (id) window.scrollTo({ top: 0 });
   }
+
+  function kiesInspector(id: string, knop: HTMLElement) {
+    // Nog eens op dezelfde regel: dicht. Een andere regel: het paneel wisselt meteen van inhoud.
+    if (inspectorOpen && inspectorId === id) return sluitInspector();
+    inspectorAnker.current = knop;
+    setInspectorId(id);
+    setInspectorOpen(true);
+  }
+
+  const sluitInspector = useCallback(() => {
+    setInspectorOpen(false);
+    inspectorAnker.current?.focus({ preventScroll: true });
+  }, []);
 
   function kiesFilter(soort: string) {
     setFilter(soort);
@@ -778,15 +743,12 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
     }
   }
 
-  if (!ingelogd) return <Inlogprompt tekst="Log in om de marketing analyses te bekijken." />;
-
-  const geopend = campagnes?.find((c) => c.id === openId) ?? null;
-  const opzetPerId = new Map(opzetten.map((o) => [o.id, o]));
-  const promptOpzet = paneel?.soort === "prompt" && paneel.opzetId ? (opzetPerId.get(paneel.opzetId) ?? null) : null;
   const vandaag = vandaagNL();
-  // De aantallen op de soortknoppen tellen binnen het statusfilter.
+  const alle = useMemo(() => campagnes ?? [], [campagnes]);
+  const opzetPerId = useMemo(() => new Map(opzetten.map((o) => [o.id, o])), [opzetten]);
+
+  // ── Filters ── (de regels zijn dezelfde als vóór de redesign; alleen de bediening is anders)
   const binnenStatus = (c: MaOverzichtRegel) => status === null || isLive(c, vandaag) === (status === "live");
-  const alle = campagnes ?? [];
   const bedrijfKnoppen = bedrijfFilterKnoppen(bedrijven, alle);
   // Een bedrijf uit de URL dat er niet (meer) is, telt als Alle.
   const actiefBedrijf = bedrijfKnoppen.find((b) => b.naam.toLowerCase() === bedrijfFilter?.trim().toLowerCase())?.naam ?? null;
@@ -796,181 +758,257 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
     vanBedrijf.map((c) => ({ opzetId: c.opzetId, lopend: binnenStatus(c) })),
   );
   // Er staat altijd precies één soort aan: soorten met andere kolommen komen nooit in één lijst.
-  // Standaard (en bij een soort uit de URL die er niet meer is) is dat Campagne analyse, of anders
-  // de eerste soort.
   const filterKnop =
     (filter !== null ? filterKnoppen.find((k) => k.id === filter) : undefined) ??
     filterKnoppen.find((k) => k.id === STANDAARD_SOORT) ??
     filterKnoppen[0] ??
     null;
-  const actiefFilter = filterKnop?.id ?? null;
   const filterHeeftActieve = Boolean(filterKnop?.opzetIds.some((id) => opzetPerId.get(id)?.actief));
   const gefilterd = filterOpOpzet(vanBedrijf, filterKnop?.opzetIds ?? null);
-  // De aantallen op de bedrijfsknoppen tellen binnen het statusfilter en het filter op soort.
   const bedrijfKnoppenGeteld = bedrijfFilterKnoppen(
     bedrijven,
     filterOpOpzet(alle, filterKnop?.opzetIds ?? null).filter(binnenStatus),
   ).filter((k) => bedrijfKnoppen.some((b) => b.naam === k.naam));
+  const totaalBinnenSoort = filterOpOpzet(alle, filterKnop?.opzetIds ?? null).filter(binnenStatus).length;
   const zichtbaar = sorteerOpStatus(gefilterd, vandaag, status);
   const aantalLive = gefilterd.filter((c) => isLive(c, vandaag)).length;
-  const ingepland = zichtbaar.filter((c) => c.planning !== "uit").length;
   const statusNaam = status === "live" ? "Live" : status === "niet-live" ? "Niet live" : null;
+  const isCampagneSoort = filterKnop?.id === STANDAARD_SOORT;
+  const isRapportage = (c: MaOverzichtRegel) => opzetPerId.get(c.opzetId)?.formulier === "rapportage";
+  const campagneRegels = zichtbaar.filter((c) => !isRapportage(c));
+  const rapportageRegels = zichtbaar.filter(isRapportage);
+  const aantalFilters = (status ? 1 : 0) + (actiefBedrijf ? 1 : 0);
 
-  const knoppen = (
-    <div className="flex items-center gap-2">
-      {beheerOpen && (
-        <div id="ma-beheer" className="flex items-center gap-2">
-          <AnalysePromptsMenu
-            opzetten={opzetten}
-            isEigenaar={isEigenaar}
-            onKies={(o) => setPaneel({ soort: "prompt", opzetId: o.id })}
-            onNieuw={() => setPaneel({ soort: "prompt", opzetId: null })}
-          />
-          <button
-            type="button"
-            onClick={() => setPaneel({ soort: "semantiek" })}
-            className="flex items-center gap-2 rounded-button border border-line bg-card px-4 py-2 text-sm font-medium text-ink transition-colors duration-[var(--duur-snel)] hover:bg-surface"
-          >
-            <IconBook className="h-4 w-4 text-ink-muted" />
-            Semantic layer
-          </button>
-          {isEigenaar && (
-            <button
-              type="button"
-              onClick={() => setPaneel({ soort: "mails" })}
-              title="Wie wanneer welke analyse per mail kreeg"
-              className="flex items-center gap-2 rounded-button border border-line bg-card px-4 py-2 text-sm font-medium text-ink transition-colors duration-[var(--duur-snel)] hover:bg-surface"
-            >
-              <IconNotes className="h-4 w-4 text-ink-muted" />
-              Verzonden e-mails
-            </button>
-          )}
-        </div>
-      )}
-      <button
-        type="button"
-        onClick={wisselBeheer}
-        aria-expanded={beheerOpen}
-        aria-controls="ma-beheer"
-        aria-label={beheerOpen ? "Beheer verbergen" : "Beheer: Analyse prompts, Semantic layer en Verzonden e-mails"}
-        title={beheerOpen ? "Beheer verbergen" : "Beheer: Analyse prompts, Semantic layer en Verzonden e-mails"}
-        className={`flex items-center justify-center self-stretch rounded-button border px-2.5 transition-colors duration-[var(--duur-snel)] ${
-          beheerOpen ? "border-line bg-surface text-ink" : "border-line bg-card text-ink-muted hover:bg-surface hover:text-ink"
-        }`}
-      >
-        <IconShield className="h-4 w-4" />
-      </button>
-      <button
-        type="button"
-        onClick={() => setPaneel({ soort: "merk-mail" })}
-        className="flex items-center gap-2 rounded-button border border-line bg-card px-4 py-2 text-sm font-medium text-ink transition-colors duration-[var(--duur-snel)] hover:bg-surface"
-      >
-        <IconMail className="h-4 w-4 text-ink-muted" />
-        E-mail settings
-      </button>
-      {!geopend && (
-        <button
-          type="button"
-          // Staat het filter op een soort, dan begint de nieuwe analyse met die opzet.
-          onClick={() => setZijbalk({ campagne: null, startOpzetId: filterKnop?.startOpzetId ?? undefined })}
-          className="flex items-center gap-2 rounded-button bg-primary px-4 py-2 text-sm font-medium text-on-primary transition-colors duration-[var(--duur-snel)] hover:bg-primary-dark"
-        >
-          <IconPlus className="h-4 w-4" />
-          Nieuwe analyse
-        </button>
-      )}
-    </div>
+  const p = useMemo(() => portefeuille(campagneRegels, vandaag), [campagneRegels, vandaag]);
+  const regelPerId = useMemo(() => new Map(alle.map((c) => [c.id, c])), [alle]);
+  const standVan = p.standVan;
+  const standTot = p.standTot;
+  const kort = (d: string) => datumKort(d).replace(/ \d{4}$/, "");
+  const standLabel = standTot ? (standVan && standVan !== standTot ? `t/m ${kort(standVan)} – ${kort(standTot)}` : `t/m ${kort(standTot)}`) : "Laatste analyse";
+
+  if (!ingelogd) return <Inlogprompt tekst="Log in om de marketing analyses te bekijken." />;
+
+  const geopend = campagnes?.find((c) => c.id === openId) ?? null;
+  const promptOpzet = paneel?.soort === "prompt" && paneel.opzetId ? (opzetPerId.get(paneel.opzetId) ?? null) : null;
+
+  const meer = (
+    <MeerMenu
+      opzetten={opzetten}
+      isEigenaar={isEigenaar}
+      onPrompt={(o) => setPaneel({ soort: "prompt", opzetId: o.id })}
+      onNieuweOpzet={() => setPaneel({ soort: "prompt", opzetId: null })}
+      onSemantiek={() => setPaneel({ soort: "semantiek" })}
+      onMerkMail={() => setPaneel({ soort: "merk-mail" })}
+      onMails={() => setPaneel({ soort: "mails" })}
+    />
   );
 
-  const tabelProps = {
+  const tabelProps: Omit<TabelProps, "campagnes"> = {
     opzetten: opzetPerId,
     vandaag,
     planningBezig,
-    onOpen: (id: string) => open(id),
+    gekozen: inspectorOpen ? inspectorId : null,
+    onKies: kiesInspector,
     onBewerk: (c: MaOverzichtRegel) => setZijbalk({ campagne: c }),
     onPlanning: kiesPlanning,
     onVolgers: (c: MaOverzichtRegel) => setVolgersVan(c),
   };
 
+  const inspectorRegel = inspectorId ? (regelPerId.get(inspectorId) ?? null) : null;
+  // Uit het overzicht zelf, zodat het aandeel tegen dezelfde campagnes staat; anders los berekend.
+  const inspectorVoortgang = inspectorId
+    ? (p.campagnes.find((c) => c.id === inspectorId) ?? portefeuille(inspectorRegel ? [inspectorRegel] : [], vandaag).campagnes[0] ?? null)
+    : null;
+
   return (
-    <div className="flex flex-col gap-5">
+    <div className="ma-werkruimte min-h-screen">
       {geopend ? (
-        <>
-          <AnalyseWeergave
-            acties={knoppen}
-            key={geopend.id}
-            campagne={geopend}
-            opzet={opzetPerId.get(geopend.opzetId) ?? null}
-            isEigenaar={isEigenaar}
-            onTerug={() => {
-              open(null);
-              laad();
-            }}
-            onBewerk={() => setZijbalk({ campagne: geopend })}
-            onCampagneBijgewerkt={bijgewerkt}
-          />
-        </>
+        <AnalyseWeergave
+          acties={meer}
+          key={geopend.id}
+          campagne={geopend}
+          opzet={opzetPerId.get(geopend.opzetId) ?? null}
+          isEigenaar={isEigenaar}
+          onTerug={() => {
+            open(null);
+            laad();
+          }}
+          onBewerk={() => setZijbalk({ campagne: geopend })}
+          onCampagneBijgewerkt={bijgewerkt}
+        />
       ) : (
         <>
-          {voorstellen && (
-            <VoorstellenBalk
-              open={voorstellen.open}
-              genegeerd={voorstellen.genegeerd}
-              laatsteZoekronde={voorstellen.laatsteZoekronde}
-              bezig={voorstelBezig}
-              onToevoegen={(v) => setZijbalk({ campagne: null, voorstel: v })}
-              onNegeren={(v) => zetVoorstel(v, "negeren")}
-              onTerugzetten={(v) => zetVoorstel(v, "terugzetten")}
-            />
-          )}
-          {campagnes && bedrijfKnoppenGeteld.length > 0 && (
-            <BedrijfFilterBalk
-              bedrijven={bedrijfKnoppenGeteld}
-              totaal={filterOpOpzet(alle, filterKnop?.opzetIds ?? null).filter(binnenStatus).length}
-              gekozen={actiefBedrijf}
-              onKies={kiesBedrijf}
-            />
-          )}
-          {campagnes && filterKnoppen.length > 0 && (
-            <OpzetFilterBalk
-              knoppen={filterKnoppen}
-              aantalLive={aantalLive}
-              aantalNietLive={gefilterd.length - aantalLive}
-              status={status}
-              onStatus={kiesStatus}
-              gekozen={actiefFilter}
-              onKies={kiesFilter}
-            />
-          )}
-          <section className="kaart-accent overflow-hidden rounded-panel border border-line bg-card shadow-card">
-            <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line-soft px-6 py-4">
-              <div>
-                <h2 className="label-theme text-label text-ink-muted">
-                  {statusNaam ? `${statusNaam} analyses` : "Analyses"}
-                  {actiefBedrijf && <span className="text-ink"> · {actiefBedrijf}</span>}
-                  {filterKnop && <span className="text-ink"> · {filterKnop.naam}</span>}
-                </h2>
-                <p className="mt-0.5 text-meta text-ink-faint">
-                  Cijfers uit de laatste analyse. Klik op een regel voor de volledige analyse.
-                  {ingepland > 0 && ` ${ingepland} ${ingepland === 1 ? "staat" : "staan"} ingepland.`}
-                </p>
-              </div>
-              {knoppen}
-            </header>
-            {fout && <p className="px-6 py-3 text-sm text-negative">{fout}</p>}
+          <Knoppenbalk
+            titel="Marketing analyse"
+            selectie={
+              <>
+                {filterKnoppen.length > 0 && filterKnop && (
+                  <Segmenten
+                    label="Soort analyse"
+                    waarde={filterKnop.id}
+                    onKies={kiesFilter}
+                    opties={filterKnoppen.map((k) => ({
+                      id: k.id,
+                      naam: k.id === STANDAARD_SOORT ? "Campagnes" : "Rapportages",
+                      aantal: k.aantal,
+                      uit: k.aantal === 0,
+                      titel: k.naam,
+                    }))}
+                  />
+                )}
+                {isCampagneSoort && (
+                  <PopoverKnop
+                    label="Periode en vergelijking"
+                    titel="Welke periode en waarmee vergeleken"
+                    breedte={360}
+                    className="ma-groep"
+                    inhoud={
+                      <>
+                        <IconCalendar />
+                        <span className="ma-getal">{standLabel}</span>
+                        <span className="hidden font-normal text-ink-muted min-[1360px]:inline">· tegen looptijd</span>
+                        <IconChevronDown className="!h-3.5 !w-3.5 text-ink-faint" />
+                      </>
+                    }
+                  >
+                    {() => (
+                      <div className="p-1.5">
+                        <MenuKop>Periode</MenuKop>
+                        <p className="px-2.5 text-[12.5px] leading-snug text-ink-muted">
+                          Elke campagne staat op de stand van zijn laatste analyse: vanaf de start van de looptijd t/m de laatste dag van de
+                          analyseperiode.
+                        </p>
+                        <ul className="mt-2 flex flex-col">
+                          {p.campagnes.map((c) => {
+                            const r = regelPerId.get(c.id);
+                            return (
+                              <li key={c.id} className="flex items-baseline justify-between gap-3 rounded-[8px] px-2.5 py-1.5 text-[12.5px]">
+                                <span className="min-w-0 truncate font-medium text-ink">{c.naam}</span>
+                                <span className="ma-getal shrink-0 text-ink-muted">
+                                  {r?.laatsteAnalyse?.periodeVan ? looptijdLabel(r.laatsteAnalyse.periodeVan, r.laatsteAnalyse.periodeTot) : "geen analyse"}
+                                </span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                        <MenuScheiding />
+                        <MenuKop>Vergeleken met</MenuKop>
+                        <p className="px-2.5 pb-1.5 text-[12.5px] leading-snug text-ink-muted">
+                          <span className="font-medium text-ink">Het tempo van de looptijd.</span> Budget en leaddoel × het verstreken deel van de
+                          looptijd op die dag. De streep in elke balk is die verwachting; binnen 10 procentpunt heet op schema.
+                        </p>
+                        <p className="px-2.5 pb-1 text-[11.5px] text-ink-faint">
+                          Een vergelijking met de vorige versie staat op de analysepagina zelf (periode-knop).
+                        </p>
+                      </div>
+                    )}
+                  </PopoverKnop>
+                )}
+                <PopoverKnop
+                  label="Filters"
+                  titel="Filter op status en bedrijf"
+                  breedte={300}
+                  className="ma-groep"
+                  inhoud={
+                    <>
+                      <IconFilter />
+                      <span className="hidden sm:inline">Filters</span>
+                      {aantalFilters > 0 && (
+                        <span className="ma-getal flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10.5px] font-semibold text-on-primary">
+                          {aantalFilters}
+                        </span>
+                      )}
+                    </>
+                  }
+                >
+                  {(sluit) => (
+                    <div className="p-1">
+                      <MenuKop>Status</MenuKop>
+                      <div className="px-1.5 pb-1">
+                        <Segmenten<"alle" | StatusFilter>
+                          label="Status"
+                          waarde={status ?? "alle"}
+                          onKies={(s) => kiesStatus(s === "alle" ? null : s)}
+                          opties={[
+                            { id: "alle", naam: "Alle", aantal: gefilterd.length },
+                            { id: "live", naam: "Live", aantal: aantalLive },
+                            { id: "niet-live", naam: "Niet live", aantal: gefilterd.length - aantalLive },
+                          ]}
+                        />
+                      </div>
+                      <MenuScheiding />
+                      <MenuKop>Bedrijf</MenuKop>
+                      <MenuRegel rol="menuitemradio" gekozen={actiefBedrijf === null} onClick={() => kiesBedrijf(null)} rechts={totaalBinnenSoort}>
+                        Alle bedrijven
+                      </MenuRegel>
+                      {bedrijfKnoppenGeteld.map((b) => (
+                        <MenuRegel
+                          key={b.naam}
+                          rol="menuitemradio"
+                          gekozen={actiefBedrijf === b.naam}
+                          uit={b.aantal === 0}
+                          onClick={() => kiesBedrijf(b.naam)}
+                          rechts={b.aantal}
+                        >
+                          {b.naam}
+                        </MenuRegel>
+                      ))}
+                      <MenuScheiding />
+                      <div className="flex items-center justify-between gap-2 px-2.5 py-1.5">
+                        <p className="text-[11.5px] leading-snug text-ink-faint">Werkt op de kerncijfers, de voortgang en de tabel.</p>
+                        <button
+                          type="button"
+                          disabled={aantalFilters === 0}
+                          onClick={() => {
+                            kiesStatus(null);
+                            kiesBedrijf(null);
+                            sluit();
+                          }}
+                          className="ma-knop shrink-0 px-2 text-[12.5px] disabled:opacity-40"
+                        >
+                          Wis filters
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </PopoverKnop>
+                {statusNaam && <FilterChip naam={statusNaam} onWis={() => kiesStatus(null)} />}
+                {actiefBedrijf && <FilterChip naam={actiefBedrijf} onWis={() => kiesBedrijf(null)} />}
+              </>
+            }
+            acties={
+              <>
+                <button
+                  type="button"
+                  // Staat het filter op een soort, dan begint de nieuwe analyse met die opzet.
+                  onClick={() => setZijbalk({ campagne: null, startOpzetId: filterKnop?.startOpzetId ?? undefined })}
+                  className="ma-knop ma-knop-primair"
+                  title="Nieuwe analyse"
+                >
+                  <IconPlus />
+                  <span className="hidden sm:inline">Nieuwe analyse</span>
+                </button>
+                {meer}
+              </>
+            }
+          />
+
+          <div className="ma-in mx-auto flex max-w-[1360px] flex-col gap-6 px-3 pb-16 pt-4 sm:px-4 lg:px-6 lg:pt-5">
+            {fout && <p className="rounded-[10px] border border-negative/25 bg-negative/5 px-4 py-2.5 text-[13px] text-negative">{fout}</p>}
             {!campagnes ? (
-              !fout && <p className="px-6 py-5 text-sm text-ink-muted">Laden…</p>
-            ) : zichtbaar.length === 0 && (filterKnop || status || actiefBedrijf) ? (
-              <div className="px-6 py-10 text-center">
-                <p className="font-semibold text-ink">
-                  Geen {statusNaam ? `${statusNaam.toLowerCase()} ` : ""}analyses{actiefBedrijf ? ` voor ${actiefBedrijf}` : ""}
-                  {filterKnop ? ` van het soort ${filterKnop.naam}` : ""}
+              !fout && <p className="px-1 py-6 text-[13px] text-ink-muted">Laden…</p>
+            ) : zichtbaar.length === 0 ? (
+              <div className="rounded-[14px] border border-dashed border-line bg-[var(--ma-ondergrond)] px-6 py-10 text-center">
+                <p className="ma-kop text-ink">
+                  {filterKnop || status || actiefBedrijf
+                    ? `Geen ${statusNaam ? `${statusNaam.toLowerCase()} ` : ""}analyses${actiefBedrijf ? ` voor ${actiefBedrijf}` : ""}${filterKnop ? ` van het soort ${filterKnop.naam}` : ""}`
+                    : "Nog geen analyses"}
                 </p>
-                <p className="mx-auto mt-1 max-w-lg text-sm text-ink-muted">
-                  {filterKnop && filterHeeftActieve ? "Maak er een aan met Nieuwe analyse" : ""}
+                <p className="mx-auto mt-1 max-w-lg text-[13px] text-ink-muted">
+                  {filterKnop && filterHeeftActieve ? "Maak er een aan met Nieuwe analyse" : "Maak met Nieuwe analyse een campagne-analyse of een rapportage aan"}
                   {(status || actiefBedrijf) && (
                     <>
-                      {filterKnop && filterHeeftActieve ? ", of " : ""}
+                      {", of "}
                       <button
                         type="button"
                         onClick={() => {
@@ -979,26 +1017,70 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
                         }}
                         className="text-ink underline underline-offset-2 hover:text-primary"
                       >
-                        {filterKnop && filterHeeftActieve ? "toon alle" : "Toon alle"}
-                        {filterKnop ? ` ${filterKnop.naam.toLowerCase()}s` : " analyses"}
+                        wis de filters
                       </button>
                     </>
                   )}
                   .
                 </p>
               </div>
-            ) : zichtbaar.length === 0 ? (
-              <div className="px-6 py-10 text-center">
-                <p className="font-semibold text-ink">Nog geen analyses</p>
-                <p className="mx-auto mt-1 max-w-lg text-sm text-ink-muted">
-                  Maak met Nieuwe analyse een campagne-analyse of een rapportage aan. Zeg daarna in Claude Code dat hij de analyse moet
-                  maken; het resultaat verschijnt hier.
-                </p>
-              </div>
             ) : (
-              <OverzichtTabellen campagnes={zichtbaar} {...tabelProps} />
+              <>
+                {campagneRegels.length > 0 && (
+                  <>
+                    <div className="flex flex-col gap-2">
+                      <p className="px-0.5 text-[12px] text-ink-muted">
+                        <span className="font-medium text-ink">
+                          {p.aantal} {p.aantal === 1 ? "campagne-analyse" : "campagne-analyses"}
+                        </span>
+                        {` · ${p.aantalLive} live`}
+                        {actiefBedrijf ? ` · ${actiefBedrijf}` : ""}
+                        {standTot ? ` · cijfers t/m ${datumKort(standTot)}` : ""}
+                      </p>
+                      <OverzichtKpis p={p} />
+                    </div>
+                    <VoortgangLijst p={p} regels={regelPerId} gekozen={inspectorOpen ? inspectorId : null} onKies={kiesInspector} />
+                    <section aria-labelledby="ma-cijfers" className="flex flex-col gap-3">
+                      <SectieKop
+                        id="ma-cijfers"
+                        titel="Alle cijfers per campagne"
+                        uitleg="Exacte waarden uit de laatste analyse, met de bron van elk leadcijfer en de planning van de analyseronde."
+                      />
+                      <CijferTabel campagnes={campagneRegels} {...tabelProps} />
+                    </section>
+                  </>
+                )}
+                {rapportageRegels.length > 0 && (
+                  <section aria-labelledby="ma-rapportages" className="flex flex-col gap-3">
+                    <SectieKop id="ma-rapportages" titel="Rapportages" uitleg="Maand-, kwartaal- en maatwerkrapportages. Klik voor de details." />
+                    <RapportageTabel campagnes={rapportageRegels} {...tabelProps} />
+                  </section>
+                )}
+              </>
             )}
-          </section>
+
+            {voorstellen && (
+              <VoorstellenBalk
+                open={voorstellen.open}
+                genegeerd={voorstellen.genegeerd}
+                laatsteZoekronde={voorstellen.laatsteZoekronde}
+                bezig={voorstelBezig}
+                onToevoegen={(v) => setZijbalk({ campagne: null, voorstel: v })}
+                onNegeren={(v) => zetVoorstel(v, "negeren")}
+                onTerugzetten={(v) => zetVoorstel(v, "terugzetten")}
+              />
+            )}
+          </div>
+
+          <Inspector
+            regel={inspectorRegel}
+            voortgang={inspectorVoortgang}
+            open={inspectorOpen && Boolean(inspectorRegel)}
+            onSluit={sluitInspector}
+            onOpenAnalyse={(id) => open(id)}
+            onBriefing={(r) => setZijbalk({ campagne: r })}
+            onVolgers={(r) => setVolgersVan(r)}
+          />
         </>
       )}
 
@@ -1020,6 +1102,7 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
           onVerwijderd={(id) => {
             setCampagnes((lijst) => lijst?.filter((x) => x.id !== id) ?? lijst);
             if (openId === id) open(null);
+            if (inspectorId === id) setInspectorOpen(false);
           }}
         />
       )}

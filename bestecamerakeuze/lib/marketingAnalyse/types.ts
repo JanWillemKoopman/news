@@ -606,6 +606,9 @@ export interface MaOverzichtRegel extends MaCampagne {
     /** Null bij een rapportage. */
     label: Label | null;
     geanalyseerdOp: string;
+    /** De periode waarover de analyse ging (redesign november 2026: "stand t/m" in het overzicht). */
+    periodeVan?: string | null;
+    periodeTot?: string | null;
     kerncijfers: MaKerncijfers;
   } | null;
   aantalAnalyses: number;
@@ -641,6 +644,9 @@ export interface MaVersie {
   versie: number;
   label: Label | null;
   geanalyseerdOp: string;
+  /** De periode waarover deze versie ging: de periodekiezer op de analysepagina toont hem. */
+  periodeVan?: string | null;
+  periodeTot?: string | null;
 }
 
 export interface MaAnalyse {
