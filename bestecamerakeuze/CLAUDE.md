@@ -1670,9 +1670,10 @@ lees dat eerst voordat je hier iets verandert.
 - **HRM campagne** (eerst "HRM analyse", 26 november 2026, migratie 0053; sinds 27 november 2026 een
   maandrapport, migratie 0054, verzoek van de eigenaar): een opzet `rapportage` (vast id `...0006`) voor
   werving bij alle bedrijven, **maandelijks**: 1 januari t/m de afgelopen maand, elke vergelijking tegen
-  de maand daarvoor, en elk hoofdcijfer apart voor Van den Udenhout en PGZ (Porsche, Bentley). Uitgaven
+  de maand daarvoor, en elk hoofdcijfer apart voor Van den Udenhout, PGZ (Porsche, Bentley) en VELOO
+  (VELOO apart: besluit van de eigenaar, 27 november 2026, prompt versie 3, migratie 0055). Uitgaven
   aan vacaturecampagnes, leads via social media (per maand én per week) en sollicitaties op de website.
-  Prompt versie 2 bij de opzet, het blok **Werving** in de semantic layer (`werving` in
+  Prompt versie 3 bij de opzet, het blok **Werving** in de semantic layer (`werving` in
   `standaardSemantiek.ts`, gelijk aan semantic layer versie 7) en een eigen paragraaf in de skill.
   Onderzoek en besluiten: `hrm-analyse-onderzoek.md`.
 - **Vergelijking onder een kerncijfer** (27 november 2026, voor de maandrapporten): staat er een

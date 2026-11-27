@@ -131,11 +131,12 @@ group by 1, 2 order by orders desc;
 
 ## HRM campagne (maandrapport werving)
 Opzet **HRM campagne** (vast id `7d0c0000-0000-4000-8000-000000000006`, formulier `rapportage`,
-planning standaard Maandelijks; migraties 0053 en 0054, besluiten van de eigenaar van 25, 26 en
+planning standaard Maandelijks; migraties 0053, 0054 en 0055, besluiten van de eigenaar van 25, 26 en
 27 november 2026 in `bestecamerakeuze/hrm-analyse-onderzoek.md`; tot 27 november heette hij "HRM
 analyse" en liep hij wekelijks). Eén maandrapport voor de hele groep, met elk hoofdcijfer apart voor
-de clusters **Van den Udenhout** (VDU, Instra, Caromi, VELOO) en **PGZ** (Porsche Groep Zuid, Porsche
-Centrum Maastricht, PGZ, Bentley Maastricht). De prompt van de opzet zegt wat er per sectie in hoort;
+de clusters **Van den Udenhout** (VDU, Instra, Caromi), **PGZ** (Porsche Groep Zuid, Porsche Centrum
+Maastricht, PGZ, Bentley Maastricht) en **VELOO** (apart, besluit van de eigenaar van 27 november 2026;
+prompt versie 3, migratie 0055). De prompt van de opzet zegt wat er per sectie in hoort;
 het blok **Werving** van de semantic layer zegt hoe je werving herkent, welk account bij welk bedrijf
 hoort en welke events sollicitaties zijn. Wat hier staat geldt alleen voor deze opzet en gaat vóór de
 algemene rapportageregels in stap 3.
