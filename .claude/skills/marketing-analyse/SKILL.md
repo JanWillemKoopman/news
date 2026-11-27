@@ -162,7 +162,11 @@ algemene rapportageregels in stap 3.
     weken) en per `session_source_medium` en `campaign` voor de focusmaand, de vergelijkingsmaand en
     de hele periode; sessies op vacaturepagina's per property met `page_path`, per maand. Niet property 469094476.
   - Facebook en LinkedIn organisch: posts met vacature, solliciteren, collega of werken bij in de
-    tekst; LinkedIn `careers_page_views` per account. Instagram kan een time-out geven.
+    tekst; LinkedIn `careers_page_views` per account.
+  - Instagram (`instagram`) in twee stappen, anders loopt het na 60 seconden vast (27 november 2026):
+    eerst `account_name`, `media_id`, `timestamp` met het tekstfilter op `media_caption`, **zonder**
+    `media_views`, per account (udenhoutgroep apart, de andere accounts samen) en per periode van
+    hoogstens acht maanden; daarna `media_id`, `media_views` met een `in`-filter op de gevonden ids.
 - **Formaat**: rapportage, dus secties met `stap` 1 t/m 7, zonder `tab` en met `groep`, in de
   volgorde van de prompt. Wat niet gemeten wordt is tekst ("niet gemeten", "niet opgehaald"), nooit 0. Kerncijfers
   voor het overzicht: alleen `kosten`.
