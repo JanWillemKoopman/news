@@ -158,8 +158,8 @@ type TabelProps = {
   onVolgers: (c: MaOverzichtRegel) => void;
 };
 
-const KOP = "ma-kolomkop whitespace-nowrap px-3 py-2.5 text-left font-semibold";
-const KOP_R = "ma-kolomkop whitespace-nowrap px-3 py-2.5 text-right font-semibold";
+const KOP = "ma-kolomkop whitespace-nowrap px-2.5 py-2.5 text-left font-semibold";
+const KOP_R = "ma-kolomkop whitespace-nowrap px-2.5 py-2.5 text-right font-semibold";
 /** De eerste kolom blijft staan bij horizontaal scrollen: een bedrag hoort altijd bij zijn campagne. */
 const VAST = "sticky left-0 z-[1] bg-[var(--ma-ondergrond)]";
 
@@ -209,7 +209,7 @@ function RijActies({ c, onBewerk, onVolgers }: { c: MaOverzichtRegel; onBewerk: 
         }}
         title="Briefing bewerken"
         aria-label={`Briefing van ${c.naam} bewerken`}
-        className="ma-knop px-1.5 text-ink-faint hover:text-ink"
+        className="ma-knop px-1 text-ink-faint hover:text-ink"
       >
         <IconPencil />
       </button>
@@ -221,7 +221,7 @@ function RijActies({ c, onBewerk, onVolgers }: { c: MaOverzichtRegel; onBewerk: 
         }}
         title={titel}
         aria-label={`${titel} — ${c.naam}`}
-        className="ma-knop gap-1 px-1.5 text-ink-faint hover:text-ink"
+        className="ma-knop gap-0.5 px-1 text-ink-faint hover:text-ink"
       >
         <IconMail />
         {c.aantalVolgers > 0 && <span className="ma-getal text-[12px]">{c.aantalVolgers}</span>}
@@ -269,7 +269,7 @@ function LeadsCel({
   const s = o.syntec;
   const vdu = s.stand === "cijfers" && s.alleenVdu ? " (alleen VDU)" : "";
   return (
-    <div className="flex min-w-[210px] flex-col gap-1">
+    <div className="flex min-w-[190px] flex-col gap-1">
       <LeadRegel
         waarde={getal(o.ga4Leads)}
         naam="Google Analytics"
@@ -358,15 +358,15 @@ function NaamKnop({ c, onKies }: { c: MaOverzichtRegel; onKies: (id: string, kno
 function CijferTabel({ campagnes, opzetten, vandaag, planningBezig, gekozen, onKies, onBewerk, onPlanning, onVolgers }: TabelProps) {
   return (
     <div className="relative overflow-x-auto rounded-[14px] border border-line bg-[var(--ma-ondergrond)] shadow-subtle">
-      <table className="w-full min-w-[940px] border-separate border-spacing-0 text-[13px]">
+      <table className="w-full min-w-[860px] border-separate border-spacing-0 text-[13px]">
         <thead>
           <tr>
-            <th className={`${KOP} ${VAST} w-[230px] pl-5 max-sm:w-[150px] max-sm:pl-3`}>Campagne</th>
-            <th className={KOP_R} title="Mediakosten uit Google Ads, Meta Ads en LinkedIn Ads, tegen het totaalbudget">
-              Uitgaven
-            </th>
-            <th className={KOP_R} title="Alle klikken ÷ alle vertoningen van Google Ads, Meta Ads en LinkedIn Ads samen">
-              CTR
+            <th className={`${KOP} ${VAST} w-[210px] pl-5 max-sm:w-[150px] max-sm:pl-3`}>Campagne</th>
+            <th
+              className={KOP_R}
+              title="Mediakosten uit Google Ads, Meta Ads en LinkedIn Ads, tegen het totaalbudget; CTR = alle klikken ÷ alle vertoningen van die advertenties samen"
+            >
+              Uitgaven en CTR
             </th>
             <th className={KOP_R} title="Sessies die op de campagnepagina('s) begonnen, uit elk kanaal (GA4)">
               Bezoekers
@@ -380,7 +380,7 @@ function CijferTabel({ campagnes, opzetten, vandaag, planningBezig, gekozen, onK
             <th className={KOP} title="Hoe vaak “voer de analyseronde uit” deze campagne maakt">
               Planning
             </th>
-            <th className="w-20 px-3 py-2.5">
+            <th className="w-16 px-2 py-2.5">
               <span className="sr-only">Briefing en mail</span>
             </th>
           </tr>
@@ -397,7 +397,7 @@ function CijferTabel({ campagnes, opzetten, vandaag, planningBezig, gekozen, onK
                 onClick={(e) => onKies(c.id, (e.currentTarget.querySelector("[data-campagne]") as HTMLElement) ?? e.currentTarget)}
                 className={rijKlasse(isGekozen)}
               >
-                <td className={`${VAST} max-w-[250px] py-3 pl-5 pr-3 max-sm:max-w-[160px] max-sm:pl-3`}>
+                <td className={`${VAST} max-w-[230px] py-3 pl-5 pr-2.5 max-sm:max-w-[160px] max-sm:pl-3`}>
                   <div className="flex items-start gap-2.5">
                     <StatusStip c={c} vandaag={vandaag} />
                     <div className="min-w-0">
@@ -412,7 +412,7 @@ function CijferTabel({ campagnes, opzetten, vandaag, planningBezig, gekozen, onK
                     </div>
                   </div>
                 </td>
-                <td className="px-3 py-3">
+                <td className="px-2.5 py-3">
                   <GetalCel
                     waarde={geanalyseerd ? formatWaarde(o.kosten, "euro") : "—"}
                     toon={o.besteedPct !== null && o.besteedPct > 100 ? "negatief" : "neutraal"}
@@ -424,17 +424,15 @@ function CijferTabel({ campagnes, opzetten, vandaag, planningBezig, gekozen, onK
                           : `${formatWaarde(o.besteedPct, "procent")} van ${formatWaarde(o.budget, "euro")}`
                     }
                   />
+                  <p className="ma-getal mt-1 whitespace-nowrap text-right text-[11.5px] text-ink-faint" title="Alle klikken ÷ alle vertoningen van Google Ads, Meta Ads en LinkedIn Ads samen">
+                    CTR <span className="text-ink">{geanalyseerd ? formatWaarde(o.ctr, "procent") : "—"}</span>
+                    {geanalyseerd && o.ctr === null ? " · volgende analyse" : ""}
+                  </p>
                 </td>
-                <td className="px-3 py-3">
-                  <GetalCel
-                    waarde={geanalyseerd ? formatWaarde(o.ctr, "procent") : "—"}
-                    onder={geanalyseerd && o.ctr === null ? "volgende analyse" : "advertenties"}
-                  />
+                <td className="px-2.5 py-3">
+                  <GetalCel waarde={geanalyseerd ? formatWaarde(o.bezoekers) : "—"} onder="sessies" />
                 </td>
-                <td className="px-3 py-3">
-                  <GetalCel waarde={geanalyseerd ? formatWaarde(o.bezoekers) : "—"} onder="campagnepagina" />
-                </td>
-                <td className="px-3 py-3">
+                <td className="px-2.5 py-3">
                   <LeadsCel o={o} geanalyseerd={geanalyseerd} c={c} onBewerk={onBewerk} />
                 </td>
                 <td
@@ -450,14 +448,14 @@ function CijferTabel({ campagnes, opzetten, vandaag, planningBezig, gekozen, onK
                     toon={o.gehaaldPct !== null && o.gehaaldPct >= 100 ? "positief" : "neutraal"}
                     onder={
                       o.doelLeads === null
-                        ? "geen aantal in doel"
+                        ? "geen aantal"
                         : o.gehaaldPct === null
                           ? "nog niet gemeten"
-                          : `${formatWaarde(o.gehaaldPct, "procent")} gehaald · ${o.bron === "syntec" ? "Syntec" : "GA4"}`
+                          : `${formatWaarde(o.gehaaldPct, "procent")} · ${o.bron === "syntec" ? "Syntec" : "GA4"}`
                     }
                   />
                 </td>
-                <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+                <td className="px-2.5 py-3" onClick={(e) => e.stopPropagation()}>
                   <PlanningKeuze
                     regel={planningInvoer(c, opzet)}
                     naam={c.naam}
@@ -467,7 +465,7 @@ function CijferTabel({ campagnes, opzetten, vandaag, planningBezig, gekozen, onK
                     compact
                   />
                 </td>
-                <td className="px-3 py-3">
+                <td className="py-3 pl-1 pr-3">
                   <RijActies c={c} onBewerk={onBewerk} onVolgers={onVolgers} />
                 </td>
               </tr>
