@@ -104,7 +104,8 @@ Migratie 0054, prompt versie 2.
 5. In **Leads via social media** komen eerst **Leads per maand** en **Kosten per lead per maand**, en
    daaronder dezelfde twee grafieken per week. Ook uitgaven en sollicitaties krijgen een maand- en een
    weekgrafiek.
-6. Steeds apart voor **Van den Udenhout** en **PGZ** (Porsche, Bentley). Aanname bij de indeling, nog
-   te bevestigen: Van den Udenhout = Van den Udenhout, Instra, Caromi en VELOO; PGZ = Porsche Groep
-   Zuid (het gedeelde Meta-account van Porsche Centrum Brabant en PGZ), Porsche Centrum Maastricht, PGZ
-   en Bentley Maastricht.
+6. Steeds apart voor **Van den Udenhout**, **PGZ** en **VELOO** (Porsche, Bentley onder PGZ). Van den
+   Udenhout = Van den Udenhout, Instra en Caromi; PGZ = Porsche Groep Zuid (het gedeelde Meta-account van
+   Porsche Centrum Brabant en PGZ), Porsche Centrum Maastricht, PGZ en Bentley Maastricht. VELOO staat
+   **apart** (besluit van de eigenaar, 27 november 2026; eerst bij Van den Udenhout ingedeeld als aanname).
+   Prompt versie 3, migratie 0055.
