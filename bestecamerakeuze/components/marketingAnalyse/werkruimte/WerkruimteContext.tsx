@@ -56,32 +56,6 @@ export function useWerkruimte() {
   return useContext(Context);
 }
 
-/**
- * De mobiele viewport, alleen voor de werkruimte. Het dashboard heeft geen viewport-meta (het is
- * voor desktop gebouwd, zie CLAUDE.md): een telefoon toont daar een uitgezoomd desktopvenster.
- * Marketing analyse heeft sinds de redesign een eigen iPhone-weergave, dus zolang deze pagina open
- * is staat de viewport op de breedte van het apparaat; daarna gaat hij terug zoals hij was, zodat
- * de andere pagina's niet veranderen.
- */
-export function useMobieleViewport(aan: boolean) {
-  useEffect(() => {
-    if (!aan) return;
-    let meta = document.querySelector<HTMLMetaElement>('meta[name="viewport"]');
-    const eigen = !meta;
-    const vorige = meta?.content ?? null;
-    if (!meta) {
-      meta = document.createElement("meta");
-      meta.name = "viewport";
-      document.head.appendChild(meta);
-    }
-    meta.content = "width=device-width, initial-scale=1, viewport-fit=cover";
-    return () => {
-      if (eigen) meta?.remove();
-      else if (meta && vorige !== null) meta.content = vorige;
-    };
-  }, [aan]);
-}
-
 /** Is de pagina onder de knoppenbalk door gescrold? Dan krijgt het glas meer dekking. */
 export function useGescrold(drempel = 4): boolean {
   const [gescrold, setGescrold] = useState(false);

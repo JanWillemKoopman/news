@@ -64,15 +64,18 @@ export function kanaalKleur(naam: string, palet: readonly string[], context: str
 }
 
 /**
- * Kleuren voor de reeksen van één grafiek. Zijn alle reeksen herkenbare kanalen met elk een
- * andere kleur, dan de vaste kanaalkleuren; anders de gewone volgorde van het palet, zodat er
- * nooit twee reeksen met dezelfde kleur naast elkaar staan.
+ * Kleuren voor de reeksen van één grafiek. Zijn alle reeksen herkenbare kanalen met elk een andere
+ * kleur, dan de vaste kanaalkleuren. Zijn het geen kanalen (proefritten, Internet en Offline,
+ * cumulatief en doel), dan krijgen ze nooit een kanaalkleur: de eerste reeks de nadrukkleur (de
+ * inkt van het theme), de tweede de rustige contextkleur, en pas daarna het palet. Zo leest een
+ * blauwe staaf altijd als Meta en een oranje altijd als Google.
  */
-export function reeksKleuren(namen: readonly string[], palet: readonly string[], context: string): string[] {
-  const standaard = namen.map((_, i) => palet[i % palet.length] ?? context);
+export function reeksKleuren(namen: readonly string[], palet: readonly string[], context: string, nadruk?: string): string[] {
   const kanaal = namen.map((n) => kanaalKleur(n, palet, context));
-  if (kanaal.some((k) => k === null)) return standaard;
-  const uniek = new Set(kanaal);
-  // Twee keer de contextkleur (Direct en Overig) mag niet; dan liever de gewone volgorde.
-  return uniek.size === kanaal.length ? (kanaal as string[]) : standaard;
+  if (kanaal.every((k) => k !== null) && new Set(kanaal).size === kanaal.length) return kanaal as string[];
+  if (nadruk && kanaal.every((k) => k === null)) {
+    return namen.map((_, i) => (i === 0 ? nadruk : i === 1 ? context : (palet[(i + 1) % palet.length] ?? context)));
+  }
+  // Een mengsel, of geen nadrukkleur: de gewone volgorde, zodat er nooit twee gelijke naast elkaar staan.
+  return namen.map((_, i) => palet[i % palet.length] ?? context);
 }

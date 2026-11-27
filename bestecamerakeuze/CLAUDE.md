@@ -22,6 +22,10 @@ rekening te houden met mobiel of tablet:
   verkleinen van de layout voor een smaller scherm.
 - Test en itereer visueel op desktop-breedtes (1400–1920px). Besteed geen tijd aan
   mobiele/tablet-varianten tenzij daar expliciet om gevraagd wordt.
+- **Uitzondering: Campagnes → Marketing analyse** (redesign 27 november 2026, op verzoek van de
+  eigenaar, nog ter beoordeling vóór verdere uitrol). Die pagina heeft een eigen werkruimte met een
+  iPhone-weergave, zie "Marketing analyse: de werkruimte" hieronder. De rest van het dashboard blijft
+  desktop-only; rol de werkruimte pas uit naar andere pagina's na akkoord van de eigenaar.
 
 ## Designvisie van het campagnedashboard
 
@@ -1662,6 +1666,81 @@ filterbalk; het gekozen tabblad staat in de URL als `?beheer=ga`.
     kunnen nooit iets tellen.
   - **Eén ophaalactie** voor de campagnetabel en dit tabblad
     (`lib/ga4KoppelingContext.tsx`), zodat ze na het opslaan hetzelfde getal tonen.
+
+### Marketing analyse: de werkruimte (redesign november 2026)
+
+Op verzoek van de eigenaar (27 november 2026) is Marketing analyse opnieuw ontworpen als een rustige
+Mac-werkruimte, **alleen voor deze pagina**; uitrol naar andere pagina's wacht op zijn akkoord. Alle
+analysefuncties, routes en definities zijn gebleven; wat hieronder over Marketing analyse staat, geldt nog,
+behalve waar het over de bediening gaat (het schildje Beheer, de rijen filterknoppen, de kruimelrij).
+
+- **Drie delen met elk één functie.** De **zijbalk** (`werkruimte/WerkruimteZijbalk.tsx`, 248px, licht en
+  dekkend, van boven tot onder) zegt waar je bent: dezelfde bestemmingen als `Sidebar.tsx`, en onder
+  Marketing analyse zet een geopende analyse zijn stappen (portal naar `STAPPEN_PLEK_ID`), zodat er één
+  navigatiekolom is in plaats van de oude tweede stappenkolom. De **knoppenbalk**
+  (`werkruimte/Knoppenbalk.tsx`) toont de selectie en de bediening: titel, soort (Campagnes/Rapportages),
+  periode en vergelijking, filters met actieve chips, en rechts Nieuwe analyse en het menu Meer (E-mail
+  settings, Verzonden e-mails, Semantic layer, Analyse prompts). Het **inhoudsgebied** maakt de cijfers
+  afleesbaar. AppShell kiest de variant met `werkruimte = actief === "marketing-analyse"`: geen rail, geen
+  PageHeader, het oogje midden in de knoppenbalk (`ThemeSwitcher plek`).
+- **Overzicht** (`werkruimte/Overzicht.tsx`, rekenwerk `lib/marketingAnalyse/portefeuille.ts`, getest):
+  kerncijfers van alle campagne-analyses in beeld (mediakosten, leads, kosten per lead, bezoekers), dan
+  **Voortgang per campagne** (balk = bereikt, streep = verstreken deel van de looptijd; kosten per lead;
+  aandeel in uitgaven en leads), dan **Alle cijfers per campagne** (de oude tabel, met vaste
+  campagnekolom). Alles bovenop `overzichtCijfers`: geen nieuwe definities, alleen optellen.
+  - **Waarmee vergelijken we.** In het overzicht met het **tempo van de looptijd**: budget en leaddoel ×
+    het verstreken deel van de looptijd op de laatste dag van de analyseperiode (`periodeTot`, sinds deze
+    redesign in `lijstOverzicht` en `lijstVersies`). Binnen 10 procentpunt is op schema/op koers. Het
+    leaddoel telt alleen campagnes met een aantal in het doel; de soort lead verschilt per campagne en
+    dat staat erbij. Een vergelijking met de vorige versie staat bewust **alleen** op de analysepagina
+    (periodeknop), met een kanttekening als prompt of semantic layer verschilden: een ander getal kan dan
+    uit de meetwijze komen (tussen v3 en v4 van de Audi A2 zakten de mediakosten van € 3.161 naar € 2.017,
+    met een andere semantic layer).
+  - **Kosten per lead bij 0 leads is een streepje met de reden** ("€ 154 en 0 leads: niet te delen"),
+    nooit € 0 of oneindig (`kplReden`).
+  - **Een klik op een campagne opent het detailpaneel** (`werkruimte/Inspector.tsx`): van rechts, de rij
+    blijft gemarkeerd, Escape of sluiten zet de focus terug op de regel en laat de scroll staan. Erin:
+    voortgang met prognose bij dit tempo, per platform (uit `kerncijfers.uitsplitsing`, alleen als die
+    optelt: `leesUitsplitsing`), bezoekers per kanaal, lead-events per soort, Syntec als context. Vandaar
+    **Open volledige analyse**; terug brengt je op dezelfde scrollhoogte en focus.
+- **Analysepagina** (`AnalyseWeergave.tsx`): de periodeknop is de **versiekiezer** (elke versie met zijn
+  exacte periode en tijdstip) plus **Vergelijk met: tempo van de looptijd / vorige versie** (`?vgl=vorige`).
+  De samenvatting begint met `AnalyseKpis` (`werkruimte/AnalyseKern.tsx`) en zet de conclusie naast
+  **TrendDuo**: kosten per week en leads per week als twee uitgelijnde grafieken (zelfde weken, vaste
+  y-asbreedte `AS_BREEDTE`, `syncId`), uit de stappen Advertenties en Conversies van de analyse zelf.
+  Snel wisselen: de knop toont meteen de nieuwe keuze met "laden…", de cijfers eronder blijven gedimd
+  (`.ma-oud`) met "Je ziet nog v6 …; v4 wordt geladen", en een antwoord van een eerdere keuze wordt
+  weggegooid.
+- **Grafieken** (`AnalyseGrafiek.tsx`): één kleur per kanaal op de hele pagina (`lib/marketingAnalyse/
+  kanaalKleur.ts`, getest: Meta altijd de eerste paletkleur, Google de tweede …); een reeks die geen kanaal
+  is krijgt nooit een kanaalkleur maar de inkt van het theme (tweede reeks: grijs). Legenda altijd in beeld,
+  staven vanaf nul, een ontbrekende meting blijft een gat, een week die niet helemaal in de periode valt
+  staat lichter met een zin eronder (`isOnvolledigeWeek`), doel/vorige als stippellijn.
+- **Liquid Glass alleen op bediening** (`.ma-glas`, `.ma-glas-paneel` in globals.css, laag `components`):
+  knoppenbalk en popovers; KPI's, grafieken en tabellen staan op een egale ondergrond. Zodra er inhoud
+  onder de balk schuift, gaat de dekking omhoog (`data-gescrold`). Zonder `backdrop-filter` of bij
+  `prefers-reduced-transparency` dekkend. Dit is de enige plek met glas; de regel "geen glassmorphism"
+  hierboven geldt voor de rest van het dashboard.
+- **Beweging** (globals.css, "MARKETING ANALYSE — WERKRUIMTE"): drie patronen. Popovers openen uit hun
+  knop (`.ma-pop`, 150–180 ms, vervaging + kleine schaal, sluiten 120 ms terug), panelen en de lade uit hun
+  zijde (`.ma-paneel`/`.ma-lade`, 220–240 ms), inhoud verschijnt rustig (`.ma-in`). Alles via transitions en
+  `useOvergang` (`werkruimte/Bediening.tsx`), dus onderbreekbaar. Geen optellende cijfers, geen
+  opnieuw-tekenende lijnen (`isAnimationActive={false}`). Bij `prefers-reduced-motion` alleen een korte
+  vervaging.
+- **Typografie**: vijf stijlen (`.ma-titel`, `.ma-kop`, `.ma-kpi`, `.ma-kolomkop`, toelichting 11,5–12 px),
+  cijfers van gelijke breedte (`.ma-getal`), getallen in tabellen rechts. TheSansB W5/W7 (de huisstijl op
+  udenhout.nl) staat vooraan in de stack; Inter is de geladen fallback, daarna de systeemletters
+  (`-apple-system`, `Segoe UI`). Kleuren en letters zijn nagelopen tegen de CSS van udenhout.nl (#19243b,
+  #003da5, #ed6935, #e2ddd1, #f6f4f0): gelijk aan de tokens van het Udenhout-theme.
+- **iPhone** (onder 1024px): de zijbalk wordt een lade (knop links in de balk), de selectie schuift op een
+  tweede regel, de filterknop toont het aantal actieve filters, de inspector is een volledige sheet, de
+  stappen staan als chips.
+- **Valkuil gevonden**: een `sr-only`-element in een `overflow-x-auto`-tabel zonder gepositioneerde ouder
+  ontsnapt uit de scrollcontainer en maakte de pagina op mobiel 1.178px breed (de telefoon zoomde dan uit
+  tot een desktopweergave). De scrollcontainers hebben daarom `relative`.
+- `OpzetFilterBalk.tsx` is verwijderd (alleen hier gebruikt); de filterregels zelf (`opzetFilterKnoppen`,
+  `bedrijfFilterKnoppen`, `filterOpOpzet`, `filterOpBedrijf`, `sorteerOpStatus`) zijn ongewijzigd, net als
+  de URL-parameters `soort`, `status`, `bedrijf`, `analyse` en `mtab`.
 
 ### Campagnes → Marketing analyse
 

@@ -1,7 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { useGrafiekKleuren } from "@/components/ThemeProvider";
+import { useGrafiekKleuren, useTheme } from "@/components/ThemeProvider";
 import { AS_GROOTTE } from "@/components/chat/chartTheme";
 import { KanaalStip } from "@/components/marketingAnalyse/werkruimte/Visueel";
 import { reeksKleuren } from "@/lib/marketingAnalyse/kanaalKleur";
@@ -18,6 +19,20 @@ export const AS_BREEDTE = 64;
 export function kortLabel(x: string): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(x)) return x;
   return new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "short" }).format(new Date(`${x}T00:00:00Z`));
+}
+
+/**
+ * De inktkleur van het actieve theme, voor een reeks die geen kanaal is. SVG-attributen lezen geen
+ * CSS-variabelen, dus hij wordt na elke themewissel uit de berekende stijl gehaald.
+ */
+function useInktKleur(): string {
+  const { theme } = useTheme();
+  const [kleur, setKleur] = useState("#0f1115");
+  useEffect(() => {
+    const waarde = getComputedStyle(document.documentElement).getPropertyValue("--color-ink").trim();
+    if (waarde) setKleur(waarde);
+  }, [theme]);
+  return kleur;
 }
 
 /**
@@ -49,11 +64,13 @@ export default function AnalyseGrafiek({
   zonderVoetnoot?: boolean;
 }) {
   const kleuren = useGrafiekKleuren();
+  const nadruk = useInktKleur();
   const reeksen = grafiek.reeksen.slice(0, MAX_REEKSEN);
   const kleur = reeksKleuren(
     reeksen.map((r) => r.naam),
     kleuren.categorieen,
     kleuren.context,
+    nadruk,
   );
   const onvolledig = grafiek.x.map((x) => isOnvolledigeWeek(x, periodeVan, periodeTot));
   const heeftOnvolledig = (periodeVan || periodeTot) && /^\d{4}-\d{2}-\d{2}$/.test(grafiek.x[0] ?? "") && onvolledig.some(Boolean);

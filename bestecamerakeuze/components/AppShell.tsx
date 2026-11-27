@@ -15,7 +15,7 @@ import { wisUrlStand } from "@/lib/kanalen/urlstand";
 import { useTeamData } from "@/lib/teamData";
 import { magTabbladZien } from "@/lib/beperkteTabbladen";
 import WerkruimteZijbalk from "@/components/marketingAnalyse/werkruimte/WerkruimteZijbalk";
-import { WerkruimteProvider, useMobieleViewport } from "@/components/marketingAnalyse/werkruimte/WerkruimteContext";
+import { WerkruimteProvider } from "@/components/marketingAnalyse/werkruimte/WerkruimteContext";
 
 type Props = {
   gebruikerEmail: string | null;
@@ -314,7 +314,6 @@ export default function AppShell({
   // doorlopende lichte zijbalk en een glazen knoppenbalk die de pagina zelf rendert. Alleen voor
   // dit tabblad; de andere pagina's houden de rail en de PageHeader (uitrol na akkoord).
   const werkruimte = actief === "marketing-analyse";
-  useMobieleViewport(werkruimte);
 
   return (
     <ActieveWeergaveProvider value={actief}>
