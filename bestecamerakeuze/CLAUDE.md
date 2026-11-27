@@ -1762,7 +1762,9 @@ lees dat eerst voordat je hier iets verandert.
   vanaf 100%, met de bron eronder; het doel gaat altijd over leads). Het leaddoel komt uit `kerncijfers.doelLeads` (de analyse leest het uit het
   vrije doel), anders het eerste getal in het doel (`overzichtCijfers` in `rekenen.ts`,
   getest) en helemaal rechts Planning (uitklapmenu, zie hieronder; 26 november 2026 op verzoek van
-  vooraan naar rechts verplaatst). Rapportages hebben een eigen tabel eronder: stipje, Rapportage,
+  vooraan naar rechts verplaatst; sinds 27 november 2026 op verzoek subtieler: in de campagnetabel één
+  grijze regel "Wekelijks · vr 4 dec" zonder kader, `compact` op `PlanningKeuze`, de toelichting in de
+  tooltip, een eindevaluatie oranje; de rapportagetabel houdt het knopje). Rapportages hebben een eigen tabel eronder: stipje, Rapportage,
   Laatste analyse, Planning.
 - **Live-stipje en statusfilter** (26 november 2026, op verzoek). Vooraan elke regel een **groen**
   stipje als de analyse live is (vandaag tussen start- en einddatum, grenzen inbegrepen; zonder

@@ -409,7 +409,7 @@ function CampagneAnalyseTabel({ campagnes, opzetten, vandaag, planningBezig, onO
             <th className={KOP} title="Het aantal leads uit het doel van de briefing, en hoeveel daarvan gehaald is">
               Doel leads
             </th>
-            <th className="w-48 px-3 py-2.5" title="Hoe vaak “voer de analyseronde uit” deze campagne maakt">
+            <th className="px-3 py-2.5" title="Hoe vaak “voer de analyseronde uit” deze campagne maakt">
               <span className="label-theme font-normal">Planning</span>
             </th>
             <th className="w-24 px-4 py-2.5">
@@ -504,6 +504,7 @@ function CampagneAnalyseTabel({ campagnes, opzetten, vandaag, planningBezig, onO
                     vandaag={vandaag}
                     bezig={planningBezig.has(c.id)}
                     onKies={(p) => onPlanning(c, p)}
+                    compact
                   />
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 text-right">
