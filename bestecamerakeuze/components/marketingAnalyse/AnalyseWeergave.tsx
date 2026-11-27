@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Briefing, BriefingZijbalk } from "@/components/marketingAnalyse/Briefing";
 import SamenvattingPagina from "@/components/marketingAnalyse/SamenvattingPagina";
 import StapNavigatie, { SAMENVATTING, VERANTWOORDING } from "@/components/marketingAnalyse/StapNavigatie";
@@ -23,6 +23,8 @@ type Props = {
   onTerug: () => void;
   onBewerk: () => void;
   onCampagneBijgewerkt: (c: MaCampagne) => void;
+  /** Beheeracties van de pagina (Beheer, E-mail settings), rechts in de kruimelrij. */
+  acties?: ReactNode;
 };
 
 /** De open stap staat in de URL, zodat een link naar één stap te delen is. */
@@ -46,7 +48,7 @@ function zetTabInUrl(sleutel: string | null) {
  * navigatie, rechts de open stap. De pagina opent op de samenvatting met de conclusie, de
  * voortgang en wat nu te doen; elke stap heeft dezelfde opbouw (`StapPagina`).
  */
-export default function AnalyseWeergave({ campagne, opzet, isEigenaar, onTerug, onBewerk, onCampagneBijgewerkt }: Props) {
+export default function AnalyseWeergave({ campagne, opzet, isEigenaar, onTerug, onBewerk, onCampagneBijgewerkt, acties }: Props) {
   const [versies, setVersies] = useState<MaVersie[] | null>(null);
   const [gekozen, setGekozen] = useState<string | null>(campagne.laatsteAnalyse?.id ?? null);
   const [analyse, setAnalyse] = useState<MaAnalyse | null>(null);
@@ -134,84 +136,112 @@ export default function AnalyseWeergave({ campagne, opzet, isEigenaar, onTerug, 
   const volgende: Buur = tabIndex >= 0 && tabIndex < tabs.length - 1 ? tabs[tabIndex + 1] : { sleutel: VERANTWOORDING, naam: "Verantwoording" };
   const b = analyse?.briefing;
   const rapportage = (b?.formulier ?? opzet?.formulier) === "rapportage";
-  const regelOnderTitel = [
-    campagne.merk,
-    bedrijvenLabel(campagne.bedrijven),
-    rapportage ? campagne.periodeTekst : looptijdLabel(campagne.startdatum, campagne.einddatum),
-    !rapportage && campagne.doel ? `doel ${campagne.doel}` : null,
-    !rapportage && campagne.budget != null ? `budget ${formatWaarde(campagne.budget, "euro")}` : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  // Eén regel feiten onder de titel: wat voor campagne, voor wie, wanneer, doel en budget.
+  // Doel en budget krijgen een gedempt etiket zodat de waarde zelf opvalt.
+  const feiten: { etiket?: string; tekst: string }[] = [
+    campagne.merk ? { tekst: campagne.merk } : null,
+    bedrijvenLabel(campagne.bedrijven) ? { tekst: bedrijvenLabel(campagne.bedrijven) } : null,
+    (rapportage ? campagne.periodeTekst : looptijdLabel(campagne.startdatum, campagne.einddatum))
+      ? { tekst: (rapportage ? campagne.periodeTekst : looptijdLabel(campagne.startdatum, campagne.einddatum)) as string }
+      : null,
+    !rapportage && campagne.doel ? { etiket: "Doel", tekst: campagne.doel } : null,
+    !rapportage && campagne.budget != null ? { etiket: "Budget", tekst: formatWaarde(campagne.budget, "euro") } : null,
+  ].filter((x): x is { etiket?: string; tekst: string } => x !== null);
 
   return (
     <div className="flex flex-col gap-5">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex min-w-0 flex-col gap-1.5">
-          <button
-            type="button"
-            onClick={() => {
-              zetTabInUrl(null);
-              onTerug();
-            }}
-            className="self-start text-sm text-ink-muted transition-colors hover:text-ink"
-          >
-            ← Alle analyses
-          </button>
-          <div className="flex min-w-0 flex-wrap items-center gap-3">
-            {Logo && <Logo role="img" aria-label={campagne.merk ?? undefined} className="h-6 w-6 shrink-0 text-ink-muted" />}
-            <h2 className="truncate font-sans-w7 text-title font-bold text-ink">{campagne.naam}</h2>
+      <header className="flex flex-col gap-4 border-b border-line-soft pb-5">
+        {/* Rij 1: waar je bent (links) en de beheeracties van de pagina (rechts). */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <nav aria-label="Kruimelpad" className="flex items-center gap-2 text-sm">
+            <button
+              type="button"
+              onClick={() => {
+                zetTabInUrl(null);
+                onTerug();
+              }}
+              className="text-ink-muted transition-colors hover:text-ink"
+            >
+              Marketing analyse
+            </button>
+            <span aria-hidden="true" className="text-ink-faint">
+              /
+            </span>
+            <span className="truncate text-ink">{campagne.naam}</span>
+          </nav>
+          {acties}
+        </div>
+
+        {/* Rij 2: de titel (links) en alles wat bij deze analyse hoort (rechts). */}
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+          <div className="flex min-w-0 items-center gap-3">
+            {Logo && <Logo role="img" aria-label={campagne.merk ?? undefined} className="h-7 w-7 shrink-0 text-ink-muted" />}
+            <h1 className="titel-theme min-w-0 truncate text-ink">{campagne.naam}</h1>
             {analyse && <LabelBadge label={analyse.label} />}
             {opzet && !opzet.standaard && <span className="text-sm text-ink-muted">{opzet.naam}</span>}
           </div>
-          <p className="text-sm text-ink-muted">{regelOnderTitel}</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {versies && versies.length > 0 && (
-            <label className="flex items-center gap-2 text-sm text-ink-muted">
-              Versie
-              <select
-                value={gekozen ?? ""}
-                onChange={(e) => setGekozen(e.target.value)}
-                className="rounded-button border border-line bg-card px-3 py-1.5 text-sm text-ink focus:border-primary focus:outline-none"
+          <div className="flex flex-wrap items-center gap-2">
+            {versies && versies.length > 0 && (
+              <label className="flex items-center gap-2 text-sm text-ink-muted">
+                <span className="sr-only sm:not-sr-only">Versie</span>
+                <select
+                  value={gekozen ?? ""}
+                  onChange={(e) => setGekozen(e.target.value)}
+                  className="max-w-[22rem] rounded-button border border-line bg-card px-3 py-1.5 text-sm text-ink focus:border-primary focus:outline-none"
+                >
+                  {versies.map((v, i) => (
+                    <option key={v.id} value={v.id}>
+                      {versieLabel(v.versie, v.geanalyseerdOp)}
+                      {v.label ? ` · ${LABEL_NAAM[v.label]}` : ""}
+                      {i === 0 ? " (nieuwste)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <span aria-hidden="true" className="mx-1 h-5 w-px bg-line" />
+            {analyse && (
+              <button
+                type="button"
+                onClick={() => setBriefingOpen(true)}
+                className="rounded-button border border-line bg-card px-3.5 py-1.5 text-sm font-medium text-ink transition-colors hover:bg-surface"
               >
-                {versies.map((v, i) => (
-                  <option key={v.id} value={v.id}>
-                    {versieLabel(v.versie, v.geanalyseerdOp)}
-                    {v.label ? ` · ${LABEL_NAAM[v.label]}` : ""}
-                    {i === 0 ? " (nieuwste)" : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          {analyse && (
+                Briefing
+              </button>
+            )}
             <button
               type="button"
-              onClick={() => setBriefingOpen(true)}
-              className="rounded-button border border-line bg-card px-3.5 py-1.5 text-sm text-ink transition-colors hover:bg-surface"
+              onClick={() => setVolgersOpen(true)}
+              className="flex items-center gap-1.5 rounded-button border border-line bg-card px-3.5 py-1.5 text-sm font-medium text-ink transition-colors hover:bg-surface"
             >
-              Briefing
+              <IconMail className="h-4 w-4 text-ink-muted" />
+              Volgers
+              <span className="tabular-nums text-ink-muted">{aantalVolgers}</span>
             </button>
-          )}
-          <button
-            type="button"
-            onClick={() => setVolgersOpen(true)}
-            className="flex items-center gap-1.5 rounded-button border border-line bg-card px-3.5 py-1.5 text-sm text-ink transition-colors hover:bg-surface"
-          >
-            <IconMail className="h-4 w-4 text-ink-muted" />
-            Volgers ({aantalVolgers})
-          </button>
-          <button
-            type="button"
-            onClick={onBewerk}
-            title="Briefing bewerken"
-            aria-label="Briefing bewerken"
-            className="flex h-8 w-8 items-center justify-center rounded-control text-ink-faint transition-colors hover:bg-surface hover:text-ink"
-          >
-            <IconPencil className="h-4 w-4" />
-          </button>
+            <button
+              type="button"
+              onClick={onBewerk}
+              title="Briefing bewerken"
+              aria-label="Briefing bewerken"
+              className="flex h-8 w-8 items-center justify-center rounded-control text-ink-faint transition-colors hover:bg-surface hover:text-ink"
+            >
+              <IconPencil className="h-4 w-4" />
+            </button>
+          </div>
         </div>
+
+        {/* Rij 3: de feiten van de campagne, rustig op één regel. */}
+        {feiten.length > 0 && (
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-muted">
+            {feiten.map((f, i) => (
+              <span key={`${f.etiket ?? ""}${f.tekst}`} className="flex items-center gap-2">
+                {i > 0 && <span aria-hidden="true" className="text-ink-faint">·</span>}
+                {f.etiket && <span className="text-ink-faint">{f.etiket}</span>}
+                <span className={f.etiket ? "text-ink" : undefined}>{f.tekst}</span>
+              </span>
+            ))}
+          </p>
+        )}
       </header>
 
       {fout && <p className="text-sm text-negative">{fout}</p>}
