@@ -13,9 +13,8 @@ import VoorstellenBalk from "@/components/marketingAnalyse/VoorstellenBalk";
 import PlanningKeuze from "@/components/marketingAnalyse/PlanningKeuze";
 import Knoppenbalk from "@/components/marketingAnalyse/werkruimte/Knoppenbalk";
 import Inspector from "@/components/marketingAnalyse/werkruimte/Inspector";
-import { OverzichtKpis, VoortgangLijst } from "@/components/marketingAnalyse/werkruimte/Overzicht";
 import { MenuKop, MenuRegel, MenuScheiding, PopoverKnop, Segmenten } from "@/components/marketingAnalyse/werkruimte/Bediening";
-import { SectieKop } from "@/components/marketingAnalyse/werkruimte/Visueel";
+import { SectieKop, TEMPO_KOSTEN, TEMPO_LEADS, TempoTekst, VoortgangBalk } from "@/components/marketingAnalyse/werkruimte/Visueel";
 import { dagNL, type PlanningInvoer } from "@/lib/marketingAnalyse/planning";
 import { getBrandLogo } from "@/components/brandLogos";
 import {
@@ -48,9 +47,9 @@ import {
   type LeadBron,
   type StatusFilter,
 } from "@/lib/marketingAnalyse/rekenen";
-import { portefeuille } from "@/lib/marketingAnalyse/portefeuille";
+import { portefeuille, type CampagneVoortgang } from "@/lib/marketingAnalyse/portefeuille";
 import { STANDAARD_SEMANTIEK } from "@/lib/marketingAnalyse/standaardSemantiek";
-import type { MaCampagne, MaOpzet, MaOverzichtRegel, MaVoorstel, MaZoekronde, Planning } from "@/lib/marketingAnalyse/types";
+import { type MaCampagne, type MaOpzet, type MaOverzichtRegel, type MaVoorstel, type MaZoekronde, type Planning } from "@/lib/marketingAnalyse/types";
 
 type Voorstellen = { open: MaVoorstel[]; genegeerd: MaVoorstel[]; laatsteZoekronde: MaZoekronde | null };
 
@@ -159,7 +158,6 @@ type TabelProps = {
 };
 
 const KOP = "ma-kolomkop whitespace-nowrap px-2.5 py-2.5 text-left font-semibold";
-const KOP_R = "ma-kolomkop whitespace-nowrap px-2.5 py-2.5 text-right font-semibold";
 /** De eerste kolom blijft staan bij horizontaal scrollen: een bedrag hoort altijd bij zijn campagne. */
 const VAST = "sticky left-0 z-[1] bg-[var(--ma-ondergrond)]";
 
@@ -241,7 +239,7 @@ function LeadRegel({ waarde, naam, soort, title }: { waarde: string; naam: strin
   return (
     <div className="grid grid-cols-[44px_minmax(0,1fr)] items-baseline gap-2.5" title={title}>
       <span className="ma-getal text-right text-ink">{waarde}</span>
-      <span className="text-[11.5px] leading-snug text-ink-faint">
+      <span className="line-clamp-2 text-[11.5px] leading-snug text-ink-faint" title={`${naam}${soort ? ` · ${soort}` : ""}`}>
         {naam}
         {soort ? ` · ${soort}` : ""}
       </span>
@@ -316,16 +314,6 @@ function LeadsCel({
   );
 }
 
-/** Een getal met een regel eronder, rechts uitgelijnd. */
-function GetalCel({ waarde, onder, toon = "neutraal" }: { waarde: string; onder: string; toon?: "neutraal" | "positief" | "negatief" }) {
-  return (
-    <div className="flex flex-col items-end gap-0.5 whitespace-nowrap">
-      <span className="ma-getal text-[13px] text-ink">{waarde}</span>
-      <span className={`text-[11.5px] ${toon === "negatief" ? "text-negative" : toon === "positief" ? "text-positive" : "text-ink-faint"}`}>{onder}</span>
-    </div>
-  );
-}
-
 function rijKlasse(gekozen: boolean) {
   return `cursor-pointer align-top transition-colors duration-[var(--ma-duur-klein)] [&>td]:border-t [&>td]:border-line-soft ${
     gekozen ? "ma-rij-gekozen [&>td:first-child]:bg-[color-mix(in_srgb,var(--color-brand)_8%,var(--ma-ondergrond))]" : "hover:bg-[color-mix(in_srgb,var(--color-ink)_2.5%,transparent)]"
@@ -346,36 +334,44 @@ function NaamKnop({ c, onKies }: { c: MaOverzichtRegel; onKies: (id: string, kno
       className="flex items-center gap-1.5 rounded-[4px] text-left text-[13.5px] font-semibold leading-snug text-ink hover:underline hover:underline-offset-2"
     >
       {Logo && <Logo role="img" aria-label={c.merk ?? undefined} className="h-3.5 w-3.5 shrink-0 text-ink-muted" />}
-      <span className="line-clamp-2">{c.naam}</span>
+      <span lang="nl" className="line-clamp-2 hyphens-auto [overflow-wrap:anywhere] max-sm:line-clamp-3">{c.naam}</span>
     </button>
   );
 }
 
 /**
- * Alle cijfers per campagne-analyse, exact: uitgaven, CTR, bezoekers, leads en orders met hun bron,
- * het leaddoel en de planning. Getallen rechts uitgelijnd; de campagnekolom blijft staan.
+ * De campagne-analyses in één tabel (verzoek van de eigenaar, 27 november 2026: Voortgang per
+ * campagne en Alle cijfers samengevoegd). Van links naar rechts: campagne, uitgaven tegen het budget,
+ * leads tegen het doel (met wat het doel is en of het uit GA4 of Syntec komt), leads en orders, de
+ * planning, en bewerken en e-mail. In beide balken is de streep het verstreken deel van de looptijd
+ * op de laatste dag van de analyse (`portefeuille.ts`). Een klik op een regel opent het detailpaneel.
  */
-function CijferTabel({ campagnes, opzetten, vandaag, planningBezig, gekozen, onKies, onBewerk, onPlanning, onVolgers }: TabelProps) {
+function CampagneTabel({
+  campagnes,
+  voortgang,
+  opzetten,
+  vandaag,
+  planningBezig,
+  gekozen,
+  onKies,
+  onBewerk,
+  onPlanning,
+  onVolgers,
+}: TabelProps & { voortgang: Map<string, CampagneVoortgang> }) {
   return (
     <div className="relative overflow-x-auto rounded-[14px] border border-line bg-[var(--ma-ondergrond)] shadow-subtle">
-      <table className="w-full min-w-[860px] border-separate border-spacing-0 text-[13px]">
+      <table className="w-full min-w-[900px] border-separate border-spacing-0 text-[13px]">
         <thead>
           <tr>
-            <th className={`${KOP} ${VAST} w-[210px] pl-5 max-sm:w-[150px] max-sm:pl-3`}>Campagne</th>
-            <th
-              className={KOP_R}
-              title="Mediakosten uit Google Ads, Meta Ads en LinkedIn Ads, tegen het totaalbudget; CTR = alle klikken ÷ alle vertoningen van die advertenties samen"
-            >
-              Uitgaven en CTR
+            <th className={`${KOP} ${VAST} w-[220px] pl-5 max-sm:w-[150px] max-sm:pl-3`}>Campagne</th>
+            <th className={KOP} title="Mediakosten uit Google Ads, Meta Ads en LinkedIn Ads, tegen het totaalbudget. De streep is het verstreken deel van de looptijd.">
+              Uitgaven
             </th>
-            <th className={KOP_R} title="Sessies die op de campagnepagina('s) begonnen, uit elk kanaal (GA4)">
-              Bezoekers
+            <th className={KOP} title="De leads van de soort uit het doel, tegen het aantal in het doel. De streep is het verstreken deel van de looptijd.">
+              Leads tegen doel
             </th>
             <th className={KOP} title="Leads in Google Analytics; bij Van den Udenhout met merk en model ook de internetleads en orders uit Syntec">
               Leads en orders
-            </th>
-            <th className={KOP_R} title="Het aantal leads uit het doel van de briefing, en hoeveel daarvan gehaald is">
-              Doel leads
             </th>
             <th className={KOP} title="Hoe vaak “voer de analyseronde uit” deze campagne maakt">
               Planning
@@ -389,15 +385,19 @@ function CijferTabel({ campagnes, opzetten, vandaag, planningBezig, gekozen, onK
           {campagnes.map((c) => {
             const opzet = opzetten.get(c.opzetId);
             const o = overzichtCijfers(c, c.laatsteAnalyse?.kerncijfers);
+            const v = voortgang.get(c.id);
             const geanalyseerd = Boolean(c.laatsteAnalyse);
-            const isGekozen = gekozen === c.id;
+            const bron = o.bron === "syntec" ? "Syntec" : "GA4";
+            const bronUitleg = o.syntecNietMogelijk
+              ? "Het doel noemt Syntec, maar Syntec geldt alleen voor een analyse die uitsluitend over Van den Udenhout gaat. Daarom gemeten in Google Analytics."
+              : BRON_UITLEG[o.bron];
             return (
               <tr
                 key={c.id}
                 onClick={(e) => onKies(c.id, (e.currentTarget.querySelector("[data-campagne]") as HTMLElement) ?? e.currentTarget)}
-                className={rijKlasse(isGekozen)}
+                className={rijKlasse(gekozen === c.id)}
               >
-                <td className={`${VAST} max-w-[230px] py-3 pl-5 pr-2.5 max-sm:max-w-[160px] max-sm:pl-3`}>
+                <td className={`${VAST} max-w-[240px] py-3 pl-5 pr-3 max-sm:max-w-[150px] max-sm:overflow-hidden max-sm:pl-3`}>
                   <div className="flex items-start gap-2.5">
                     <StatusStip c={c} vandaag={vandaag} />
                     <div className="min-w-0">
@@ -407,64 +407,89 @@ function CijferTabel({ campagnes, opzetten, vandaag, planningBezig, gekozen, onK
                         {bedrijvenLabel(c.bedrijven)} · {looptijdLabel(c.startdatum, c.einddatum)}
                       </p>
                       <p className="mt-0.5 text-[11.5px] text-ink-faint max-sm:hidden">
-                        <LaatsteAnalyse c={c} opzet={opzet} />
+                        {c.laatsteAnalyse ? (
+                          <>
+                            {versieLabel(c.laatsteAnalyse.versie, c.laatsteAnalyse.geanalyseerdOp)}
+                            {c.laatsteAnalyse.label ? ` · ${c.laatsteAnalyse.label === "eind" ? "eindevaluatie" : "tussentijds"}` : ""}
+                          </>
+                        ) : (
+                          <LaatsteAnalyse c={c} opzet={opzet} />
+                        )}
                       </p>
                     </div>
                   </div>
                 </td>
-                <td className="px-2.5 py-3">
-                  <GetalCel
-                    waarde={geanalyseerd ? formatWaarde(o.kosten, "euro") : "—"}
-                    toon={o.besteedPct !== null && o.besteedPct > 100 ? "negatief" : "neutraal"}
-                    onder={
-                      o.budget === null
-                        ? "geen budget"
-                        : o.besteedPct === null
-                          ? `budget ${formatWaarde(o.budget, "euro")}`
-                          : `${formatWaarde(o.besteedPct, "procent")} van ${formatWaarde(o.budget, "euro")}`
-                    }
-                  />
-                  <p className="ma-getal mt-1 whitespace-nowrap text-right text-[11.5px] text-ink-faint" title="Alle klikken ÷ alle vertoningen van Google Ads, Meta Ads en LinkedIn Ads samen">
-                    CTR <span className="text-ink">{geanalyseerd ? formatWaarde(o.ctr, "procent") : "—"}</span>
-                    {geanalyseerd && o.ctr === null ? " · volgende analyse" : ""}
+
+                <td className="min-w-[148px] px-2.5 py-3">
+                  <p className="ma-getal flex items-baseline gap-1 whitespace-nowrap text-ink">
+                    <span className="font-semibold">{geanalyseerd ? formatWaarde(o.kosten, "euro") : "—"}</span>
+                    <span className="text-[11.5px] text-ink-faint">{o.budget !== null ? `/ ${formatWaarde(o.budget, "euro")}` : "geen budget"}</span>
+                  </p>
+                  {o.budget !== null && (
+                    <div className="mt-1.5 max-w-[180px]">
+                      <VoortgangBalk
+                        dun
+                        pct={v?.besteedPct ?? null}
+                        tijdPct={v?.tijdPct ?? null}
+                        label={`${formatWaarde(v?.besteedPct ?? null, "procent")} van het budget besteed bij ${formatWaarde(v?.tijdPct ?? null, "procent")} van de looptijd`}
+                      />
+                    </div>
+                  )}
+                  <p className="mt-1 whitespace-nowrap text-[11.5px]">
+                    {v?.kostenTempo ? (
+                      <TempoTekst {...TEMPO_KOSTEN[v.kostenTempo]} titel={TEMPO_KOSTEN[v.kostenTempo].uitleg} />
+                    ) : (
+                      <span className="text-ink-faint">{o.budget === null ? "Geen budget in de briefing" : "—"}</span>
+                    )}
+                    {v?.besteedPct != null && (
+                      <span className={`ma-getal ${v.besteedPct > 100 ? "text-negative" : "text-ink-faint"}`}> · {formatWaarde(v.besteedPct, "procent")}</span>
+                    )}
                   </p>
                 </td>
-                <td className="px-2.5 py-3">
-                  <GetalCel waarde={geanalyseerd ? formatWaarde(o.bezoekers) : "—"} onder="sessies" />
+
+                <td className="min-w-[160px] px-2.5 py-3" title={`${c.doel ? `Doel in de briefing: ${c.doel}\n` : ""}${bronUitleg}`}>
+                  <p className="ma-getal flex items-baseline gap-1 whitespace-nowrap text-ink">
+                    <span className="font-semibold">{geanalyseerd ? formatWaarde(o.leads) : "—"}</span>
+                    {o.doelLeads !== null && <span className="text-[11.5px] text-ink-faint">/ {formatWaarde(o.doelLeads)}</span>}
+                  </p>
+                  {o.doelLeads !== null && (
+                    <div className="mt-1.5 max-w-[180px]">
+                      <VoortgangBalk
+                        dun
+                        pct={o.gehaaldPct}
+                        tijdPct={v?.tijdPct ?? null}
+                        label={`${formatWaarde(o.gehaaldPct, "procent")} van het doel bij ${formatWaarde(v?.tijdPct ?? null, "procent")} van de looptijd`}
+                      />
+                    </div>
+                  )}
+                  {v?.leadTempo && (
+                    <p className="mt-1 whitespace-nowrap text-[11.5px]">
+                      <TempoTekst {...TEMPO_LEADS[v.leadTempo]} />
+                      <span className="ma-getal text-ink-faint"> · {formatWaarde(o.gehaaldPct, "procent")}</span>
+                    </p>
+                  )}
+                  <p className="mt-1 text-[11.5px] leading-snug text-ink-muted">
+                    <span className="text-ink-faint">Doel </span>
+                    {o.doelLeads !== null ? `${formatWaarde(o.doelLeads)} ${o.leadSoort ?? "leads"}` : `${o.leadSoort ?? "leads"}, zonder aantal`}
+                    <span className="ml-1.5 inline-flex rounded-[4px] border border-line px-1 text-[10.5px] font-semibold leading-[15px] text-ink-muted">{bron}</span>
+                  </p>
                 </td>
+
                 <td className="px-2.5 py-3">
                   <LeadsCel o={o} geanalyseerd={geanalyseerd} c={c} onBewerk={onBewerk} />
                 </td>
-                <td
-                  className="px-3 py-3"
-                  title={
-                    o.syntecNietMogelijk
-                      ? "Het doel noemt Syntec, maar Syntec geldt alleen voor een analyse die uitsluitend over Van den Udenhout gaat. Daarom gemeten in Google Analytics."
-                      : BRON_UITLEG[o.bron]
-                  }
-                >
-                  <GetalCel
-                    waarde={o.doelLeads !== null ? formatWaarde(o.doelLeads) : "—"}
-                    toon={o.gehaaldPct !== null && o.gehaaldPct >= 100 ? "positief" : "neutraal"}
-                    onder={
-                      o.doelLeads === null
-                        ? "geen aantal"
-                        : o.gehaaldPct === null
-                          ? "nog niet gemeten"
-                          : `${formatWaarde(o.gehaaldPct, "procent")} · ${o.bron === "syntec" ? "Syntec" : "GA4"}`
-                    }
-                  />
-                </td>
+
                 <td className="px-2.5 py-3" onClick={(e) => e.stopPropagation()}>
                   <PlanningKeuze
                     regel={planningInvoer(c, opzet)}
                     naam={c.naam}
                     vandaag={vandaag}
                     bezig={planningBezig.has(c.id)}
-                    onKies={(p) => onPlanning(c, p)}
+                    onKies={(pl) => onPlanning(c, pl)}
                     compact
                   />
                 </td>
+
                 <td className="py-3 pl-1 pr-3">
                   <RijActies c={c} onBewerk={onBewerk} onVolgers={onVolgers} />
                 </td>
@@ -778,6 +803,7 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
   const aantalFilters = (status ? 1 : 0) + (actiefBedrijf ? 1 : 0);
 
   const p = useMemo(() => portefeuille(campagneRegels, vandaag), [campagneRegels, vandaag]);
+  const voortgangPerId = useMemo(() => new Map(p.campagnes.map((c) => [c.id, c])), [p]);
   const regelPerId = useMemo(() => new Map(alle.map((c) => [c.id, c])), [alle]);
   const standVan = p.standVan;
   const standTot = p.standTot;
@@ -993,6 +1019,19 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
 
           <div className="ma-in mx-auto flex max-w-[1360px] flex-col gap-6 px-3 pb-16 pt-4 sm:px-4 lg:px-6 lg:pt-5">
             {fout && <p className="rounded-[10px] border border-negative/25 bg-negative/5 px-4 py-2.5 text-[13px] text-negative">{fout}</p>}
+            {/* Bovenaan, op de plek van de vroegere kerncijfers (verzoek van de eigenaar, 27 november 2026):
+                de campagnes die Claude in de advertenties vond en die nog geanalyseerd kunnen worden. */}
+            {voorstellen && isCampagneSoort && (
+              <VoorstellenBalk
+                open={voorstellen.open}
+                genegeerd={voorstellen.genegeerd}
+                laatsteZoekronde={voorstellen.laatsteZoekronde}
+                bezig={voorstelBezig}
+                onToevoegen={(v) => setZijbalk({ campagne: null, voorstel: v })}
+                onNegeren={(v) => zetVoorstel(v, "negeren")}
+                onTerugzetten={(v) => zetVoorstel(v, "terugzetten")}
+              />
+            )}
             {!campagnes ? (
               !fout && <p className="px-1 py-6 text-[13px] text-ink-muted">Laden…</p>
             ) : zichtbaar.length === 0 ? (
@@ -1025,28 +1064,14 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
             ) : (
               <>
                 {campagneRegels.length > 0 && (
-                  <>
-                    <div className="flex flex-col gap-2">
-                      <p className="px-0.5 text-[12px] text-ink-muted">
-                        <span className="font-medium text-ink">
-                          {p.aantal} {p.aantal === 1 ? "campagne-analyse" : "campagne-analyses"}
-                        </span>
-                        {` · ${p.aantalLive} live`}
-                        {actiefBedrijf ? ` · ${actiefBedrijf}` : ""}
-                        {standTot ? ` · cijfers t/m ${datumKort(standTot)}` : ""}
-                      </p>
-                      <OverzichtKpis p={p} />
-                    </div>
-                    <VoortgangLijst p={p} regels={regelPerId} gekozen={inspectorOpen ? inspectorId : null} onKies={kiesInspector} />
-                    <section aria-labelledby="ma-cijfers" className="flex flex-col gap-3">
-                      <SectieKop
-                        id="ma-cijfers"
-                        titel="Alle cijfers per campagne"
-                        uitleg="Exacte waarden uit de laatste analyse, met de bron van elk leadcijfer en de planning van de analyseronde."
-                      />
-                      <CijferTabel campagnes={campagneRegels} {...tabelProps} />
-                    </section>
-                  </>
+                  <section aria-labelledby="ma-campagnes" className="flex flex-col gap-3">
+                    <SectieKop
+                      id="ma-campagnes"
+                      titel="Campagne-analyses"
+                      uitleg="Cijfers uit de laatste analyse. Balk = bereikt, streep = waar je bij een gelijk tempo zou staan. Klik op een campagne voor de details."
+                    />
+                    <CampagneTabel campagnes={campagneRegels} voortgang={voortgangPerId} {...tabelProps} />
+                  </section>
                 )}
                 {rapportageRegels.length > 0 && (
                   <section aria-labelledby="ma-rapportages" className="flex flex-col gap-3">
@@ -1057,17 +1082,6 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
               </>
             )}
 
-            {voorstellen && (
-              <VoorstellenBalk
-                open={voorstellen.open}
-                genegeerd={voorstellen.genegeerd}
-                laatsteZoekronde={voorstellen.laatsteZoekronde}
-                bezig={voorstelBezig}
-                onToevoegen={(v) => setZijbalk({ campagne: null, voorstel: v })}
-                onNegeren={(v) => zetVoorstel(v, "negeren")}
-                onTerugzetten={(v) => zetVoorstel(v, "terugzetten")}
-              />
-            )}
           </div>
 
           <Inspector

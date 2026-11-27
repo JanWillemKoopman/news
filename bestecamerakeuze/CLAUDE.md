@@ -1683,11 +1683,19 @@ behalve waar het over de bediening gaat (het schildje Beheer, de rijen filterkno
   settings, Verzonden e-mails, Semantic layer, Analyse prompts). Het **inhoudsgebied** maakt de cijfers
   afleesbaar. AppShell kiest de variant met `werkruimte = actief === "marketing-analyse"`: geen rail, geen
   PageHeader, het oogje midden in de knoppenbalk (`ThemeSwitcher plek`).
-- **Overzicht** (`werkruimte/Overzicht.tsx`, rekenwerk `lib/marketingAnalyse/portefeuille.ts`, getest):
-  kerncijfers van alle campagne-analyses in beeld (mediakosten, leads, kosten per lead, bezoekers), dan
-  **Voortgang per campagne** (balk = bereikt, streep = verstreken deel van de looptijd; kosten per lead;
-  aandeel in uitgaven en leads), dan **Alle cijfers per campagne** (de oude tabel, met vaste
-  campagnekolom). Alles bovenop `overzichtCijfers`: geen nieuwe definities, alleen optellen.
+- **Overzicht** (bijgesteld op verzoek van de eigenaar, 27 november 2026): geen regel "4 campagne-analyses" en
+  geen blok met totaalcijfers meer. Bovenaan staat de balk **Voorgestelde campagne-analyses**
+  (`VoorstellenBalk.tsx`, alleen bij Campagnes): ingeklapt een duidelijke horizontale balk met het aantal en
+  per bedrijf en per merk hoeveel voorstellen er zijn; uitgeklapt de lijst met Merk en Bedrijf als eigen
+  kolommen (vaste kolombreedtes, `table-fixed`), Toevoegen en negeren (kruisje). Daaronder **één tabel**
+  `CampagneTabel` (in `MarketingAnalysePaneel.tsx`; Voortgang per campagne en Alle cijfers zijn
+  samengevoegd), van links naar rechts: **Campagne** (bedrijf, looptijd, laatste versie; geen "dag x van y"),
+  **Uitgaven** (tegen het budget, balk met de streep van de looptijd en het tempo), **Leads tegen doel**
+  (balk, tempo en een regel "Doel 20 proefritten" met de bron als label **GA4** of **Syntec**), **Leads en
+  orders** (GA4, Syntec internet, Syntec orders) en **Planning**, plus bewerken en e-mail. CTR, bezoekers,
+  kosten per lead en het aandeel staan sindsdien alleen in het detailpaneel. Rekenwerk: `portefeuille.ts`
+  (getest), bovenop `overzichtCijfers`: geen nieuwe definities. De tabel past op 1280 px zonder horizontaal
+  scrollen; op een telefoon schuift hij met een vaste campagnekolom.
   - **Waarmee vergelijken we.** In het overzicht met het **tempo van de looptijd**: budget en leaddoel ×
     het verstreken deel van de looptijd op de laatste dag van de analyseperiode (`periodeTot`, sinds deze
     redesign in `lijstOverzicht` en `lijstVersies`). Binnen 10 procentpunt is op schema/op koers. Het
