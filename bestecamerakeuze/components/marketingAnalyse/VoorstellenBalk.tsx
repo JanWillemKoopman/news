@@ -3,7 +3,7 @@
 import { Fragment, useState } from "react";
 import { getBrandLogo } from "@/components/brandLogos";
 import { IconChevronDown, IconLink } from "@/components/icons";
-import { bedrijvenLabel, datumKort, formatWaarde, looptijdLabel, paginaKort, sorteerVoorstellen } from "@/lib/marketingAnalyse/rekenen";
+import { bedrijvenLabel, datumKort, formatWaarde, isLive, looptijdLabel, paginaKort, sorteerVoorstellen, vandaagNL } from "@/lib/marketingAnalyse/rekenen";
 import { ZEKERHEID_NAAM, type MaVoorstel, type MaZoekronde } from "@/lib/marketingAnalyse/types";
 
 type Props = {
@@ -18,6 +18,20 @@ type Props = {
 };
 
 const KOP = "label-theme whitespace-nowrap px-3 py-2.5 font-normal";
+
+/** Groen ademend stipje als de campagne live is (vandaag tussen start en eind), anders grijs: gelijk aan het overzicht eronder. */
+function StatusStip({ v, vandaag }: { v: MaVoorstel; vandaag: string }) {
+  const live = isLive(v, vandaag);
+  const titel = live ? "Live: vandaag valt binnen de looptijd" : "Niet live: vandaag valt buiten de looptijd";
+  return (
+    <span
+      role="img"
+      aria-label={titel}
+      title={titel}
+      className={`mt-1.5 block h-2 w-2 shrink-0 rounded-full ${live ? "live-stip bg-open" : "bg-closed opacity-70"}`}
+    />
+  );
+}
 
 /** Het label bij twijfel, met de reden als tooltip. "Zeker" en "Waarschijnlijk" staan er niet: rust. */
 function ZekerheidLabel({ v }: { v: MaVoorstel }) {
@@ -152,6 +166,7 @@ export default function VoorstellenBalk({ open, genegeerd, laatsteZoekronde, bez
   const [ingeklapt, setIngeklapt] = useState(true);
   const [uitgeklapt, setUitgeklapt] = useState<string | null>(null);
   const [genegeerdOpen, setGenegeerdOpen] = useState(false);
+  const vandaag = vandaagNL();
 
   if (open.length === 0 && genegeerd.length === 0) return null;
 
@@ -211,6 +226,7 @@ export default function VoorstellenBalk({ open, genegeerd, laatsteZoekronde, bez
                     >
                       <td className="py-3 pl-6 pr-3">
                         <div className="flex items-start gap-2.5">
+                          <StatusStip v={v} vandaag={vandaag} />
                           {Logo ? <Logo className="mt-0.5 h-4 w-4 shrink-0 text-ink-muted" /> : <span className="w-4 shrink-0" />}
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
