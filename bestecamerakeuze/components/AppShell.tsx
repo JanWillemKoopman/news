@@ -26,6 +26,7 @@ type Props = {
   campagnes: React.ReactNode;
   tijdlijn: React.ReactNode;
   campagnebeheer: React.ReactNode;
+  campagneAnalyse: React.ReactNode;
   marketingAnalyse: React.ReactNode;
   campagneTimeline: React.ReactNode;
   kpiOverzicht: React.ReactNode;
@@ -106,6 +107,11 @@ const TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
     title: "Marketing analyse",
     subtitle:
       "Full-funnel analyses per campagne: van kosten en bereik tot bezoek, gedrag en leads. Gemaakt door Claude Code, met elke versie bewaard.",
+  },
+  "campagne-analyse": {
+    title: "Campagne analyse",
+    subtitle:
+      "Alle campagne-analyses naast elkaar: uitgaven, bereik, leads en doel in één oogopslag. Klik op een campagne voor de volledige analyse.",
   },
   "campagne-timeline": {
     title: "Campagne timeline",
@@ -229,6 +235,7 @@ export default function AppShell({
   campagnes,
   tijdlijn,
   campagnebeheer,
+  campagneAnalyse,
   marketingAnalyse,
   campagneTimeline,
   kpiOverzicht,
@@ -362,6 +369,9 @@ export default function AppShell({
         </div>
         <div className="mt-6" role="tabpanel" hidden={actief !== "campagnebeheer"}>
           {campagnebeheer}
+        </div>
+        <div className="mt-6" role="tabpanel" hidden={actief !== "campagne-analyse"}>
+          {bezocht.has("campagne-analyse") ? campagneAnalyse : null}
         </div>
         <div className="mt-6" role="tabpanel" hidden={actief !== "marketing-analyse"}>
           {bezocht.has("marketing-analyse") ? marketingAnalyse : null}

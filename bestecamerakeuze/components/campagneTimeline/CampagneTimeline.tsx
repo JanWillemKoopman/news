@@ -8,6 +8,7 @@ import Inlogprompt from "@/components/Inlogprompt";
 import { getBrandLogo } from "@/components/brandLogos";
 import { IconChevronDown } from "@/components/icons";
 import { formatCurrency } from "@/lib/format";
+import { isCampagneAnalyse } from "@/lib/campagneAnalyseOverzicht";
 import {
   balkPositie,
   bedrijfOpties,
@@ -34,7 +35,7 @@ import {
   vandaagNL,
   versieLabel,
 } from "@/lib/marketingAnalyse/rekenen";
-import { STANDAARD_OPZET_ID, type MaOpzet, type MaOverzichtRegel } from "@/lib/marketingAnalyse/types";
+import type { MaOpzet, MaOverzichtRegel } from "@/lib/marketingAnalyse/types";
 
 const MIN_KOLOMBREEDTE = 14;
 const MAX_KOLOMBREEDTE = 44;
@@ -87,12 +88,6 @@ type HoverInfo = { rij: Rij; top: number; left: number };
 /** De link naar de analyse zelf: Marketing analyse opent hem uit de URL. */
 function analyseHref(id: string): string {
   return `/?tab=marketing-analyse&analyse=${encodeURIComponent(id)}`;
-}
-
-/** Een Campagne analyse = een analyse met een opzet met het formulier "campagne" (geen rapportage). */
-function isCampagneAnalyse(c: MaOverzichtRegel, opzetPerId: Map<string, MaOpzet>): boolean {
-  const opzet = opzetPerId.get(c.opzetId);
-  return opzet ? opzet.formulier === "campagne" : c.opzetId === STANDAARD_OPZET_ID;
 }
 
 function MerkLogo({ merk }: { merk: string | null }) {
