@@ -626,8 +626,11 @@ export function normaliseerResultaat(ruw: unknown): MaResultaat {
       .sort((a, b) => a.stap - b.stap),
     inzichten: lijst(r.inzichten),
     aanbevelingen: leesAanbevelingen(r.aanbevelingen),
-    herkenning: lijst(r.herkenning),
+    herkenning: lijst(r.herkenning).filter(
+      (h) => h && typeof h === "object" && typeof h.naam === "string" && typeof h.bron === "string",
+    ),
     bronnen: lijst(r.bronnen),
+    bronFilters: lijst(r.bronFilters).filter((f) => f && typeof f.bron === "string" && typeof f.filter === "string"),
     correcties: lijst(r.correcties),
     semantiekVoorstellen: lijst(r.semantiekVoorstellen),
     datakwaliteit: lijst(r.datakwaliteit),

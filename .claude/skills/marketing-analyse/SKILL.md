@@ -318,6 +318,46 @@ het bereik en de uitgaven telt en wat het tijdelijke jaarbudget is.
 - **Bewaren**: `marketing_analyse_bewaar` zoals in stap 5, `p_kerncijfers => '{}'`, `p_samenvatting` de kop.
   Het dashboard toont dit format zonder stappenlijst en zonder samenvattingspagina.
 
+## Dataverantwoording (`herkenning` en `bronFilters`, plan §25)
+Het laatste onderdeel van elke analyse heet in het dashboard **Dataverantwoording** (besluit van de
+eigenaar, 28 november 2026): per bron in één oogopslag welke datapunten zijn meegenomen en hoe er
+gefilterd is. Het team haalt er met een − iets af en zet er met een + een twijfelgeval bij; dat
+komt als vaste regel in de Data correctie en geldt vanaf de volgende analyse(ronde). Dit geldt voor
+elke opzet die de analysepagina gebruikt (niet voor Maandrapport Jana, formaat 4).
+- **Volledig, één rij per datapunt.** Elke advertentiecampagne, elke organische post, elke
+  campagnepagina, elk lead-event, elke mailing en elke Syntec-filter die in een cijfer meetelt, staat
+  als eigen rij in `herkenning`. Niet samenvatten ("3 Meta-campagnes"). Bron met vaste namen:
+  `Google Ads`, `Meta Ads`, `LinkedIn Ads`, `Instagram`, `Facebook`, `LinkedIn organisch`, `E-mail`,
+  `GA4`, `Syntec leads`, `Syntec orders` (het dashboard groepeert ze daarop in de volgorde van de funnel).
+- **Per rij**: `sleutel` (stabiel tussen versies: `<bron>:<soort>:<extern id>`, het id van het
+  platform waar dat er is: campagne-id, `media_id`, post-id; voor een pagina het pad, voor een event
+  de naam), `cijfers` (het belangrijkste eerst: uitgaven bij een campagne, bereik of vertoningen bij
+  een post, sessies bij een pagina of mailing, events bij een event, leads bij een filter), `datum`
+  (post, mailing; bij een campagne de start) en `tot`, `url` waar die er is (post, pagina), `account`
+  als de bron meer accounts heeft, `reden` in een korte zin, `zekerheid`.
+- **Per bron de filter** in `bronFilters`, in gewone taal: accounts, het filter ("campagnenaam
+  bevat A2", "tekst bevat A2 of Audi A2", "landingspagina begint met /acties/audi-a2", "merk Audi,
+  model A2, Kanaalgroep Internet") en de periode. Ook voor een bron die je bekeek maar waar niets
+  uit kwam (die toont het dashboard als "niets gevonden").
+- **Twijfelgevallen opschrijven** als `opgenomen: false`, met in `reden` waarom niet: posts die het
+  model noemen tussen andere, campagnes met een lijkende naam of het model in een feed, verwante
+  pagina's, posts of mailings net buiten de looptijd. Hoogstens ±15, de sterkste kandidaten eerst.
+  Ze tellen in geen enkel cijfer mee.
+- **E-mail: één rij per mailing** (besluit van de eigenaar, 28 november 2026; uitzondering op "niet
+  per mailing", alleen hier). In de stappen blijft e-mail één kanaal. Een mailing herken je aan de
+  campagnenaam van het e-mailverkeer (`session_manual_campaign_name`); het overige e-mailverkeer
+  per landingspagina met de dag waarop het piekte, als soort `e-mailverkeer`. Noem ook hier geen
+  M_BT, Selligent of direct (regel van de semantic layer). **Zodra de mailsysteemdata er is**
+  (verzonden mailings met sends, opens en klikken): bron `E-mail`, soort `mailing`, naam = de
+  onderwerpregel of mailingnaam, `datum` = verzenddatum, `cijfers` = verzonden, opens, klikken (en
+  sessies op de campagnepagina), `sleutel` = `e-mail:mailing:<mailing-id>`.
+- **Vaste regels in de Data correctie** (`Weglaten: <bron> · <soort> · <naam> [<sleutel>]` en
+  `Meenemen: … [<sleutel>]`) pas je strikt toe: `Weglaten` = uit **alle** cijfers, `Meenemen` = in de
+  cijfers waar het hoort. Meld elke regel in `correcties`. Het datapunt blijft in `herkenning` staan
+  met `viaCorrectie` ("weglaten": `opgenomen: false`, zodat het team het met + terug kan zetten;
+  "meenemen": `opgenomen: true`), met dezelfde `sleutel` als in de regel. Vrije tekst in de Data
+  correctie geldt zoals altijd.
+
 ## Stap 0 — Welke campagne(s) of rapportage(s)
 ```sql
 select c.id, c.naam, c.bedrijven, c.merk, c.modellen, c.startdatum, c.einddatum, c.periode_tekst,
@@ -411,7 +451,9 @@ select id, versie, inhoud from dataloket.marketing_analyse_semantiek order by ve
     × `event_count` (landing page hoort bij de sessie: events in sessies die op de
     campagnepagina begonnen). E-mail en lead-events volgens de semantic layer. E-mail is altijd
     één kanaal: tel de delen op en noem nooit hoe e-mail is opgebouwd (ook niet in de
-    verantwoording), en splits e-mail niet per mailing.
+    verantwoording), en splits e-mail in de stappen niet per mailing. **Uitzondering: in
+    `herkenning` (de Dataverantwoording) staat wél één rij per mailing**, zie "Dataverantwoording"
+    hieronder.
   - GA4 voor de stap **Vervolg op de website**: `landing_page` × `page_path` (of
     `page_path_plus_query_string`) × `sessions`/`screen_page_views` voor de pagina's die bekeken
     worden in sessies die op de campagnepagina begonnen; deel ze in paginagroepen in (modellen,
@@ -534,7 +576,14 @@ een campagne (`tabbladenVoor` in `rekenen.ts`, getest). Zonder `groep` geen kopj
   } ],
   "aanbevelingen": [ { "titel": "…", "toelichting": "…", "prioriteit": "hoog|middel|laag",
                        "tabs": ["advertenties", "email"] } ],
-  "herkenning": [ { "bron": "Meta Ads", "soort": "campagne", "naam": "…", "reden": "…", "zekerheid": "zeker|waarschijnlijk|twijfel" } ],
+  "herkenning": [ { "bron": "Meta Ads", "soort": "campagne", "naam": "A2 | Leads | Okt", "reden": "naam bevat A2",
+                    "zekerheid": "zeker|waarschijnlijk|twijfel", "sleutel": "meta-ads:campagne:120211234567",
+                    "opgenomen": true, "account": "Van den Udenhout (69324444)", "datum": "2026-09-12", "tot": "2026-10-31",
+                    "cijfers": [ { "label": "uitgaven", "waarde": 1240.5, "eenheid": "euro" }, { "label": "klikken", "waarde": 3120, "eenheid": "aantal" } ] },
+                  { "bron": "Instagram", "soort": "post", "naam": "Audi-weekend bij Van den Udenhout", "reden": "noemt de A2 tussen vier andere modellen",
+                    "sleutel": "instagram:post:17890123456789", "opgenomen": false, "datum": "2026-11-03", "url": "https://www.instagram.com/p/…",
+                    "cijfers": [ { "label": "bereik", "waarde": 2960, "eenheid": "aantal" } ] } ],
+  "bronFilters": [ { "bron": "Meta Ads", "accounts": [ "Van den Udenhout (69324444)" ], "filter": "campagnenaam bevat “A2”", "periode": "1 sep – 27 nov" } ],
   "bronnen": [ "Windsor · Meta Ads · Van den Udenhout (69324444)", "Supabase · marketing_analyse_leads t/m 22 nov", "Supabase · Syntec orders (marketing_analyse_orders) t/m 14 nov" ],
   "correcties": [ { "correctie": "regel uit de Data correctie", "verwerking": "wat je ermee deed" } ],
   "semantiekVoorstellen": [ { "blok": "Google Analytics 4", "voorstel": "…", "reden": "…" } ],

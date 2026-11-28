@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getGebruiker } from "@/lib/auth";
 import { isBeheerder } from "@/lib/gebruikersbeheer";
 import { leesCampagneInvoer } from "@/lib/marketingAnalyse/rekenen";
+import { metRegel } from "@/lib/marketingAnalyse/dataverantwoording";
 import {
   haalCampagne,
   haalOpzet,
@@ -28,6 +29,9 @@ export const dynamic = "force-dynamic";
  * PATCH ?id=… { opzetId, naam, … }  → briefing bijwerken (de opzet mag veranderen)
  * PATCH ?id=… { planning }          → planning: uit, week, maand of kwartaal (iedereen)
  * PATCH ?id=… { dataCorrectie }     → alleen de Data correctie (vanaf de analysepagina)
+ * PATCH ?id=… { correctieRegel: { sleutel, regel } } → één vaste regel (− of + in de
+ *                                    Dataverantwoording) zetten of weghalen (regel null); de rest
+ *                                    van de Data correctie blijft zoals hij in de database staat
  * DELETE ?id=…                      → campagne met al zijn analyses weg (alleen de eigenaar)
  *
  * De analyses zelf schrijft Claude Code (skill marketing-analyse), nooit deze routes.
@@ -86,6 +90,23 @@ export async function PATCH(request: Request) {
     if ("planning" in body && Object.keys(body).length === 1) {
       if (!isPlanning(body.planning)) return NextResponse.json({ fout: "Onbekende planning." }, { status: 400 });
       campagne = await zetPlanning(supabase, id, body.planning);
+    } else if ("correctieRegel" in body && Object.keys(body).length === 1) {
+      const invoer = (body.correctieRegel ?? {}) as { sleutel?: unknown; regel?: unknown };
+      const sleutel = typeof invoer.sleutel === "string" ? invoer.sleutel.trim() : "";
+      const regel = typeof invoer.regel === "string" ? invoer.regel.trim() : null;
+      if (!sleutel || sleutel.length > 500 || (regel !== null && regel.length > 1000)) {
+        return NextResponse.json({ fout: "Ongeldige regel voor de Data correctie." }, { status: 400 });
+      }
+      const vorige = await haalCampagne(supabase, id);
+      if (!vorige) return NextResponse.json({ fout: "Campagne niet gevonden." }, { status: 404 });
+      let tekst: string;
+      try {
+        tekst = metRegel(vorige.dataCorrectie, sleutel, regel);
+      } catch (err) {
+        return fout(err, 400);
+      }
+      if (tekst.length > MAX_CORRECTIE) return NextResponse.json({ fout: "De Data correctie wordt te lang." }, { status: 400 });
+      campagne = await zetDataCorrectie(supabase, id, tekst || null);
     } else if ("dataCorrectie" in body && Object.keys(body).length === 1) {
       const tekst = typeof body.dataCorrectie === "string" ? body.dataCorrectie.trim().slice(0, MAX_CORRECTIE) : "";
       campagne = await zetDataCorrectie(supabase, id, tekst || null);

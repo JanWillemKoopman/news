@@ -667,7 +667,7 @@ planning Maandelijks), prompt versie 2.
 
 ## 25. Dataverantwoording: per bron wat er is meegenomen, met − en + (plan, verzoek van de eigenaar, 28 november 2026)
 
-**Status: plan, nog niet gebouwd.** Besluiten die nog open staan, staan in 25.9.
+**Status: gebouwd op 28 november 2026.** De antwoorden van de eigenaar op de open vragen staan in 25.9.
 
 ### 25.1 Wat de eigenaar wil
 Het laatste onderdeel in de navigatie van een analyse (nu "Verantwoording") wordt **Dataverantwoording**:
@@ -812,11 +812,25 @@ zonder Verantwoording en blijft buiten dit plan.
 - **E-mail is altijd één kanaal** (besluit van de eigenaar): e-mail staat er als herkenningsregel(s),
   niet per mailing — zie 25.9.
 
-### 25.9 Open vragen aan de eigenaar
-1. **E-mail per mailing?** De vaste regel zegt dat e-mail nergens per mailing wordt uitgesplitst. In de
-   Dataverantwoording zou dat per mailing wél handig zijn om er één af te halen. Uitzondering alleen
-   hier, of e-mail als één regel laten?
-2. **Alleen klaarzetten, of direct een nieuwe versie?** Voorstel: een klik zet het klaar voor de
-   volgende analyse (vrijdagronde of handmatig). Een knop "Nu opnieuw analyseren" kan later.
-3. **Zelf iets toevoegen dat nergens in de lijst staat** (bijv. een pagina die de analyse niet vond):
-   voorstel is dat dat de vrije tekst van de Data correctie blijft. Of een veld "+ Zelf toevoegen" per bron?
+### 25.9 Besluiten van de eigenaar (28 november 2026)
+1. **E-mail per mailing: ja.** In de Dataverantwoording staat elke mailing als eigen rij (uitzondering op
+   "e-mail niet per mailing"; in de stappen blijft e-mail één kanaal). Tot de data uit het mailsysteem er is,
+   herkent de analyse een mailing aan de campagnenaam van het e-mailverkeer en de rest per landingspagina met
+   de piekdag (GA4 kent geen code per mailing: M_BT is per ontvanger). **De echte mailresultaten komen eraan**
+   (verzonden mailings met sends, opens en klikken in de mail); dan wordt elke mailing een rij met die
+   cijfers (`cijfers` op `Herkenning` is daar al op gebouwd, de skill beschrijft het).
+2. **Een klik geldt vanaf de volgende ronde.** Geen knop "nu opnieuw analyseren"; bovenaan staat de datum
+   van de volgende analyse uit de planning (staat de planning uit: de volgende analyse die je start).
+3. **Het vrije tekstveld Data correctie blijft**, voor wat nergens in de lijst staat. Geen knop
+   "+ Zelf toevoegen" per bron.
+
+### 25.10 Zo gebouwd
+- Rekenwerk en de vaste vorm van de regels: `lib/marketingAnalyse/dataverantwoording.ts` (getest).
+  Regels heten `Weglaten:` en `Meenemen:` in plaats van − en + (leesbaarder voor mens en analyse).
+- Route: PATCH `/api/marketing-analyse?id=…` met `{ correctieRegel: { sleutel, regel } }` (regel null = weg).
+- Weergave: `Verantwoording.tsx` (Dataverantwoording en het blok Data correctie), `StapNavigatie.tsx`
+  (naam, subregel en het aantal aanpassingen), `AnalyseWeergave.tsx` (planning en telling).
+- Formaat: `Herkenning` kreeg `sleutel`, `opgenomen`, `cijfers`, `datum`, `tot`, `url`, `account`,
+  `viaCorrectie`; `MaResultaat` kreeg `bronFilters`. Allemaal optioneel, geen nieuw formaatnummer.
+- Skill: paragraaf "Dataverantwoording" in `.claude/skills/marketing-analyse/SKILL.md`. De semantic layer
+  in de database zegt nog "niet per mailing"; de skill maakt alleen voor `herkenning` een uitzondering.

@@ -11,7 +11,9 @@ import VolgersZijbalk from "@/components/marketingAnalyse/VolgersZijbalk";
 import { LabelBadge } from "@/components/marketingAnalyse/onderdelen";
 import { getBrandLogo } from "@/components/brandLogos";
 import { IconMail, IconPencil } from "@/components/icons";
-import { bedrijvenLabel, formatWaarde, looptijdLabel, tabbladenVoor, versieLabel } from "@/lib/marketingAnalyse/rekenen";
+import { bedrijvenLabel, formatWaarde, looptijdLabel, tabbladenVoor, vandaagNL, versieLabel } from "@/lib/marketingAnalyse/rekenen";
+import { aantalAanpassingen } from "@/lib/marketingAnalyse/dataverantwoording";
+import { dagNL, volgendeWeergave } from "@/lib/marketingAnalyse/planning";
 import { LABEL_NAAM, type MaAnalyse, type MaCampagne, type MaOpzet, type MaOverzichtRegel, type MaVersie } from "@/lib/marketingAnalyse/types";
 
 export { DoelRegel, LabelBadge } from "@/components/marketingAnalyse/onderdelen";
@@ -134,9 +136,20 @@ export default function AnalyseWeergave({ campagne, opzet, isEigenaar, onTerug, 
   }
 
   const vorige: Buur = tabIndex > 0 ? tabs[tabIndex - 1] : { sleutel: SAMENVATTING, naam: "Samenvatting" };
-  const volgende: Buur = tabIndex >= 0 && tabIndex < tabs.length - 1 ? tabs[tabIndex + 1] : { sleutel: VERANTWOORDING, naam: "Verantwoording" };
+  const volgende: Buur = tabIndex >= 0 && tabIndex < tabs.length - 1 ? tabs[tabIndex + 1] : { sleutel: VERANTWOORDING, naam: "Dataverantwoording" };
   const b = analyse?.briefing;
   const rapportage = (b?.formulier ?? opzet?.formulier) === "rapportage";
+  // Wanneer een − of + in de Dataverantwoording ingaat: de eerstvolgende ronde van de planning.
+  const volgendeAnalyse = volgendeWeergave(
+    {
+      planning: campagne.planning,
+      formulier: opzet?.formulier ?? "campagne",
+      startdatum: campagne.startdatum,
+      einddatum: campagne.einddatum,
+      laatsteAnalyse: campagne.laatsteAnalyse ? dagNL(campagne.laatsteAnalyse.geanalyseerdOp) : null,
+    },
+    vandaagNL(),
+  ).datum;
   // Eén regel feiten onder de titel: wat voor campagne, voor wie, wanneer, doel en budget.
   // Doel en budget krijgen een gedempt etiket zodat de waarde zelf opvalt.
   const feiten: { etiket?: string; tekst: string }[] = [
@@ -296,7 +309,12 @@ export default function AnalyseWeergave({ campagne, opzet, isEigenaar, onTerug, 
 
       {analyse && r && r.formaat !== 4 && (
         <div className={`grid grid-cols-[272px_minmax(0,1fr)] items-start gap-6 transition-opacity ${laadt ? "opacity-60" : ""}`}>
-          <StapNavigatie tabs={tabs} actief={actief} onKies={kiesTab} />
+          <StapNavigatie
+            tabs={tabs}
+            actief={actief}
+            onKies={kiesTab}
+            aanpassingen={aantalAanpassingen(campagne.dataCorrectie, analyse.briefing.dataCorrectie)}
+          />
           <div className="flex min-w-0 flex-col gap-5">
             {actief === SAMENVATTING && <SamenvattingPagina key={analyse.id} analyse={analyse} resultaat={r} tabs={tabs} onKies={kiesTab} />}
             {tab && (
@@ -319,6 +337,7 @@ export default function AnalyseWeergave({ campagne, opzet, isEigenaar, onTerug, 
                 isEigenaar={isEigenaar}
                 onCampagneBijgewerkt={onCampagneBijgewerkt}
                 versieId={analyse.id}
+                volgendeAnalyse={volgendeAnalyse}
               />
             )}
             <div className="flex flex-wrap items-center justify-between gap-3 pt-1">

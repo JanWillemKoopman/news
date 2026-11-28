@@ -140,6 +140,14 @@ export function IconPlus({ className }: IconProps) {
   );
 }
 
+export function IconMinus({ className }: IconProps) {
+  return (
+    <svg {...base} className={className} aria-hidden="true">
+      <path d="M5 12h14" />
+    </svg>
+  );
+}
+
 export function IconInfo({ className }: IconProps) {
   return (
     <svg {...base} className={className} aria-hidden="true">

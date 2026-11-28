@@ -426,13 +426,48 @@ export interface Aanbeveling {
   tabs?: TabSleutel[];
 }
 
-/** Wat de analyse aan de campagne heeft toegerekend, en waarom. */
+/** Een cijfer bij een datapunt in de Dataverantwoording (uitgaven, bereik, sessies, opens …). */
+export interface HerkenningCijfer {
+  label: string;
+  waarde: number;
+  eenheid: Eenheid;
+}
+
+/**
+ * Wat de analyse aan de campagne heeft toegerekend, en waarom: één datapunt per rij in de
+ * Dataverantwoording (plan §25). Alles behalve bron, soort, naam en reden is optioneel, zodat
+ * versies van vóór 28 november 2026 gewoon blijven werken.
+ */
 export interface Herkenning {
   bron: string;
+  /** campagne | advertentie | post | pagina | event | mailing | filter … */
   soort: string;
   naam: string;
   reden: string;
   zekerheid?: "zeker" | "waarschijnlijk" | "twijfel";
+  /** Stabiel tussen versies: `<bron>:<soort>:<extern id, pad of naam>`. Zonder: `herkenningSleutel`. */
+  sleutel?: string;
+  /** Standaard true. false = mogelijk touchpoint dat de analyse bekeek maar niet meenam. */
+  opgenomen?: boolean;
+  /** Het belangrijkste cijfer eerst; bij een mailing bijv. verzonden, opens en klikken. */
+  cijfers?: HerkenningCijfer[];
+  /** Post of mailing: de datum; campagne: de start. JJJJ-MM-DD. */
+  datum?: string;
+  /** Campagne: het einde van de looptijd binnen de analyse. */
+  tot?: string;
+  url?: string;
+  account?: string;
+  /** Meegenomen of weggelaten door een regel uit de Data correctie. */
+  viaCorrectie?: "meenemen" | "weglaten";
+}
+
+/** Hoe er per bron is gefilterd (de kop boven de rijen van die bron in de Dataverantwoording). */
+export interface BronFilter {
+  bron: string;
+  accounts?: string[];
+  /** In gewone taal: "campagnenaam bevat A2". */
+  filter: string;
+  periode?: string;
 }
 
 /** Wat de analyse met een regel uit de Data correctie heeft gedaan. */
@@ -600,6 +635,8 @@ export interface MaResultaat {
   herkenning: Herkenning[];
   /** Welke bronnen er gebruikt zijn (bijv. "Windsor · Meta Ads · Van den Udenhout"). */
   bronnen?: string[];
+  /** Per bron hoe er gefilterd is (plan §25); oudere versies hebben alleen `bronnen`. */
+  bronFilters?: BronFilter[];
   correcties?: CorrectieVerwerking[];
   semantiekVoorstellen?: SemantiekVoorstel[];
   datakwaliteit?: string[];

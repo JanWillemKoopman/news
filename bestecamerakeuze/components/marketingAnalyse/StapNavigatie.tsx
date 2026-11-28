@@ -44,16 +44,20 @@ function Vak({ actief, children }: { actief: boolean; children: React.ReactNode 
 /**
  * De navigatie links op de analysepagina: bovenaan de samenvatting, dan de stappen van de
  * funnel in hun groepen (Media, Content, Website, Resultaat), elk met het hoofdgetal en het
- * stipje met het oordeel, en onderaan de verantwoording.
+ * stipje met het oordeel, en onderaan de Dataverantwoording (met het aantal aanpassingen dat
+ * klaarstaat voor de volgende analyse).
  */
 export default function StapNavigatie({
   tabs,
   actief,
   onKies,
+  aanpassingen = 0,
 }: {
   tabs: AnalyseTab[];
   actief: string;
   onKies: (sleutel: string) => void;
+  /** Hoeveel regels in de Data correctie klaarstaan voor de volgende analyse. */
+  aanpassingen?: number;
 }) {
   return (
     <nav
@@ -102,9 +106,17 @@ export default function StapNavigatie({
       <button type="button" onClick={() => onKies(VERANTWOORDING)} aria-current={actief === VERANTWOORDING ? "page" : undefined} className={knopKlasse(actief === VERANTWOORDING)}>
         <Vak actief={actief === VERANTWOORDING}>i</Vak>
         <span className="flex min-w-0 flex-1 flex-col">
-          <span className="text-sm font-semibold text-ink">Verantwoording</span>
-          <span className="text-meta text-ink-muted">Bronnen, herkenning, datakwaliteit</span>
+          <span className="text-sm font-semibold text-ink">Dataverantwoording</span>
+          <span className="text-meta text-ink-muted">Wat is meegenomen, per bron</span>
         </span>
+        {aanpassingen > 0 && (
+          <span
+            title={`${aanpassingen} ${aanpassingen === 1 ? "aanpassing" : "aanpassingen"} klaar voor de volgende analyse`}
+            className="shrink-0 rounded-control border border-line px-1.5 text-meta tabular-nums text-ink-muted"
+          >
+            {aanpassingen}
+          </span>
+        )}
       </button>
     </nav>
   );

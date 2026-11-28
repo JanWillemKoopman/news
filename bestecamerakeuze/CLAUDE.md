@@ -1934,7 +1934,27 @@ lees dat eerst voordat je hier iets verandert.
   in §19 van het plan, eerdere opzet met tabbladen in §14). Links een vaste navigatie
   (`StapNavigatie.tsx`): bovenaan **Samenvatting**, dan de stappen van de funnel in hun groepen
   (`ANALYSE_TABBLADEN` in `types.ts`, indeling in `tabbladenVoor` in `rekenen.ts`, getest), elk
-  met nummer, hoofdgetal en stipje met het oordeel, en onderaan **Verantwoording**.
+  met nummer, hoofdgetal en stipje met het oordeel, en onderaan **Dataverantwoording** (heette
+  Verantwoording; zie hieronder).
+  - **Dataverantwoording** (28 november 2026, verzoek van de eigenaar, plan §25,
+    `Verantwoording.tsx`, rekenwerk in `lib/marketingAnalyse/dataverantwoording.ts`, getest): per
+    groep van de funnel (Advertenties, Organische social, E-mail, Website, Syntec, Overig;
+    `groepVanBron`) en per bron een kop met accounts, filter en periode (`bronFilters` in het
+    resultaat) en één rij per datapunt uit `herkenning` (soort, naam met link, reden, datum of
+    looptijd, cijfers). Op hover van een rij een **−** (geen kleurverandering van de rij); onder een
+    dikke streep de **mogelijke touchpoints, niet meegenomen** (`opgenomen: false`) met een **+**.
+    Een klik zet direct een vaste regel in het bestaande veld Data correctie
+    (`Weglaten: <bron> · <soort> · <naam> [<sleutel>]` / `Meenemen: …`; PATCH `correctieRegel`, de
+    server voegt hem in de tekst zoals die in de database staat), dus geen eigen tabel: de skill leest
+    het veld al, elke versie legt het vast en de volgende analyseronde neemt het mee. De rij blijft
+    staan met "Gaat eraf / Komt erbij bij de volgende analyse · Ongedaan maken" (ongedaan zet de
+    regel van deze versie terug). In het blok Data correctie staan de regels als lijst met een kruisje,
+    het tekstveld houdt alleen de vrije tekst (besluit: dat veld blijft). Bovenaan de tellingen en
+    wanneer de volgende analyse is (`volgendeWeergave` van de planning); in de navigatie het aantal
+    regels dat anders is dan bij deze versie (`aantalAanpassingen`). E-mail staat er per mailing
+    (uitzondering op "e-mail niet per mailing", alleen hier); zodra de mailsysteemdata er is met
+    sends, opens en klikken komen die als `cijfers` op dezelfde rijen. Oudere versies zonder `sleutel`,
+    `opgenomen` of `bronFilters` werken gewoon (sleutel uit bron + soort + naam, de oude bronchips).
   - **De stappen (formaat 3, 25 november 2026, plan §21)**: Media: **Advertenties** (met bereik
     en investering), **Organische social**, **E-mail**; Website: **Campagnepagina** (verkeer en
     gedrag op de pagina), **Conversies** (lead-events en andere conversies, op de pagina of
