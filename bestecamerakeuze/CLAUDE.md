@@ -2059,15 +2059,32 @@ de sidebar en bovenaan de groep Campagnes op het startscherm.
   Marketing analyse. Alleen opzetten met formulier `campagne` (`isCampagneAnalyse`, gedeeld met Campagne timeline).
 - **Kolomkop** = link naar de analyse (`/?tab=marketing-analyse&analyse=<id>`): status (Online/Offline), naam,
   merk en bedrijf, looptijd met voortgangsbalk (dag x van y), laatste versie en label. Onderaan elke kolom een knop
-  Bekijk analyse. Een gewone link (volledige paginalading), net als Campagne timeline.
-- **Rijen**: Budget (Uitgaven, balk met streepje voor het verstreken deel van de looptijd en
+  Bekijk analyse (een tekstlink). Een gewone link (volledige paginalading), net als Campagne timeline.
+- **Rijen**: Budget (Uitgaven, balk met driehoekje voor het verstreken deel van de looptijd en
   Op schema / sneller / achter, `budgetTempo`), Bereik (CTR, Bezoekers), Leads en orders (Google Analytics,
   Syntec internet, Syntec orders; de Syntec-rijen alleen als minstens één campagne er cijfers voor heeft) en Doel
   (percentage gehaald, groen vanaf 100%).
 - **Filters**: Bedrijf, Merk (multi-select, `filterTimeline`) en **Online/Offline**. Online = live (vandaag binnen de
   looptijd, `isLive`), offline = nog niet begonnen of afgelopen; de aantallen tellen binnen Bedrijf en Merk.
-- **Samenvatting** boven de tabel over de campagnes in beeld (`samenvatting`): campagnes online, uitgegeven
-  tegen budget (alleen campagnes met een analyse), bezoekers en leads (Google Analytics).
+- **Geen samenvatting (KPI-kaarten) boven de tabel** (28 november 2026, op verzoek weggehaald): de tabel staat
+  direct onder de filters. `samenvatting` in `lib/campagneAnalyseOverzicht.ts` bestaat nog (getest), maar
+  wordt hier niet meer getoond.
+- **Afwerking** (28 november 2026, op verzoek, A2–A12 uit de designronde):
+  - Het budgettempo staat als **label met icoon** (`TempoPil`): groen ✓ Op schema, oranje ↓ Achter op de
+    looptijd, rood ↑ Sneller dan de looptijd.
+  - **Eén kleurlogica voor elke balk** (`Meter`): groen = doel gehaald, donker = op koers, oranje = achter op de
+    looptijd, rood = te snel of over budget. Bij Doel leads telt "achter" als het gehaalde deel meer dan 10
+    procentpunt achterloopt op de looptijd (`budgetTempo`).
+  - Op de budgetbalk een **driehoekje (▾)** waar de besteding nu zou staan; de regel eronder zegt het ook
+    ("15% van € 1.000 · ▾ verwacht 35%"). Geen tooltip erop: de cel heeft al een hover-kaartje.
+  - **Geen stippellijn** meer onder de cijfers; een cel met hover-kaartje krijgt bij hover een zacht vlak.
+  - "Tussentijdse evaluatie" is tekst in de regel ("Analyse v1 · 27 nov 2026 · tussentijds"); alleen een
+    **eindevaluatie** krijgt nog een label.
+  - **Sectiekoppen** (Budget, Bereik …) zijn een klein label boven de rijen, zonder grijze band.
+  - **Merklogo** in de kop 18px in de inktkleur.
+  - De **kolom onder de muis licht zacht op** (`kolomHover`).
+  - Onderaan elke kolom een **rustige tekstlink** "Bekijk analyse →" in plaats van een knop; hij kleurt blauw
+    als je in zijn kolom bent. De kolomkop opent de analyse ook.
 - Live eerst, dan wat nog moet beginnen, dan afgelopen (`sorteerOpStatus`).
 - **Kosten per klik en Kosten per lead** (28 november 2026, op verzoek, groep Efficiëntie tussen Leads en
   orders en Doel): mediakosten ÷ klikken en mediakosten ÷ leads in Google Analytics (de soort uit het doel,
@@ -2080,8 +2097,8 @@ de sidebar en bovenaan de groep Campagnes op het startscherm.
   internetleads voor merk en model en niet te herleiden tot deze campagne.
 - **Hover met meer uitleg** (28 november 2026, op verzoek): met de muis (of toetsenfocus) boven een
   cijfer opent een kaartje (`HoverKaart.tsx`, in een portal op `<body>`: de tabel scrolt horizontaal en
-  zou het kaartje afsnijden; klapt naar boven als er onder geen ruimte is). Cellen met een kaartje hebben
-  een stippellijntje onder het grote getal; zonder inhoud is er geen kaartje. Inhoud in
+  zou het kaartje afsnijden; klapt naar boven als er onder geen ruimte is). Cellen met een kaartje krijgen
+  bij hover een zacht vlak (de stippellijn eronder is weg); zonder inhoud is er geen kaartje. Inhoud in
   `hoverKaarten.tsx`, twee soorten:
   - **Uitsplitsing van de analyse** (`kerncijfers.uitsplitsing`, type `MaUitsplitsing`): Uitgaven en CTR per
     platform (Google, Meta, LinkedIn), Bezoekers per kanaal, Google Analytics-leads per event (met welke

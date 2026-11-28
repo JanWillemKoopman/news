@@ -5,7 +5,7 @@ import FilterBar from "@/components/FilterBar";
 import FilterSelect from "@/components/FilterSelect";
 import Inlogprompt from "@/components/Inlogprompt";
 import { getBrandLogo } from "@/components/brandLogos";
-import { IconArrowRight } from "@/components/icons";
+import { IconArrowDown, IconArrowRight, IconArrowUp, IconCheck } from "@/components/icons";
 import HoverKaart from "@/components/campagneAnalyse/HoverKaart";
 import {
   analyseDatumLabel,
@@ -26,7 +26,6 @@ import {
   filterOpOnline,
   isCampagneAnalyse,
   ONLINE_FILTERS,
-  samenvatting,
   telOnline,
   tijdVoortgang,
   type OnlineFilter,
@@ -48,7 +47,7 @@ import {
 } from "@/lib/marketingAnalyse/rekenen";
 import type { MaOpzet, MaOverzichtRegel } from "@/lib/marketingAnalyse/types";
 import { kostenPer, leesUitsplitsing } from "@/lib/marketingAnalyse/uitsplitsing";
-import { SkeletKaarten } from "@/components/Skelet";
+import { SkeletTabel } from "@/components/Skelet";
 
 const LABELKOLOM = 196;
 const KOLOM_MIN = 280;
@@ -67,6 +66,25 @@ const TEMPO: Record<BudgetTempo, { naam: string; toon: Toon }> = {
   "te-snel": { naam: "Sneller dan de looptijd", toon: "negatief" },
   "te-langzaam": { naam: "Achter op de looptijd", toon: "waarschuwing" },
 };
+
+/**
+ * A2: het budgettempo als klein label met icoon, in dezelfde vorm als het Online-label in de kop,
+ * in plaats van losse gekleurde tekst. Groen = op schema, oranje = achter, rood = te snel.
+ */
+const PIL: Record<BudgetTempo, { vlak: string; icoon: ReactNode }> = {
+  "op-schema": { vlak: "bg-positive/10 text-positive", icoon: <IconCheck className="h-3 w-3" /> },
+  "te-snel": { vlak: "bg-negative/10 text-negative", icoon: <IconArrowUp className="h-3 w-3" /> },
+  "te-langzaam": { vlak: "bg-orange/12 text-orange-dark", icoon: <IconArrowDown className="h-3 w-3" /> },
+};
+
+function TempoPil({ tempo }: { tempo: BudgetTempo }) {
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-pill px-2 py-0.5 text-meta font-semibold leading-snug ${PIL[tempo].vlak}`}>
+      <span aria-hidden="true">{PIL[tempo].icoon}</span>
+      {TEMPO[tempo].naam}
+    </span>
+  );
+}
 
 /** Alles wat één kolom nodig heeft, één keer uitgerekend. */
 type Kolom = {
@@ -118,7 +136,9 @@ function Meta({ children, toon = "neutraal" }: { children: ReactNode; toon?: Too
  * looptijd (zoals op de analysepagina): zo zie je in één blik of het budget gelijk loopt met de tijd.
  */
 function Meter({ pct, tijdPct, toon = "neutraal" }: { pct: number; tijdPct?: number | null; toon?: Toon }) {
-  const vul = toon === "negatief" ? "bg-negative" : toon === "positief" ? "bg-positive" : "bg-progress-fill";
+  // A4: één kleurlogica voor elke balk: groen = gehaald, donker = op koers, oranje = achter, rood = over.
+  const vul =
+    toon === "negatief" ? "bg-negative" : toon === "positief" ? "bg-positive" : toon === "waarschuwing" ? "bg-orange" : "bg-progress-fill";
   const klem = (n: number) => Math.min(100, Math.max(0, n));
   return (
     <div
@@ -132,13 +152,13 @@ function Meter({ pct, tijdPct, toon = "neutraal" }: { pct: number; tijdPct?: num
         className={`h-full rounded-pill ${vul} transition-[width] duration-[var(--duur-traag)] ease-merk`}
         style={{ width: `${klem(pct)}%` }}
       />
+      {/* A5: waar de balk nu "hoort" te staan (verstreken deel van de looptijd): een driehoekje
+          boven de balk met een lijntje erdoor, uitgelegd in de regel eronder ("▾ verwacht 35%"). */}
       {tijdPct != null && (
-        <span
-          data-tip="Verstreken deel van de looptijd"
-          aria-hidden="true"
-          className="absolute -bottom-[3px] -top-[3px] w-px bg-ink/50"
-          style={{ left: `${klem(tijdPct)}%` }}
-        />
+        <span aria-hidden="true" className="absolute -top-[7px] bottom-[-3px] flex -translate-x-1/2 flex-col items-center" style={{ left: `${klem(tijdPct)}%` }}>
+          <span className="h-0 w-0 border-x-[4px] border-t-[5px] border-x-transparent border-t-ink/60" />
+          <span className="w-px flex-1 bg-ink/45" />
+        </span>
       )}
     </div>
   );
@@ -155,7 +175,8 @@ function Cel({ children, kaart }: { children: ReactNode; kaart?: Kaart | null })
     <HoverKaart
       titel={kaart.titel}
       kaart={kaart.inhoud}
-      className="-m-2 p-2 [&_.groot]:underline [&_.groot]:decoration-dotted [&_.groot]:decoration-ink-faint/60 [&_.groot]:underline-offset-[6px] hover:bg-surface-tint"
+      // A3: geen stippellijn meer onder elk getal (te druk); de cel krijgt bij hover een zacht vlak.
+      className="-m-2 cursor-default rounded-control p-2 transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-ink/[0.04]"
     >
       {inhoud}
     </HoverKaart>
@@ -187,7 +208,7 @@ function MerkRegel({ merk }: { merk: string | null }) {
   const Logo = getBrandLogo(merk);
   return (
     <span className="inline-flex min-w-0 items-center gap-1.5">
-      {Logo && <Logo role="img" aria-label={merk} className="h-3.5 w-3.5 shrink-0 text-ink-muted" />}
+      {Logo && <Logo role="img" aria-label={merk} className="h-[18px] w-[18px] shrink-0 text-ink" />}
       <span className="truncate">{merk}</span>
     </span>
   );
@@ -236,9 +257,14 @@ function KolomKop({ k }: { k: Kolom }) {
 
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-meta text-ink-faint">
         {a ? (
+          // A6: "tussentijds" als tekst in de regel (staat bij bijna elke campagne, dus geen label
+          // waard); alleen een eindevaluatie krijgt een label, want die wijkt af.
           <>
-            <span>Analyse {versieLabel(a.versie, a.geanalyseerdOp)}</span>
-            <LabelBadge label={a.label} />
+            <span>
+              Analyse {versieLabel(a.versie, a.geanalyseerdOp)}
+              {a.label === "tussentijds" && " · tussentijds"}
+            </span>
+            {a.label === "eind" && <LabelBadge label={a.label} />}
           </>
         ) : (
           <span>{geanalyseerd ? "" : "Nog niet geanalyseerd"}</span>
@@ -308,22 +334,29 @@ const GROEPEN: Groep[] = [
     rijen: [
       {
         label: "Uitgaven",
-        uitleg: "Mediakosten uit Google Ads, Meta Ads en LinkedIn Ads, tegen het totaalbudget. Het streepje op de balk is het verstreken deel van de looptijd.",
+        uitleg: "Mediakosten uit Google Ads, Meta Ads en LinkedIn Ads, tegen het totaalbudget. Het driehoekje (▾) op de balk is waar de besteding nu zou staan als hij gelijk opliep met de looptijd.",
         render: ({ o, geanalyseerd, tijd, kaartBron }) => {
           const tempo = budgetTempo(o.besteedPct, tijd?.pct ?? null);
           const boven = o.besteedPct !== null && o.besteedPct > 100;
+          const balk: Toon = boven || tempo === "te-snel" ? "negatief" : tempo === "te-langzaam" ? "waarschuwing" : "neutraal";
           return (
             <Cel kaart={kaartUitgaven(kaartBron)}>
               {geanalyseerd && o.kosten !== null ? <Groot toon={boven ? "negatief" : "neutraal"}>{formatWaarde(o.kosten, "euro")}</Groot> : <Leeg />}
-              {o.besteedPct !== null && <Meter pct={o.besteedPct} tijdPct={tijd?.pct} toon={boven ? "negatief" : "neutraal"} />}
+              {o.besteedPct !== null && <Meter pct={o.besteedPct} tijdPct={tijd?.pct} toon={balk} />}
               <Meta toon={boven ? "negatief" : "neutraal"}>
                 {o.budget === null
                   ? "Geen budget opgegeven"
                   : o.besteedPct === null
                     ? `Budget ${formatWaarde(o.budget, "euro")}`
                     : `${formatWaarde(o.besteedPct, "procent")} van ${formatWaarde(o.budget, "euro")}`}
+                {o.besteedPct !== null && tijd && (
+                  <span className="text-ink-faint">
+                    {" · "}
+                    <span aria-hidden="true">▾</span> verwacht {formatWaarde(Math.round(tijd.pct), "procent")}
+                  </span>
+                )}
               </Meta>
-              {tempo && <Meta toon={TEMPO[tempo].toon}>{TEMPO[tempo].naam}</Meta>}
+              {tempo && <TempoPil tempo={boven ? "te-snel" : tempo} />}
             </Cel>
           );
         },
@@ -429,8 +462,9 @@ const GROEPEN: Groep[] = [
       {
         label: "Doel leads",
         uitleg: "Hoeveel van het leaddoel uit de briefing is gehaald, en uit welke bron dat gemeten is.",
-        render: ({ o, geanalyseerd, kaartBron }) => {
+        render: ({ o, geanalyseerd, tijd, kaartBron }) => {
           const gehaald = o.gehaaldPct !== null && o.gehaaldPct >= 100;
+          const achter = !gehaald && budgetTempo(o.gehaaldPct, tijd?.pct ?? null) === "te-langzaam";
           return (
             <Cel kaart={kaartDoel(kaartBron)}>
               {geanalyseerd && o.gehaaldPct !== null ? (
@@ -438,7 +472,7 @@ const GROEPEN: Groep[] = [
               ) : (
                 <Leeg />
               )}
-              {o.gehaaldPct !== null && <Meter pct={o.gehaaldPct} toon={gehaald ? "positief" : "neutraal"} />}
+              {o.gehaaldPct !== null && <Meter pct={o.gehaaldPct} toon={gehaald ? "positief" : achter ? "waarschuwing" : "neutraal"} />}
               <span data-tip={o.syntecNietMogelijk ? "Het doel noemt Syntec, maar Syntec geldt alleen voor een analyse die uitsluitend over Van den Udenhout gaat. Daarom gemeten in Google Analytics." : BRON_UITLEG[o.bron]}>
                 <Meta toon={gehaald ? "positief" : "neutraal"}>
                   {o.doelLeads === null
@@ -459,16 +493,6 @@ const GROEPEN: Groep[] = [
 // ---------------------------------------------------------------------------
 // Samenvatting en filters
 // ---------------------------------------------------------------------------
-
-function StatTegel({ label, titel, children, onder }: { label: string; titel?: string; children: ReactNode; onder: ReactNode }) {
-  return (
-    <div data-tip={titel} className="flex flex-col gap-2 rounded-card border border-line bg-card px-5 py-4 shadow-subtle">
-      <span className="label-theme text-label text-ink-faint">{label}</span>
-      <div className="flex items-baseline gap-2">{children}</div>
-      <div className="flex min-h-[1rem] flex-col gap-1.5 text-meta text-ink-faint">{onder}</div>
-    </div>
-  );
-}
 
 function OnlineSchakelaar({
   waarde,
@@ -532,6 +556,9 @@ export default function CampagneAnalyse({ ingelogd }: { ingelogd: boolean }) {
   const [bedrijfFilter, setBedrijfFilter] = useState<string[]>([]);
   const [merkFilter, setMerkFilter] = useState<string[]>([]);
   const [onlineFilter, setOnlineFilter] = useState<OnlineFilter | null>(null);
+  // A10: de kolom onder de muis licht zacht op, zodat je één campagne makkelijk van boven naar
+  // beneden leest.
+  const [kolomHover, setKolomHover] = useState<string | null>(null);
   const vandaag = useMemo(() => vandaagNL(), []);
 
   useEffect(() => {
@@ -596,7 +623,6 @@ export default function CampagneAnalyse({ ingelogd }: { ingelogd: boolean }) {
       }),
     [zichtbaar, vandaag],
   );
-  const totaal = useMemo(() => samenvatting(zichtbaar, vandaag), [zichtbaar, vandaag]);
 
   if (!ingelogd) return <Inlogprompt tekst="Log in om de campagne-analyses te bekijken." />;
 
@@ -606,7 +632,16 @@ export default function CampagneAnalyse({ ingelogd }: { ingelogd: boolean }) {
     );
   }
 
-  if (regels === null) return <SkeletKaarten />;
+  if (regels === null) {
+    return (
+      <div className="flex flex-col gap-5">
+        <div className="h-[86px] rounded-panel border border-line bg-card" />
+        <div className="rounded-panel border border-line bg-card">
+          <SkeletTabel rijen={5} kolommen={4} />
+        </div>
+      </div>
+    );
+  }
 
   if (campagnes.length === 0) {
     return (
@@ -625,6 +660,7 @@ export default function CampagneAnalyse({ ingelogd }: { ingelogd: boolean }) {
     setMerkFilter([]);
     setOnlineFilter(null);
   };
+  const licht = (k: Kolom) => (kolomHover === k.c.id ? "bg-ink/[0.022]" : "");
   const toonSyntec = kolommen.some((k) => k.o.syntec.stand === "cijfers");
   const groepen = GROEPEN.map((g) =>
     g.titel === "Leads en orders" && !toonSyntec ? { ...g, rijen: g.rijen.filter((r) => r.label === "Google Analytics") } : g,
@@ -643,52 +679,6 @@ export default function CampagneAnalyse({ ingelogd }: { ingelogd: boolean }) {
         <OnlineSchakelaar waarde={onlineFilter} onChange={setOnlineFilter} aantallen={aantallen} />
       </FilterBar>
 
-      {kolommen.length > 0 && (
-        <div className="grid grid-cols-4 gap-4">
-          <StatTegel
-            label="Campagnes online"
-            onder={
-              <span>
-                {totaal.aantal - totaal.online > 0
-                  ? `${totaal.aantal - totaal.online} offline in deze selectie`
-                  : "Alle campagnes in deze selectie lopen"}
-              </span>
-            }
-          >
-            <Groot>{totaal.online}</Groot>
-            <span className="text-sm tabular-nums text-ink-faint">van {totaal.aantal}</span>
-          </StatTegel>
-          <StatTegel
-            label="Uitgegeven"
-            titel="Mediakosten van de campagnes met een analyse, tegen hun totaalbudget"
-            onder={
-              totaal.besteedPct !== null && totaal.budget !== null ? (
-                <>
-                  <Meter pct={totaal.besteedPct} toon={totaal.besteedPct > 100 ? "negatief" : "neutraal"} />
-                  <span>
-                    {formatWaarde(totaal.besteedPct, "procent")} van {formatWaarde(totaal.budget, "euro")}
-                  </span>
-                </>
-              ) : (
-                <span>Nog geen analyse</span>
-              )
-            }
-          >
-            {totaal.kosten !== null ? <Groot>{formatWaarde(totaal.kosten, "euro")}</Groot> : <Leeg />}
-          </StatTegel>
-          <StatTegel label="Bezoekers" titel="Sessies die op een campagnepagina begonnen, opgeteld" onder={<span>Op de campagnepagina's</span>}>
-            {totaal.bezoekers !== null ? <Groot>{formatWaarde(totaal.bezoekers)}</Groot> : <Leeg />}
-          </StatTegel>
-          <StatTegel
-            label="Leads"
-            titel="De leads in Google Analytics, opgeteld over de campagnes in beeld. De soort lead verschilt per campagne."
-            onder={<span>Google Analytics</span>}
-          >
-            {totaal.leads !== null ? <Groot>{formatWaarde(totaal.leads)}</Groot> : <Leeg />}
-          </StatTegel>
-        </div>
-      )}
-
       <section className="kaart-accent overflow-hidden rounded-panel border border-line bg-card shadow-card">
         {kolommen.length === 0 ? (
           <div className="px-6 py-12 text-center">
@@ -706,6 +696,7 @@ export default function CampagneAnalyse({ ingelogd }: { ingelogd: boolean }) {
             {/* Campagnes zijn kolommen, cijfers rijen (zoals de campagnetabel): border-separate
                 en geen collapse, anders schemeren gescrollde cellen door de sticky kolom heen. */}
             <table
+              onMouseLeave={() => setKolomHover(null)}
               className="w-full table-fixed border-separate border-spacing-0 text-left"
               style={{ minWidth: LABELKOLOM + kolommen.length * KOLOM_MIN }}
             >
@@ -727,7 +718,8 @@ export default function CampagneAnalyse({ ingelogd }: { ingelogd: boolean }) {
                     <th
                       key={k.c.id}
                       scope="col"
-                      className="border-b border-line p-0 align-top font-normal [border-left:1px_dashed_var(--color-line-soft)]"
+                      onMouseEnter={() => setKolomHover(k.c.id)}
+                      className={`border-b border-line p-0 align-top font-normal [border-left:1px_dashed_var(--color-line-soft)] ${licht(k)}`}
                     >
                       <KolomKop k={k} />
                     </th>
@@ -737,17 +729,20 @@ export default function CampagneAnalyse({ ingelogd }: { ingelogd: boolean }) {
               <tbody>
                 {groepen.map((groep) => (
                   <Fragment key={groep.titel}>
+                    {/* A8: de sectiekop is alleen een klein label boven de rijen, geen grijze band
+                        meer over de volle breedte. */}
                     <tr>
                       <th
                         scope="colgroup"
-                        className="label-theme sticky left-0 z-10 border-b border-r border-line-soft bg-surface-tint px-5 py-2 text-left text-label text-ink-faint"
+                        className="label-theme sticky left-0 z-10 border-r border-line-soft bg-card px-5 pb-1 pt-6 text-left text-label text-ink-faint"
                       >
                         {groep.titel}
                       </th>
                       {kolommen.map((k) => (
                         <td
                           key={k.c.id}
-                          className="border-b border-line-soft bg-surface-tint [border-left:1px_dashed_var(--color-line-soft)]"
+                          onMouseEnter={() => setKolomHover(k.c.id)}
+                          className={`[border-left:1px_dashed_var(--color-line-soft)] ${licht(k)}`}
                         />
                       ))}
                     </tr>
@@ -763,7 +758,8 @@ export default function CampagneAnalyse({ ingelogd }: { ingelogd: boolean }) {
                         {kolommen.map((k) => (
                           <td
                             key={k.c.id}
-                            className="border-b border-line-soft px-5 py-5 align-top [border-left:1px_dashed_var(--color-line-soft)]"
+                            onMouseEnter={() => setKolomHover(k.c.id)}
+                            className={`border-b border-line-soft px-5 py-5 align-top [border-left:1px_dashed_var(--color-line-soft)] ${licht(k)}`}
                           >
                             {rij.render(k)}
                           </td>
@@ -777,10 +773,18 @@ export default function CampagneAnalyse({ ingelogd }: { ingelogd: boolean }) {
                     <span className="sr-only">Analyse</span>
                   </th>
                   {kolommen.map((k) => (
-                    <td key={k.c.id} className="px-5 py-4 [border-left:1px_dashed_var(--color-line-soft)]">
+                    <td
+                      key={k.c.id}
+                      onMouseEnter={() => setKolomHover(k.c.id)}
+                      className={`px-5 py-4 [border-left:1px_dashed_var(--color-line-soft)] ${licht(k)}`}
+                    >
+                      {/* A12: een rustige tekstlink in plaats van vier gelijke knoppen; hij kleurt
+                          mee als je in zijn kolom bent. De kolomkop opent de analyse ook. */}
                       <a
                         href={analyseHref(k.c.id)}
-                        className="inline-flex items-center gap-1.5 rounded-button border border-line bg-card px-3.5 py-1.5 text-sm font-medium text-ink transition-colors duration-[var(--duur-snel)] hover:border-primary hover:text-primary"
+                        className={`inline-flex items-center gap-1.5 text-sm font-medium transition-colors duration-[var(--duur-snel)] ease-merk hover:text-primary ${
+                          kolomHover === k.c.id ? "text-primary" : "text-ink-muted"
+                        }`}
                       >
                         Bekijk analyse
                         <IconArrowRight className="h-3.5 w-3.5" />
