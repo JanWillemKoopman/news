@@ -156,7 +156,7 @@ export default function Kosten({ ingelogd }: { ingelogd: boolean }) {
       </div>
 
       {fout && (
-        <p className="rounded-card border border-orange bg-card px-4 py-3 text-sm text-orange">
+        <p className="rounded-card border border-orange bg-card px-4 py-3 text-sm text-orange vdu:text-orange-dark">
           {fout}
         </p>
       )}

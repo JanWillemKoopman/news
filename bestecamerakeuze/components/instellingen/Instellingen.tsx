@@ -231,7 +231,7 @@ export default function Instellingen({
       </p>
 
       {fout && (
-        <p className="mt-4 rounded-card border border-orange bg-card px-3 py-2 text-xs text-orange">
+        <p className="mt-4 rounded-card border border-orange bg-card px-3 py-2 text-xs text-orange vdu:text-orange-dark">
           {fout}
         </p>
       )}
@@ -253,7 +253,7 @@ export default function Instellingen({
                 type="button"
                 onClick={() => void avatarVerwijderen()}
                 disabled={bezigMetUploaden}
-                className="rounded-control border border-line bg-card px-3 py-1.5 text-sm font-medium text-ink-muted transition-colors hover:bg-surface hover:text-orange disabled:cursor-wait disabled:opacity-60"
+                className="rounded-control border border-line bg-card px-3 py-1.5 text-sm font-medium text-ink-muted transition-colors hover:bg-surface hover:text-orange vdu:hover:text-orange-dark disabled:cursor-wait disabled:opacity-60"
               >
                 Verwijderen
               </button>
@@ -368,7 +368,7 @@ export default function Instellingen({
           />
         </div>
 
-        {wachtwoordFout && <p className="mt-1 text-xs text-orange">{wachtwoordFout}</p>}
+        {wachtwoordFout && <p className="mt-1 text-xs text-orange vdu:text-orange-dark">{wachtwoordFout}</p>}
         {wachtwoordOpgeslagen && (
           <p className="mt-1 text-xs text-positive">Wachtwoord gewijzigd.</p>
         )}

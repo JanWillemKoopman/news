@@ -9,6 +9,7 @@ import {
   Jost,
   Manrope,
   Saira,
+  Source_Sans_3,
 } from "next/font/google";
 import ThemeProvider from "@/components/ThemeProvider";
 import { STANDAARD_THEME, THEME_OPSLAG_SLEUTEL, THEMES } from "@/lib/themes";
@@ -19,7 +20,8 @@ import "./globals.css";
  * zijn geen van alle vrij te gebruiken, dus dit zijn de dichtstbijzijnde vrije
  * benaderingen — gekozen op vorm, niet op naam:
  *
- * - Inter          → TheSansB (Udenhout)  — humanistisch, neutraal
+ * - Source Sans 3  → TheSansB (Udenhout)  — humanistisch, open, iets smal (sinds november 2026;
+ *                                          daarvoor Inter, dat te geometrisch en breed oogt)
  * - DM Sans        → VW Head / VW Text    — geometrisch, vriendelijk, hoge x-hoogte
  * - Archivo        → Audi Type Extended   — variabele breedte-as voor de "extended" kop
  * - Manrope        → Škoda Next / Pro     — geometrisch met licht afgeronde uiteinden
@@ -32,9 +34,11 @@ import "./globals.css";
  * `preload: false` op de merkfonts: alleen het font van het gekozen theme wordt
  * daadwerkelijk gedownload (de browser haalt een @font-face pas op zodra hij hem nodig
  * heeft). Zonder dat zou elk bezoek negen fontfamilies binnentrekken voor één theme.
- * Inter blijft wél preloaden — dat is het standaardtheme.
+ * Source Sans 3 preloadt wél — dat is het standaardtheme. Inter is alleen nog de
+ * terugvalletter van de basis in @theme en laadt pas als iets hem echt gebruikt.
  */
-const inter = Inter({ subsets: ["latin", "latin-ext"], variable: "--font-inter" });
+const udenhout = Source_Sans_3({ subsets: ["latin", "latin-ext"], variable: "--font-udenhout" });
+const inter = Inter({ subsets: ["latin", "latin-ext"], variable: "--font-inter", preload: false });
 
 const dmSans = DM_Sans({
   subsets: ["latin", "latin-ext"],
@@ -89,6 +93,7 @@ const cormorant = Cormorant_Garamond({
 });
 
 const fontVariabelen = [
+  udenhout.variable,
   inter.variable,
   dmSans.variable,
   archivo.variable,

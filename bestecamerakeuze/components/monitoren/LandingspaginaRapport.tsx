@@ -14,7 +14,7 @@ import type { Blok, Criterium, InfoPunt, Niveau, Rapport } from "@/lib/landingsp
 /** Kleur volgt de schoolschaal: onvoldoende rood, 5,5-7 oranje, daarboven groen. */
 export function scoreKleur(score: number) {
   if (score < 5.5) return { tekst: "text-negative", vlak: "bg-negative", zacht: "bg-negative/10" };
-  if (score < 7) return { tekst: "text-orange", vlak: "bg-orange", zacht: "bg-orange/10" };
+  if (score < 7) return { tekst: "text-orange vdu:text-orange-dark", vlak: "bg-orange", zacht: "bg-orange/10" };
   return { tekst: "text-positive", vlak: "bg-positive", zacht: "bg-positive/10" };
 }
 
@@ -52,7 +52,7 @@ function Kop({ children }: { children: React.ReactNode }) {
 
 const STATUS: Record<InfoPunt["status"], { teken: string; kleur: string }> = {
   duidelijk: { teken: "✓", kleur: "text-positive" },
-  onduidelijk: { teken: "?", kleur: "text-orange" },
+  onduidelijk: { teken: "?", kleur: "text-orange vdu:text-orange-dark" },
   ontbreekt: { teken: "✗", kleur: "text-negative" },
 };
 
@@ -81,7 +81,7 @@ function Blokken({ blokken }: { blokken: Blok[] }) {
       {blokken.map((b, i) => (
         <li key={i} className="grid grid-cols-[5.5rem_1fr] gap-2 text-sm leading-snug">
           <span
-            className={`text-meta ${b.oordeel === "overbodig" ? "text-negative" : b.oordeel === "kern" ? "text-ink-faint" : "text-orange"}`}
+            className={`text-meta ${b.oordeel === "overbodig" ? "text-negative" : b.oordeel === "kern" ? "text-ink-faint" : "text-orange vdu:text-orange-dark"}`}
           >
             {b.oordeel}
           </span>

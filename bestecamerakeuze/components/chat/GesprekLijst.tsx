@@ -141,7 +141,7 @@ export default function GesprekLijst({
                         }}
                         aria-label={`Verwijder ${g.titel}`}
                         title="Verwijderen"
-                        className="rounded p-1 text-ink-faint hover:text-orange"
+                        className="rounded p-1 text-ink-faint hover:text-orange vdu:hover:text-orange-dark"
                       >
                         <IconTrash className="h-3.5 w-3.5" />
                       </button>

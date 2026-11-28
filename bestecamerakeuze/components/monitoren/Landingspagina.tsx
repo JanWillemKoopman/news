@@ -278,7 +278,7 @@ export default function Landingspagina({ ingelogd }: { ingelogd: boolean }) {
                   {screenshot.stukken.length === 1 ? "deel" : "delen"}
                 </p>
                 {screenshot.afgekapt && (
-                  <p className="text-meta text-orange">
+                  <p className="text-meta text-orange vdu:text-orange-dark">
                     De pagina is erg lang; alleen het bovenste deel wordt meegestuurd.
                   </p>
                 )}

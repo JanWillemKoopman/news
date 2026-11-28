@@ -33,7 +33,7 @@ const ONDERDELEN = {
     <ol className="mb-3 flex list-decimal flex-col gap-1 pl-5 last:mb-0">{children}</ol>
   ),
   li: ({ children }: { children?: React.ReactNode }) => (
-    <li className="leading-relaxed marker:text-orange">{children}</li>
+    <li className="leading-relaxed marker:text-orange vdu:marker:text-orange-dark">{children}</li>
   ),
   code: ({ children }: { children?: React.ReactNode }) => (
     <code className="rounded bg-surface px-1.5 py-0.5 font-mono text-[0.85em] text-ink">

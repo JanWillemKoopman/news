@@ -120,7 +120,7 @@ export default function KennisEnActies() {
   return (
     <div className="flex flex-col gap-4">
       {fout && (
-        <p className="rounded-card border border-orange bg-card px-3 py-2 text-xs text-orange">
+        <p className="rounded-card border border-orange bg-card px-3 py-2 text-xs text-orange vdu:text-orange-dark">
           {fout}
         </p>
       )}

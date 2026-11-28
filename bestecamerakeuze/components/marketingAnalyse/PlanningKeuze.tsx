@@ -8,7 +8,7 @@ import { PLANNING_NAAM, PLANNINGEN, type Planning } from "@/lib/marketingAnalyse
 
 const TOON_KLEUR: Record<VolgendeWeergave["toon"], string> = {
   klaar: "text-primary",
-  eind: "text-orange",
+  eind: "text-orange vdu:text-orange-dark",
   gewoon: "text-ink-muted",
   uit: "text-ink-muted",
 };
@@ -131,7 +131,7 @@ export default function PlanningKeuze({
           {volgende.datum && (
             <>
               {" · "}
-              <span className={volgende.toon === "eind" ? "text-orange" : undefined}>{volgende.datum}</span>
+              <span className={volgende.toon === "eind" ? "text-orange vdu:text-orange-dark" : undefined}>{volgende.datum}</span>
             </>
           )}
           {pijl}

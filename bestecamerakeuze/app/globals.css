@@ -276,9 +276,8 @@ body {
    de `vdu:`-klassen gelden alleen in de huisstijl. Alles hier is kleur, lijn of schaduw: geen
    maat, gewicht of afstand, dus geen enkel element verschuift of wordt hoger.
 
-   - Egale ondergrond: geen korrel op het paginavlak, geen verloop over de sidebar.
-   - Grijze tekst met meer contrast (± 5:1 op wit in plaats van ± 3:1) en iets preciezere
-     zachte lijnen. Op `body`, zodat ook pop-ups en zijbalken (portals naar body) meedoen.
+   - Egale ondergrond, leesbaar grijs en warme lijnen: zie het blok UDENHOUT hieronder (bij
+     de andere themes), met het palet van udenhout.nl.
    - Panelen zonder slagschaduw. Tailwind v4 zet de waarde van een --shadow-*-token letterlijk
      in de utility (`.shadow-card` leest géén var(--shadow-card)), dus het token op none zetten
      werkt niet; daarom zetten we hier het schaduwdeel (`--tw-shadow`) ongelaagd op nul, wat
@@ -286,13 +285,6 @@ body {
      pop-up, de uitgeklapte sidebar) houden hun schaduw: die liggen écht boven de pagina. */
 @custom-variant vdu (&:where([data-theme="udenhout"] *));
 
-[data-theme="udenhout"] body {
-  --color-ink-muted: color-mix(in srgb, var(--color-ink) 74%, transparent);
-  --color-ink-faint: color-mix(in srgb, var(--color-ink) 60%, transparent);
-  --color-line-soft: color-mix(in srgb, var(--color-ink) 8%, transparent);
-  --theme-page-patroon: none;
-  --theme-sidebar-verloop: none;
-}
 [data-theme="udenhout"] :is(.shadow-subtle, .shadow-card, .shadow-raised) {
   --tw-shadow: 0 0 #0000;
 }
@@ -591,6 +583,120 @@ body {
   .iso-blok:hover .iso-beweeg {
     transform: none;
   }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════════
+   UDENHOUT (het standaardtheme)
+   De huisstijl van udenhout.nl, in november 2026 opnieuw opgehaald uit de site zelf (de
+   stylesheets en negen pagina's: home, acties, contact, Volkswagen, werkplaatsplanner,
+   private lease, kennis & nieuws, auto, vestigingen). Wat de site doet:
+   - Tekst is **navy** (#19243b, `text-blue` op de site), niet zwart; koppen in TheSansB W7.
+   - Vlakken in lichtbeige (#f6f4f0, `neutral-light`) met witte kaarten, lijnen in zand
+     (#e2ddd1, `neutral`), ruime hoeken (knoppen 16px, kaarten 16–24px).
+   - Knoppen: navy vlak met witte tekst; helderblauw (#003da5, `blue-light`) is de tweede
+     knopkleur én de link-/hoverkleur. Oranje (#ed6935) is een spaarzaam accent.
+   - Status: success #36b934, warning #f2b21a, error #e92811.
+   Hoe dat hier is vertaald, en waarom soms een tint donkerder dan op de site: dit is een
+   datascherm met veel kleine tekst, dus elke tekstkleur haalt WCAG AA (4,5:1) op wit én op
+   het beige vlak. Het site-oranje (3,2:1) en -groen (2,6:1) halen dat niet als tekst; die
+   blijven de vlak- en stipkleur, en voor tekst staat er een donkerdere tint van dezelfde
+   kleur naast (--color-orange-dark, --color-positive). Nagerekend:
+     navy #19243b 15,5 · muted #495265 7,8 · faint #646c7d 5,3 · blauw #003da5 9,5 ·
+     oranje-tekst #b4461b 5,5 · groen-tekst #1f7a2f 5,4 · rood-tekst #c4230e 5,8 (op wit).
+   Alleen dit theme: de merkthemes hieronder houden hun eigen tokens, en de basis in
+   @theme bovenaan (waar zij op terugvallen) is bewust niet aangeraakt. */
+[data-theme="udenhout"] {
+  --color-ink: #19243b;
+  --color-ink-muted: #495265;
+  --color-ink-faint: #646c7d;
+
+  --color-page: #f6f4f0;
+  --color-card: #ffffff;
+  --color-surface: #f6f4f0;
+  --color-surface-tint: #fbfaf7;
+  --color-accent: #e2ddd1;
+  --color-accent-dark: #d5cdbb;
+  --color-line: #e2ddd1;
+  --color-line-soft: #ece8e0;
+
+  --color-brand: #19243b;
+  --color-brand-dark: #0e1421;
+  --color-brand-light: #e6eaf1;
+  --color-primary: #003da5;
+  --color-primary-dark: #002e7d;
+  --color-primary-light: rgba(0, 61, 165, 0.08);
+  --color-on-primary: #ffffff;
+  --color-logo: #003da5;
+  --color-on-logo: #ffffff;
+
+  /* Oranje: het vlak is het site-oranje, tekst in oranje gebruikt de donkere tint. */
+  --color-orange: #ed6935;
+  --color-orange-dark: #b4461b;
+
+  /* Status. Het live-stipje en het groene vlak in de kleur van de site (een stip hoeft geen
+     tekstcontrast te halen); tekst in groen of rood in een tint die AA haalt. */
+  --color-open: #36b934;
+  --color-open-bright: #7fd67d;
+  --color-open-light: #e3f4e2;
+  --color-closed: #8a91a0;
+  --color-closed-light: #eceef1;
+  --color-positive: #1f7a2f;
+  --color-negative: #c4230e;
+
+  --color-progress-track: #ece8e0;
+  --color-progress-fill: #19243b;
+  --color-selectie: rgba(0, 61, 165, 0.16);
+
+  /* Tijdlijn: actief helderblauw, bijna af oranje met navy erop (wit op oranje haalt maar
+     3,2:1), afgelopen in zand. */
+  --color-balk-actief: #003da5;
+  --color-on-balk-actief: #ffffff;
+  --color-balk-bijna-af: #ed6935;
+  --color-on-balk-bijna-af: #19243b;
+  --color-balk-gepland: #19243b;
+  --color-balk-afgelopen: #d5cdbb;
+  --color-on-balk-afgelopen: #19243b;
+
+  /* De sidebar in hetzelfde navy als de footer van de site. */
+  --color-sidebar: #19243b;
+  --color-sidebar-line: rgba(255, 255, 255, 0.1);
+  --color-sidebar-ink: #ffffff;
+  --color-sidebar-ink-muted: rgba(255, 255, 255, 0.64);
+  --color-sidebar-hover: rgba(255, 255, 255, 0.07);
+  --color-sidebar-active: rgba(255, 255, 255, 0.12);
+
+  /* Vormtaal van de site: knoppen 16px (`.btn`), kaarten 16px, grote vlakken 24px. */
+  --radius-button: 16px;
+  --radius-card: 16px;
+  --radius-panel: 24px;
+  --radius-control: 10px;
+
+  /* Rustig en vlak: geen korrel op het paginavlak, geen verloop over de sidebar. */
+  --theme-page-patroon: none;
+  --theme-sidebar-verloop: none;
+  --theme-kaart-accent: var(--color-line);
+  --focus-ring-kleur: #003da5;
+
+  /* TheSansB is de letter van de site (W5 Plain voor tekst, W7 voor koppen). Hij is niet
+     vrij te gebruiken als webfont, dus hij staat vooraan voor wie hem geïnstalleerd heeft;
+     daarna Source Sans 3 (`--font-udenhout`, app/layout.tsx), de vrije letter die er in
+     karakter het dichtst bij zit: humanistisch, open, iets smal — net als TheSans. */
+  --font-sans:
+    "TheSansB W5 Plain", "TheSansB", var(--font-udenhout), ui-sans-serif, system-ui,
+    -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans-w7:
+    "TheSansB W7", "TheSansB", var(--font-udenhout), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --theme-title-weight: 700;
+  --theme-title-tracking: -0.015em;
+  --theme-label-weight: 600;
+  --theme-label-tracking: 0.06em;
+
+  /* Source Sans heeft een kleinere x-hoogte dan de letters eromheen, waardoor de kleine
+     tekst (12px meta-regels, bronlabels) op een laptop te klein oogt. font-size-adjust
+     schaalt hem optisch naar een leesbare x-hoogte zonder de maattokens te verzetten;
+     erft door naar alles, ook pop-ups. */
+  font-size-adjust: ex-height 0.52;
 }
 
 /* ════════════════════════════════════════════════════════════════════════════════

@@ -147,7 +147,7 @@ export default function GebruikersBeheer({
             className="w-full rounded-control border border-line bg-card px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none"
           />
           {toevoegFout && (
-            <p className="rounded-card border border-orange bg-card px-3 py-2 text-xs text-orange">
+            <p className="rounded-card border border-orange bg-card px-3 py-2 text-xs text-orange vdu:text-orange-dark">
               {toevoegFout}
             </p>
           )}
@@ -166,7 +166,7 @@ export default function GebruikersBeheer({
       <div className="rounded-panel border border-line bg-card p-6 shadow-card">
         <p className="font-sans-w7 text-base font-bold text-ink">Accounts</p>
         {laadFout && (
-          <p className="mt-3 rounded-card border border-orange bg-card px-3 py-2 text-xs text-orange">
+          <p className="mt-3 rounded-card border border-orange bg-card px-3 py-2 text-xs text-orange vdu:text-orange-dark">
             {laadFout}
           </p>
         )}
@@ -209,7 +209,7 @@ export default function GebruikersBeheer({
                       disabled={g.vergrendeld || verwijderId === g.id}
                       onClick={() => void verwijderen(g)}
                       title={g.vergrendeld ? "Dit account is vergrendeld en kan niet verwijderd worden" : "Verwijderen"}
-                      className="inline-flex items-center gap-1.5 rounded-control border border-line bg-card px-3 py-1.5 text-sm font-medium text-ink-muted transition-colors hover:bg-surface hover:text-orange disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-control border border-line bg-card px-3 py-1.5 text-sm font-medium text-ink-muted transition-colors hover:bg-surface hover:text-orange vdu:hover:text-orange-dark disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <IconTrash className="h-3.5 w-3.5" />
                       {verwijderId === g.id ? "Bezig…" : "Verwijderen"}
@@ -379,7 +379,7 @@ function GebruikerBewerken({
         </button>
       </div>
 
-      {fout && <p className="text-xs text-orange">{fout}</p>}
+      {fout && <p className="text-xs text-orange vdu:text-orange-dark">{fout}</p>}
       {opgeslagen && <p className="text-xs text-positive">Opgeslagen.</p>}
     </form>
   );
@@ -445,7 +445,7 @@ function StandaardWachtwoordPaneel() {
             {bezig ? "Opslaan…" : "Opslaan"}
           </button>
         </div>
-        {fout && <p className="text-xs text-orange">{fout}</p>}
+        {fout && <p className="text-xs text-orange vdu:text-orange-dark">{fout}</p>}
         {opgeslagen && <p className="text-xs text-positive">Opgeslagen.</p>}
       </form>
     </div>

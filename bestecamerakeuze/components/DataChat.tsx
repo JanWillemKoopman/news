@@ -146,7 +146,7 @@ function Verantwoording({ queries }: { queries: QueryVerslag[] }) {
             </pre>
             <p className="mt-1.5 text-xs text-ink-faint">
               {q.fout ? (
-                <span className="text-orange">Mislukt: {q.fout}</span>
+                <span className="text-orange vdu:text-orange-dark">Mislukt: {q.fout}</span>
               ) : (
                 <>
                   {q.aantalRijen} {q.aantalRijen === 1 ? "rij" : "rijen"} · {q.duurMs} ms
@@ -219,7 +219,7 @@ function IconActieKnop({
   actief?: boolean;
   actiefKleur?: "primary" | "orange";
 }) {
-  const kleur = actiefKleur === "orange" ? "text-orange" : "text-primary";
+  const kleur = actiefKleur === "orange" ? "text-orange vdu:text-orange-dark" : "text-primary";
   return (
     <button
       type="button"
@@ -789,7 +789,7 @@ export default function DataChat({ ingelogd }: { ingelogd: boolean }) {
               )}
 
               {fout && (
-                <p className="rounded-card border border-orange bg-card px-4 py-3 text-sm text-orange">
+                <p className="rounded-card border border-orange bg-card px-4 py-3 text-sm text-orange vdu:text-orange-dark">
                   {fout}
                 </p>
               )}

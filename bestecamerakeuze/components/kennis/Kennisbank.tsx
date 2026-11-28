@@ -67,7 +67,7 @@ const SOORT_KLEUR: Record<Soort, string> = {
   koppeling: "border-primary text-primary",
   definitie: "border-line text-ink-muted",
   context: "border-line text-ink-muted",
-  let_op: "border-orange text-orange",
+  let_op: "border-orange text-orange vdu:text-orange-dark",
 };
 
 function leeg(soort: Soort = "koppeling") {
@@ -338,7 +338,7 @@ export default function Kennisbank({ ingelogd }: { ingelogd: boolean }) {
       </div>
 
       {fout && (
-        <p className="rounded-card border border-orange bg-card px-4 py-3 text-sm text-orange">
+        <p className="rounded-card border border-orange bg-card px-4 py-3 text-sm text-orange vdu:text-orange-dark">
           {fout}
         </p>
       )}
@@ -447,7 +447,7 @@ export default function Kennisbank({ ingelogd }: { ingelogd: boolean }) {
                   <button
                     type="button"
                     onClick={() => void verwijder(item)}
-                    className="rounded-button border border-line bg-card px-3 py-1 text-xs text-ink-muted transition-colors hover:border-orange hover:text-orange"
+                    className="rounded-button border border-line bg-card px-3 py-1 text-xs text-ink-muted transition-colors hover:border-orange hover:text-orange vdu:hover:text-orange-dark"
                   >
                     Verwijderen
                   </button>

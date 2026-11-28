@@ -226,7 +226,7 @@ duidelijke hiërarchie, niet meer kleur/schaduw/badges dan nodig.
   `--radius-avatar` voor avatars en het beeldmerk (rond bij de merken met een ronde
   vormtaal, hoekig bij Porsche/CUPRA/Bentley). Shadows zijn subtiel en lopen in vier
   hoogtes (zie "Themes" hieronder), nooit een zware drop-shadow.
-- Typografie: `TheSansB` (huisstijl) met Inter als geladen fallback via
+- Typografie: `TheSansB` (huisstijl) met Source Sans 3 als geladen fallback via
   `next/font/google`. Sectiekoppen (zoals "PLANNING") zijn klein, uppercase, met iets
   verhoogde letter-spacing en gedempt — ondersteunend, niet dominant. Lettergroottes
   lopen via tokens (`--text-xs/sm/base` plus `--text-label`, `--text-cell`,
@@ -266,10 +266,8 @@ Houd je in de huisstijl aan deze principes bij nieuwe UI:
   `.kaart-hover`). Zwevende lagen houden hun schaduw:
   `shadow-dropdown`, `shadow-modal` en de uitgeklapte sidebar. Een schakelaar-knopje krijgt een
   haarlijn (`ring-1 ring-ink/15`) in plaats van een schaduw. Geen glas, geen gradients.
-- **Leesbaar grijs.** `--color-ink-muted` (74%) en `--color-ink-faint` (60%) zijn op `body`
-  afgeleid van `--color-ink`, ± 5:1 op wit; `--color-line-soft` 8%. Zo zijn bronlabels,
-  budgetregels en planningsregels ook op een laptop leesbaar. Op body, zodat pop-ups en zijbalken
-  (portals) meedoen.
+- **Leesbaar grijs.** Elke tekstkleur haalt WCAG AA (4,5:1) op wit én op het beige vlak; zie
+  "Het Udenhout-theme" hieronder.
 - **Een gekozen filter is direct herkenbaar**: een vol vlak in de inktkleur (`vdu:bg-ink vdu:text-card`,
   met `vdu:border-ink` als de knop een rand heeft), in elk filter, periodeknop, segment en schakelaar.
   Tabbladen krijgen een streep in de inktkleur (`border-ink`). Een gekozen tegel (kerncijferstrip,
@@ -283,6 +281,34 @@ Houd je in de huisstijl aan deze principes bij nieuwe UI:
   sidebar-tegels bewegen bij hover zoals eerder gevraagd.
 - **Kerncijfers dragen gewicht** (Marketing analyse: `vdu:font-semibold` op de cijfers in de tabel).
   Controleer bij een gewicht- of maatwijziging in een tabel altijd of de rijen even hoog blijven.
+
+### Het Udenhout-theme: de huisstijl van udenhout.nl (november 2026)
+
+Het standaardtheme volgt de site, in november 2026 opnieuw opgehaald uit de stylesheets van
+udenhout.nl en negen pagina's (home, acties, contact, Volkswagen, werkplaatsplanner, private
+lease, kennis & nieuws, auto, vestigingen). Alles staat in het blok `[data-theme="udenhout"]` in
+globals.css, niet in `@theme`: de merkthemes vallen op `@theme` terug voor tokens die ze zelf niet
+zetten, en die moeten ongewijzigd blijven (besluit van de eigenaar; nagemeten pixel voor pixel).
+
+- **Palet van de site**: navy `#19243b` (tekst, sidebar, gekozen filters, voortgangsbalk),
+  helderblauw `#003da5` (primaire knop, links, focus), zand `#e2ddd1` (lijnen), lichtbeige
+  `#f6f4f0` (pagina en vlakken), oranje `#ed6935` (accent), groen `#36b934` (live-stipje).
+- **Tekst is navy, niet zwart**, zoals op de site. Grijs: `#495265` (muted) en `#646c7d` (faint).
+- **Contrast**: elke tekstkleur haalt AA op wit én beige (nagerekend in de kop van het blok). Het
+  site-oranje en -groen halen dat als tekst niet (3,2 en 2,6:1); zij blijven de vlak- en
+  stipkleur, tekst krijgt een donkerdere tint van dezelfde kleur: `--color-orange-dark` `#b4461b`
+  (in componenten `text-orange vdu:text-orange-dark`), `--color-positive` `#1f7a2f`,
+  `--color-negative` `#c4230e`. Op een oranje tijdlijnbalk staat navy in plaats van wit.
+- **Vorm**: knoppen 16px (de `.btn` van de site), kaarten 16px, panelen 24px.
+- **Letter**: TheSansB (W5 Plain voor tekst, W7 voor koppen) is de letter van de site, maar niet
+  vrij te gebruiken als webfont; hij staat vooraan in de stack voor wie hem geïnstalleerd heeft.
+  Daarna **Source Sans 3** (`--font-udenhout`, app/layout.tsx), de vrije letter die er in karakter
+  het dichtst bij zit (humanistisch, open, iets smal); eerder was dat Inter. Omdat Source Sans een
+  kleinere x-hoogte heeft, staat `font-size-adjust: ex-height 0.52` op het theme: kleine tekst blijft
+  op een laptop leesbaar zonder de maattokens te verzetten. Mag het dashboard de webfont van
+  udenhout.nl gebruiken (licentie), zet dan de bestanden in `public/` met een `@font-face`.
+- **Grafieken** (`lib/themes.ts`, Udenhout): helderblauw en oranje van de site voorop, as in het
+  faint-grijs, groen en rood gelijk aan de tekstkleuren hierboven.
 
 ### Themes (het oogje rechtsboven)
 

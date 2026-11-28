@@ -114,7 +114,7 @@ export default function Prikbord({ ingelogd }: { ingelogd: boolean }) {
   return (
     <div className="flex flex-col gap-4">
       {fout && (
-        <p className="rounded-card border border-orange bg-card px-4 py-3 text-sm text-orange">{fout}</p>
+        <p className="rounded-card border border-orange bg-card px-4 py-3 text-sm text-orange vdu:text-orange-dark">{fout}</p>
       )}
 
       {items === null ? (

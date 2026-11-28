@@ -19,7 +19,7 @@ import { deelScreenshot } from "@/lib/screenshotDelen";
 
 const SOORT_STIJL: Record<WijzigingSoort, string> = {
   nieuw: "text-positive",
-  aangepast: "text-orange",
+  aangepast: "text-orange vdu:text-orange-dark",
   verplaatst: "text-ink-faint",
   verwijderd: "text-negative",
 };

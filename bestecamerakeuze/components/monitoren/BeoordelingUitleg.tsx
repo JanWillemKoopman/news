@@ -271,13 +271,13 @@ export default function BeoordelingUitleg() {
               <li>
                 Onder <B>Informatie &amp; bezwaren</B> staat wat de bezoeker nodig heeft:{" "}
                 <span className="font-semibold text-positive">✓</span> duidelijk,{" "}
-                <span className="font-semibold text-orange">?</span> onduidelijk of verstopt,{" "}
+                <span className="font-semibold text-orange vdu:text-orange-dark">?</span> onduidelijk of verstopt,{" "}
                 <span className="font-semibold text-negative">✗</span> ontbreekt.
               </li>
               <li>
                 Onder <B>Focus &amp; opbouw</B> staan alle blokken van boven naar beneden:{" "}
                 <span className="text-ink">kern</span> (draagt bij aan het doel),{" "}
-                <span className="text-orange">aanpassen</span> (hoort erbij, maar is te lang,
+                <span className="text-orange vdu:text-orange-dark">aanpassen</span> (hoort erbij, maar is te lang,
                 staat verkeerd of verstopt informatie) en{" "}
                 <span className="text-negative">overbodig</span> (doorgestreept: kan weg).
               </li>

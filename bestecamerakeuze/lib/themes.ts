@@ -84,18 +84,20 @@ export const THEMES: readonly Theme[] = [
   {
     id: "udenhout",
     naam: "Udenhout",
-    omschrijving: "De eigen huisstijl: donkerblauw, zand en helderblauw.",
-    staal: ["#f7f6f3", "#19243b", "#003da5"],
+    omschrijving: "De eigen huisstijl van udenhout.nl: navy, zand, helderblauw en oranje.",
+    staal: ["#f6f4f0", "#19243b", "#003da5"],
     grafiek: {
-      categorieen: ["#2563c9", "#ed6935", "#0d8f7f", "#b3312c", "#8258c4", "#a97400"],
-      context: "#b6b3ad",
-      as: "#5b6472",
+      // Helderblauw en oranje van udenhout.nl voorop; daarna kleuren die er in lichtheid
+      // genoeg van verschillen om naast elkaar leesbaar te blijven.
+      categorieen: ["#003da5", "#ed6935", "#0d8f7f", "#b3312c", "#8258c4", "#a97400"],
+      context: "#c9c2b3",
+      as: "#646c7d",
       raster: "rgba(25, 36, 59, 0.10)",
       vlak: "#ffffff",
       label: "#19243b",
-      positief: "#15803d",
-      negatief: "#b91c1c",
-      blauw: "#2563c9",
+      positief: "#1f7a2f",
+      negatief: "#c4230e",
+      blauw: "#003da5",
       lijndikte: 2,
       lijnvorm: "monotone",
       punt: "gevuld",

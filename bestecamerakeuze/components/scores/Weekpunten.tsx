@@ -32,7 +32,7 @@ function Reeks({ weken }: { weken: number }) {
       className="inline-flex items-center gap-1 text-sm text-ink"
       title={`${weken} weken op rij iets vastgelegd`}
     >
-      <IconFlame className="h-3.5 w-3.5 text-orange" />
+      <IconFlame className="h-3.5 w-3.5 text-orange vdu:text-orange-dark" />
       <span className="tabular-nums">{weken} weken</span>
     </span>
   );
