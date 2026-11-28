@@ -86,8 +86,9 @@ export default function StapNavigatie({
               >
                 <Vak actief={isActief}>{nr}</Vak>
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-sm font-semibold text-ink">{tab.naam}</span>
-                  <span className="truncate text-meta tabular-nums text-ink-muted">
+                  {/* H17: niet afgekapt maar zo nodig op twee regels. */}
+                  <span className="line-clamp-2 text-sm font-semibold leading-snug text-ink">{tab.naam}</span>
+                  <span className="line-clamp-2 text-meta tabular-nums text-ink-muted">
                     {cijfer ? `${cijfer} · ${tab.hoofdcijfer?.label.toLowerCase()}` : tab.leeg ? "geen data" : " "}
                   </span>
                 </span>

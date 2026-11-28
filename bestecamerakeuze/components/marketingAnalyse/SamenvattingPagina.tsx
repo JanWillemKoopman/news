@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Markdown from "@/components/chat/Markdown";
-import { IconChevronDown } from "@/components/icons";
+import { IconChevronDown, IconInfo } from "@/components/icons";
 import { OordeelBadge, PrioriteitLabel } from "@/components/marketingAnalyse/onderdelen";
 import {
   datumKort,
@@ -153,9 +153,6 @@ export default function SamenvattingPagina({
     (a) => a.prioriteit,
   );
   const aantalKlaar = acties.filter((a) => afgevinkt.has(a.sleutel)).length;
-  const stappenMetActies = tabs
-    .map((t) => ({ tab: t, aantal: t.secties.reduce((n, s) => n + (s.acties?.length ?? 0), 0) }))
-    .filter((x) => x.aantal > 0);
 
   const metMeters = !rapportage && (v.doelLeads !== null || v.budget !== null);
 
@@ -243,24 +240,34 @@ export default function SamenvattingPagina({
         )}
       </section>
 
-      {problemen.map((t) => (
-        <div key={t.sleutel} role="note" className="flex items-start gap-4 rounded-card border border-negative/25 bg-negative/5 px-5 py-4">
-          <span aria-hidden="true" className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-negative text-meta font-bold text-on-primary">
-            !
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-ink">Probleem bij {t.naam}</p>
-            <p className="mt-0.5 text-sm text-ink-muted">{t.secties.find((s) => s.kop)?.kop ?? "Bekijk deze stap."}</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => onKies(t.sleutel)}
-            className="shrink-0 rounded-button border border-line bg-card px-3.5 py-1.5 text-sm font-semibold text-ink transition-colors hover:bg-surface"
-          >
-            Bekijk {t.naam}
-          </button>
+      {/* H3: een probleem als rustige witte kaart met een rode streep links en een klein icoon,
+          in plaats van een volledig roze vlak met een grote knop. */}
+      {problemen.length > 0 && (
+        <div className="flex flex-col gap-3">
+          {problemen.map((t) => (
+            <div
+              key={t.sleutel}
+              role="note"
+              className="flex items-start gap-3.5 rounded-card border border-line border-l-[3px] border-l-negative bg-card px-5 py-4 shadow-subtle"
+            >
+              <span aria-hidden="true" className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-negative/10 text-negative">
+                <IconInfo className="h-3.5 w-3.5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-ink">Probleem bij {t.naam}</p>
+                <p className="mt-0.5 text-sm text-ink-muted">{t.secties.find((s) => s.kop)?.kop ?? "Bekijk deze stap."}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onKies(t.sleutel)}
+                className="shrink-0 whitespace-nowrap text-sm font-medium text-primary underline-offset-2 transition-colors hover:underline"
+              >
+                Bekijk {t.naam} →
+              </button>
+            </div>
+          ))}
         </div>
-      ))}
+      )}
 
       <section className={KAART}>
         <div className="flex flex-wrap items-baseline justify-between gap-3 px-7 pb-1 pt-5">
@@ -324,27 +331,13 @@ export default function SamenvattingPagina({
             })}
           </ol>
         )}
-        {stappenMetActies.length > 0 && r.formaat !== 1 && (
-          <div className="flex flex-wrap items-center gap-2 border-t border-line-soft px-7 py-4">
-            <span className="text-meta text-ink-muted">Acties per stap:</span>
-            {stappenMetActies.map(({ tab, aantal }) => (
-              <button
-                key={tab.sleutel}
-                type="button"
-                onClick={() => onKies(tab.sleutel)}
-                className="whitespace-nowrap rounded-pill border border-line bg-surface-tint px-2.5 py-0.5 text-meta text-ink-muted transition-colors hover:border-ink/20 hover:text-ink"
-              >
-                {tab.naam} ({aantal})
-              </button>
-            ))}
-          </div>
-        )}
       </section>
 
       {tabs.length > 0 && (
         <section className={`${KAART} overflow-hidden`}>
           <div className="px-7 pb-3 pt-5">
-            <h2 className="font-sans-w7 text-base font-bold text-ink">De funnel in één oogopslag</h2>
+            {/* H13: een rapportage (HRM, maandrapport) is geen funnel. */}
+            <h2 className="font-sans-w7 text-base font-bold text-ink">{rapportage ? "Alle stappen in één oogopslag" : "De funnel in één oogopslag"}</h2>
             <p className="mt-0.5 text-meta text-ink-muted">Elke stap met zijn hoofdgetal en het oordeel. Klik voor de verdieping.</p>
           </div>
           {tabs.map((t) => (
@@ -352,7 +345,7 @@ export default function SamenvattingPagina({
               key={t.sleutel}
               type="button"
               onClick={() => onKies(t.sleutel)}
-              className={`grid w-full grid-cols-[28px_190px_150px_minmax(0,1fr)_16px] items-center gap-4 border-t border-line-soft px-7 py-3.5 text-left transition-colors hover:bg-surface-tint ${
+              className={`grid w-full grid-cols-[28px_190px_150px_minmax(0,1fr)_16px] items-start gap-4 border-t border-line-soft px-7 py-3.5 text-left transition-colors hover:bg-surface-tint ${
                 t.leeg ? "opacity-60" : ""
               }`}
             >
@@ -363,9 +356,9 @@ export default function SamenvattingPagina({
               <span className="truncate text-sm font-semibold tabular-nums text-ink">
                 {t.hoofdcijfer ? formatWaarde(t.hoofdcijfer.waarde, t.hoofdcijfer.eenheid) : "—"}
               </span>
-              <span className="flex min-w-0 items-center gap-3">
+              <span className="flex min-w-0 items-start gap-3">
                 <OordeelBadge oordeel={t.oordeel} />
-                <span className="truncate text-sm text-ink-muted">{t.secties.find((s) => s.kop)?.kop ?? t.reden ?? ""}</span>
+                <span className="line-clamp-2 text-sm text-ink-muted">{t.secties.find((s) => s.kop)?.kop ?? t.reden ?? ""}</span>
               </span>
               <span aria-hidden="true" className="text-ink-faint">
                 ›

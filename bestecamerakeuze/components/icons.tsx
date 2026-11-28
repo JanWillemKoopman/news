@@ -504,3 +504,14 @@ export function IconColumns({ className }: IconProps) {
     </svg>
   );
 }
+
+/** Drie puntjes: een menu met minder vaak gebruikte acties (bijv. Versie verwijderen). */
+export function IconMeer({ className }: IconProps) {
+  return (
+    <svg {...base} className={className} aria-hidden="true">
+      <circle cx="5" cy="12" r="1.25" fill="currentColor" />
+      <circle cx="12" cy="12" r="1.25" fill="currentColor" />
+      <circle cx="19" cy="12" r="1.25" fill="currentColor" />
+    </svg>
+  );
+}

@@ -2063,6 +2063,33 @@ lees dat eerst voordat je hier iets verandert.
     voorbeeldteksten met "bijv." en lichter (M5); Annuleren en Opslaan in een vaste balk onderin via de nieuwe
     `voet`-prop van `Drawer` (M6).
 
+- **Resultatenpagina, afwerking** (28 november 2026, op verzoek, H1–H24 uit de designronde op de HRM-analyse;
+  geldt voor elke analyse, want alle analyses delen deze onderdelen):
+  - **Grafieken** (`AnalyseGrafiek.tsx`): vaste kleur per bedrijf/cluster/platform (`VASTE_KLEUR`: Van den
+    Udenhout plek 0, PGZ/Porsche/Bentley 4, VELOO 2, Meta 5, Google 3, Groep/Totaal neutraal grijs; plek 1 =
+    oranje blijft vrij, want oranje is "Aandacht"); maanden "2026-10" op de as als "okt", in de tooltip
+    "oktober 2026"; vanaf 20 punten worden staven gestapeld; de figuur vult zijn kaart (even hoge grafieken).
+  - **Kerncijfers** (`KerncijferRij`): rijen zonder gaten (5–6 tegels per drie, 7–8 per vier, laatste rij rekt op);
+    een cijfer dat tekst is staat in een kleinere letter, en begint de toelichting met een bedrag dan staat dat
+    groot (`TekstCijfer`); een tegel "Niet gemeten" is een oranje waarschuwing.
+  - **Tabellen** (`AnalyseTabel`): kolom Verschil in kleur (groen gunstig, rood ongunstig; kosten per lead lager
+    is beter, bedragen zonder oordeel, `richtingVoor`); Subtotaal- en Totaal-rijen halfvet met een vlak; nullen
+    lichter; Ja/Nee als ✓/✕; Cluster en Bedrijf samen in één kolom; kosten per lead boven 2,5× de mediaan rood
+    en rijen met uitgaven maar 0 leads oranje; vanaf 13 rijen eerst 10 met "Toon alle N rijen"; sorteren door op
+    een kolomkop te klikken (niet in tabellen met subtotalen).
+  - **Stappagina** (`StapPagina.tsx`): drie of meer tabellen met dezelfde kolommen worden één kaart met een
+    schakelaar, het totaal ("Hele groep") vooraan (`TabelWisselaar`); een maandtabel met aantallen per platform
+    krijgt een gestapelde staafgrafiek met de tabel ingeklapt (`maandGrafiekUit`); "Wat nu te doen" is een witte
+    kaart met een blauwe streep, even hoog als "Wat we zien".
+  - **Samenvatting**: problemen als witte kaart met rode streep en een tekstlink; prioriteit hoog rood gevuld,
+    middel oranje, laag grijs; bij een rapportage "Alle stappen in één oogopslag" met zinnen op twee regels; de rij
+    "Acties per stap" is weg.
+  - **Kop**: de soort analyse alleen als hij van de naam verschilt; vanaf vier bedrijven "7 bedrijven" met de namen
+    in de tooltip; de versiekeuze in eigen stijl; **Versie verwijderen** in het menu achter ⋯ (alleen de eigenaar),
+    niet meer onder elke stap.
+  - **Stapnavigatie**: namen en hoofdcijfers op twee regels in plaats van afgekapt. **Verantwoording**: bronnen
+    als lijst, zekerheid als label, Opslaan grijs met uitleg zolang er niets getypt is.
+
 ### Campagnes → Campagne analyse
 
 Tabblad onder **Campagnes** (view `campagne-analyse`, `components/campagneAnalyse/CampagneAnalyse.tsx`,
