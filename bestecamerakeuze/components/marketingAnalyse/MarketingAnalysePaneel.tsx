@@ -737,6 +737,9 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
   function open(id: string | null) {
     setOpenId(id);
     zetUrl(id);
+    // Terug naar het overzicht: de open stap hoort bij die analyse, niet bij de volgende die je opent
+    // (anders opent een link als "Dataverantwoording" vanuit Campagne analyse ook de volgende daarop).
+    if (!id) zetUrl(null, "mtab");
     window.scrollTo({ top: 0 });
   }
 

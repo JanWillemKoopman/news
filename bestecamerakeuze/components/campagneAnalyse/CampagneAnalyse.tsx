@@ -109,6 +109,11 @@ function analyseHref(id: string): string {
   return `/?tab=marketing-analyse&analyse=${encodeURIComponent(id)}`;
 }
 
+/** Rechtstreeks naar de Dataverantwoording van de laatste analyse (de open stap staat in `mtab`). */
+function verantwoordingHref(id: string): string {
+  return `${analyseHref(id)}&mtab=verantwoording`;
+}
+
 // ---------------------------------------------------------------------------
 // Kleine bouwstenen
 // ---------------------------------------------------------------------------
@@ -780,15 +785,29 @@ export default function CampagneAnalyse({ ingelogd }: { ingelogd: boolean }) {
                     >
                       {/* A12: een rustige tekstlink in plaats van vier gelijke knoppen; hij kleurt
                           mee als je in zijn kolom bent. De kolomkop opent de analyse ook. */}
-                      <a
-                        href={analyseHref(k.c.id)}
-                        className={`inline-flex items-center gap-1.5 text-sm font-medium transition-colors duration-[var(--duur-snel)] ease-merk hover:text-primary ${
-                          kolomHover === k.c.id ? "text-primary" : "text-ink-muted"
-                        }`}
-                      >
-                        Bekijk analyse
-                        <IconArrowRight className="h-3.5 w-3.5" />
-                      </a>
+                      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                        <a
+                          href={analyseHref(k.c.id)}
+                          className={`inline-flex items-center gap-1.5 text-sm font-medium transition-colors duration-[var(--duur-snel)] ease-merk hover:text-primary ${
+                            kolomHover === k.c.id ? "text-primary" : "text-ink-muted"
+                          }`}
+                        >
+                          Bekijk analyse
+                          <IconArrowRight className="h-3.5 w-3.5" />
+                        </a>
+                        {/* Rechtstreeks naar de Dataverantwoording, om per campagne snel iets weg te
+                            halen (−) of toe te voegen (+) voor de volgende analyse. Secundaire actie:
+                            omrand, gedempte tekst. Alleen als er een analyse is. */}
+                        {k.c.laatsteAnalyse && (
+                          <a
+                            href={verantwoordingHref(k.c.id)}
+                            data-tip="Bekijk per bron wat is meegenomen, en haal eraf of voeg toe voor de volgende analyse"
+                            className="inline-flex items-center rounded-button border border-line px-3 py-1 text-meta font-medium text-ink-muted transition-colors duration-[var(--duur-snel)] ease-merk hover:border-ink-muted hover:text-ink"
+                          >
+                            Dataverantwoording
+                          </a>
+                        )}
+                      </div>
                     </td>
                   ))}
                 </tr>
