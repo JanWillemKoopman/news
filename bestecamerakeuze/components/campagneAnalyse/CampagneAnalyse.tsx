@@ -796,13 +796,14 @@ export default function CampagneAnalyse({ ingelogd }: { ingelogd: boolean }) {
                           <IconArrowRight className="h-3.5 w-3.5" />
                         </a>
                         {/* Rechtstreeks naar de Dataverantwoording, om per campagne snel iets weg te
-                            halen (−) of toe te voegen (+) voor de volgende analyse. Secundaire actie:
-                            omrand, gedempte tekst. Alleen als er een analyse is. */}
+                            halen (−) of toe te voegen (+) voor de volgende analyse. Bewust subtiel (op
+                            verzoek): een kleine grijze tekstlink zonder rand, donkerder bij hover. Alleen
+                            als er een analyse is. */}
                         {k.c.laatsteAnalyse && (
                           <a
                             href={verantwoordingHref(k.c.id)}
                             data-tip="Bekijk per bron wat is meegenomen, en haal eraf of voeg toe voor de volgende analyse"
-                            className="inline-flex items-center rounded-button border border-line px-3 py-1 text-meta font-medium text-ink-muted transition-colors duration-[var(--duur-snel)] ease-merk hover:border-ink-muted hover:text-ink"
+                            className="text-meta text-ink-faint underline-offset-2 transition-colors duration-[var(--duur-snel)] ease-merk hover:text-ink hover:underline"
                           >
                             Dataverantwoording
                           </a>

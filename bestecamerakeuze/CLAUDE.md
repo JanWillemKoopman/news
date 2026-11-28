@@ -2149,7 +2149,8 @@ de sidebar en bovenaan de groep Campagnes op het startscherm.
   - De **kolom onder de muis licht zacht op** (`kolomHover`).
   - Onderaan elke kolom een **rustige tekstlink** "Bekijk analyse →" in plaats van een knop; hij kleurt blauw
     als je in zijn kolom bent. De kolomkop opent de analyse ook.
-  - Rechts daarnaast (28 november 2026, op verzoek) een omrand knopje **Dataverantwoording**
+  - Rechts daarnaast (28 november 2026, op verzoek) een subtiele grijze tekstlink **Dataverantwoording** (klein,
+    zonder rand, donkerder met onderstreping bij hover; eerst een omrand knopje, op verzoek subtieler)
     (`verantwoordingHref`: `…&analyse=<id>&mtab=verantwoording`), alleen bij een campagne met een analyse. Het
     opent de analyse direct op de Dataverantwoording, om per campagne snel iets weg te halen of toe te voegen
     voor de volgende analyse. Terug naar het overzicht in Marketing analyse haalt `mtab` uit de URL.
