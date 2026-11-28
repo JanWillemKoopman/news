@@ -37,7 +37,7 @@ export default function BedrijvenKiezer({
               aan ? "border-primary bg-primary/10 text-ink vdu:border-ink vdu:bg-ink vdu:text-card" : "border-line bg-card text-ink-muted hover:bg-surface vdu:hover:border-ink-faint vdu:hover:bg-card hover:text-ink"
             }`}
           >
-            {aan && <IconCheck className="h-3.5 w-3.5 text-primary" />}
+            {aan && <IconCheck className="h-3.5 w-3.5 text-primary vdu:text-card" />}
             {b}
           </button>
         );

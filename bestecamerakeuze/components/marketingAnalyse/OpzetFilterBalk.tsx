@@ -1,6 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import type { OpzetFilterKnop, StatusFilter } from "@/lib/marketingAnalyse/rekenen";
+
+/**
+ * M10: elke filterrij begint met een klein kopje in een vaste breedte (Bedrijf, Status, Soort),
+ * zodat de twee rijen als twee aparte filters lezen en de knoppen recht onder elkaar beginnen.
+ */
+function RijKop({ children }: { children: React.ReactNode }) {
+  return <span className="label-theme w-16 shrink-0 text-label text-ink-faint">{children}</span>;
+}
 
 type Props = {
   knoppen: OpzetFilterKnop[];
@@ -35,7 +44,7 @@ export function FilterKnop({
       type="button"
       aria-pressed={aan}
       onClick={onClick}
-      title={leeg ? `Geen analyses: ${naam}` : undefined}
+      data-tip={leeg ? `Geen analyses: ${naam}` : undefined}
       // Gekozen: een vol vlak in de inktkleur, zodat de selectie in één oogopslag te zien is. Zelfde
       // gewicht en maat als voorheen, dus de knoppen schuiven niet; hover wisselt alleen rand en tekst.
       className={`inline-flex items-center gap-2 whitespace-nowrap rounded-button border px-3.5 py-1.5 text-sm transition-colors duration-[var(--duur-snel)] ease-merk ${
@@ -64,6 +73,7 @@ export function FilterKnop({
 export default function OpzetFilterBalk({ knoppen, aantalLive, aantalNietLive, status, onStatus, gekozen, onKies }: Props) {
   return (
     <div className="flex flex-wrap items-center gap-2">
+      <RijKop>Status</RijKop>
       <div role="group" aria-label="Filter op status" className="flex items-center gap-2">
         <FilterKnop naam="Live" stip="live" aantal={aantalLive} aan={status === "live"} onClick={() => onStatus(status === "live" ? null : "live")} />
         <FilterKnop
@@ -74,7 +84,8 @@ export default function OpzetFilterBalk({ knoppen, aantalLive, aantalNietLive, s
           onClick={() => onStatus(status === "niet-live" ? null : "niet-live")}
         />
       </div>
-      <span aria-hidden className="mx-1 h-5 w-px bg-line" />
+      <span aria-hidden className="mx-2 h-5 w-px bg-line" />
+      <span className="label-theme mr-1 text-label text-ink-faint">Soort</span>
       <div role="group" aria-label="Filter op soort analyse" className="flex flex-wrap items-center gap-2">
         {knoppen.map((k) => (
           <FilterKnop key={k.id} naam={k.naam} aantal={k.aantal} aan={gekozen === k.id} onClick={() => onKies(k.id)} />
@@ -100,13 +111,33 @@ export function BedrijfFilterBalk({
   gekozen: string | null;
   onKies: (bedrijf: string | null) => void;
 }) {
+  // M3: bedrijven zonder analyses (binnen de andere filters) staan achter "+N", zodat de rij rustig
+  // blijft; een gekozen bedrijf blijft altijd zichtbaar.
+  const [alleOpen, setAlleOpen] = useState(false);
+  const zichtbaar = bedrijven.filter((b) => b.aantal > 0 || b.naam === gekozen);
+  const verborgen = bedrijven.filter((b) => !zichtbaar.includes(b));
+  const lijst = alleOpen ? bedrijven : zichtbaar;
   return (
-    <div role="group" aria-label="Filter op bedrijf" className="flex flex-wrap items-center gap-2">
-      <FilterKnop naam="Alle" aantal={totaal} aan={gekozen === null} onClick={() => onKies(null)} />
-      <span aria-hidden className="mx-1 h-5 w-px bg-line" />
-      {bedrijven.map((b) => (
-        <FilterKnop key={b.naam} naam={b.naam} aantal={b.aantal} aan={gekozen === b.naam} onClick={() => onKies(gekozen === b.naam ? null : b.naam)} />
-      ))}
+    <div className="flex flex-wrap items-center gap-2">
+      <RijKop>Bedrijf</RijKop>
+      <div role="group" aria-label="Filter op bedrijf" className="flex flex-wrap items-center gap-2">
+        <FilterKnop naam="Alle" aantal={totaal} aan={gekozen === null} onClick={() => onKies(null)} />
+        <span aria-hidden className="mx-1 h-5 w-px bg-line" />
+        {lijst.map((b) => (
+          <FilterKnop key={b.naam} naam={b.naam} aantal={b.aantal} aan={gekozen === b.naam} onClick={() => onKies(gekozen === b.naam ? null : b.naam)} />
+        ))}
+        {verborgen.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setAlleOpen((x) => !x)}
+            aria-expanded={alleOpen}
+            data-tip={alleOpen ? undefined : `Zonder analyses: ${verborgen.map((b) => b.naam).join(", ")}`}
+            className="rounded-button px-2.5 py-1.5 text-sm text-ink-muted transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-surface hover:text-ink"
+          >
+            {alleOpen ? "Minder" : `+${verborgen.length}`}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

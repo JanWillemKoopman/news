@@ -85,13 +85,14 @@ export default function StapNavigatie({
                 type="button"
                 onClick={() => onKies(tab.sleutel)}
                 aria-current={isActief ? "page" : undefined}
-                title={tab.hoofdcijfer ? `${tab.hoofdcijfer.label}: ${cijfer}` : (tab.reden ?? undefined)}
+                data-tip={tab.hoofdcijfer ? `${tab.hoofdcijfer.label}: ${cijfer}` : (tab.reden ?? undefined)}
                 className={knopKlasse(isActief, tab.leeg)}
               >
                 <Vak actief={isActief}>{nr}</Vak>
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-sm font-semibold text-ink">{tab.naam}</span>
-                  <span className="truncate text-meta tabular-nums text-ink-muted">
+                  {/* H17: niet afgekapt maar zo nodig op twee regels. */}
+                  <span className="line-clamp-2 text-sm font-semibold leading-snug text-ink">{tab.naam}</span>
+                  <span className="line-clamp-2 text-meta tabular-nums text-ink-muted">
                     {cijfer ? `${cijfer} · ${tab.hoofdcijfer?.label.toLowerCase()}` : tab.leeg ? "geen data" : " "}
                   </span>
                 </span>
@@ -111,7 +112,7 @@ export default function StapNavigatie({
         </span>
         {aanpassingen > 0 && (
           <span
-            title={`${aanpassingen} ${aanpassingen === 1 ? "aanpassing" : "aanpassingen"} klaar voor de volgende analyse`}
+            data-tip={`${aanpassingen} ${aanpassingen === 1 ? "aanpassing" : "aanpassingen"} klaar voor de volgende analyse`}
             className="shrink-0 rounded-control border border-line px-1.5 text-meta tabular-nums text-ink-muted"
           >
             {aanpassingen}

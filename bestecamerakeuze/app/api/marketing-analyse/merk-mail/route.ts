@@ -9,7 +9,7 @@ import type { MaMerkMail } from "@/lib/marketingAnalyse/types";
 export const dynamic = "force-dynamic";
 
 /**
- * Marketing analyse — E-mail settings: per automerk de adressen die standaard volger worden van
+ * Marketing analyse — E-mailinstellingen: per automerk de adressen die standaard volger worden van
  * elke nieuwe analyse voor dat merk (de trigger uit migratie 0047 zet ze erbij).
  *
  * GET                        → { merken, adressen }: de merkenlijst en alle adressen

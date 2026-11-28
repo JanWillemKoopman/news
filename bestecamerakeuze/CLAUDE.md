@@ -276,13 +276,39 @@ Houd je in de huisstijl aan deze principes bij nieuwe UI:
   Selligent-opt-ins, signaal) krijgt `bg-surface` met een streep of rand in de inktkleur. Houd het
   lettergewicht van gekozen en niet-gekozen gelijk aan wat het was, anders verschuiven de knoppen.
 - **Primair blauw alleen voor de hoofdactie** (Nieuwe analyse, Opslaan, Analyseer …). Een selectie
-  is nooit blauw; secundaire acties (E-mail settings, Nu bijwerken, Data updaten, Annuleren) zijn
+  is nooit blauw; secundaire acties (E-mailinstellingen, Nu bijwerken, Data updaten, Annuleren) zijn
   omrand met gedempte tekst (`text-ink-muted`), bij hover een donkerdere rand en tekst.
 - **Hover en focus zonder beweging**: alleen een kleur- of randwissel. `.kaart-hover` tilt niet meer
   op maar krijgt een donkerdere rand. Uitzondering: de illustraties op het startscherm en de
   sidebar-tegels bewegen bij hover zoals eerder gevraagd.
 - **Kerncijfers dragen gewicht** (Marketing analyse: `vdu:font-semibold` op de cijfers in de tabel).
   Controleer bij een gewicht- of maatwijziging in een tabel altijd of de rijen even hoog blijven.
+
+### Afwerking voor het hele dashboard (G1–G10, 28 november 2026, op verzoek)
+
+Kleine dingen die het geheel professioneler maken. Gebruik ze bij nieuwe UI:
+
+- **Tooltips: `data-tip="…"`, niet `title`** (G7). `components/TooltipLaag.tsx` (één keer in
+  `AppShell`) toont elke `data-tip` als nette tooltip na 350 ms, ook bij toetsenbordfocus, in een
+  portal (wordt dus niet afgesneden door overflow-hidden). Optioneel `data-tip-plaats="rechts|links|boven"`.
+  Een icoonknop houdt daarnaast altijd een `aria-label`. Op Campagne analyse, Marketing analyse en
+  Campagne timeline zijn alle `title`-attributen omgezet.
+- **Bevestiging na een handeling: `toonMelding({ titel, regel?, soort?, actie? })`** uit
+  `lib/meldingen.ts` (G3). `components/MeldingLaag.tsx` zet hem onderaan in het midden; met
+  `actie` ("Ongedaan maken") blijft hij langer staan. Staat op planning, voorstel negeren/terugzetten,
+  briefing opslaan/aanmaken/verwijderen, versie verwijderen, data correctie, volgers en E-mailinstellingen.
+- **Laden: `components/Skelet.tsx`** (`SkeletRegels`, `SkeletTabel`, `SkeletKaarten`) in plaats van
+  de tekst "Laden…" (G4).
+- **Sidebar** (G5/G6): klapt pas uit na 150 ms op de rail (`data-uit` + `group-data-[uit=true]:`,
+  niet meer `group-hover:`), met Tab meteen; uitgeklapt een duidelijke schaduw (`.sidebar-schil`). In
+  de rail staat per groep het groepsicoon (`icon` in `navigatie.tsx`) i.p.v. een streepje.
+- **Marges** (G8): `<main>` heeft links en rechts 64px (`px-16`); alleen de Kanalen-pagina's houden
+  `pr-28` vanwege het lampje naast het oogje.
+- **Alleen in de huisstijl** (globals.css, blok "Afwerking"): waarschuwingstekst `text-orange-dark`
+  10% donkerder (4,8:1), gedempte sidebartekst 70% (G1), en een knop wordt bij indrukken een fractie
+  donkerder (G2, `filter: brightness`, geen beweging). Elke knop krijgt in `@layer base` een korte
+  kleurovergang. In vlakken met overflow-hidden staat de focusring binnen de rand (G9).
+- Knoptekst in het Nederlands: "E-mailinstellingen" (was "E-mail settings", G10).
 
 ### Themes (het oogje rechtsboven)
 
@@ -1903,7 +1929,7 @@ lees dat eerst voordat je hier iets verandert.
   ingelogde collega's). Per regel wie wanneer welke analyse kreeg, nieuwste eerst, zoekbaar op adres
   of campagne. Versies zonder logregel staan er ook in (`mailOverzicht` in `mailLog.ts`, getest): van
   vóór het logboek met alleen het aantal, zonder volgers ("Geen mail") of niet verstuurd met de fout.
-- **E-mail settings: adressen per merk** (25 november 2026, migratie 0047, op verzoek). Per automerk
+- **E-mailinstellingen: adressen per merk** (25 november 2026, migratie 0047, op verzoek). Per automerk
   de adressen die standaard volger worden van elke nieuwe analyse voor dat merk, zodat niemand ze per
   analyse opnieuw hoeft op te geven (`MerkMailZijbalk.tsx`, route `merk-mail`, tabel
   `marketing_analyse_merk_mail`). Een trigger op `marketing_analyse_campagnes` zet ze erbij bij een
@@ -1998,7 +2024,7 @@ lees dat eerst voordat je hier iets verandert.
     items of niet-oplopende kwartielen weg. Getest in `rekenen.test.ts`.
 - **Het overzicht**: één tabel, live bovenaan op startdatum, dan nog te beginnen, dan afgelopen
   (zie "Live-stipje en statusfilter"); per regel de planning (uitklapmenu) en bij campagnes de kerncijfers uit de laatste analyse.
-  Rechtsboven (25 november 2026, op verzoek) een schildje **Beheer**, dan **E-mail settings** en Nieuwe
+  Rechtsboven (25 november 2026, op verzoek) een schildje **Beheer**, dan **E-mailinstellingen** en Nieuwe
   analyse. Analyse prompts, Semantic layer en (alleen voor de eigenaar) Verzonden e-mails staan achter het schildje (vooral voor beheerders, maar
   iedereen kan ze openen); open of dicht wordt per browser onthouden. De open analyse staat in de URL
   (`?analyse=<campagne-id>`).
@@ -2040,28 +2066,89 @@ lees dat eerst voordat je hier iets verandert.
 - **Een eigen tabel, niet de sheet.** Dit is geen campagnelijst maar de briefing voor een
   analyse; de sheet blijft de bron van de campagnetabel.
 
+- **Afwerking** (28 november 2026, op verzoek, M1–M11 uit de designronde):
+  - **Leads en orders** (M1): elke bron op één regel (getal + bron + soort), afgekapt; de volledige soort staat in
+    de tooltip. Rijen zijn daardoor even hoog als de andere kolommen.
+  - **Rij-hover** (M2): een duidelijker vlak (`vdu:hover:bg-ink/[0.035]`) en rechts een pijltje (`RIJ_PIJL`).
+  - **Bedrijfsfilter** (M3): bedrijven zonder analyses staan achter "+N" (tooltip noemt ze); een gekozen
+    bedrijf blijft altijd zichtbaar.
+  - **Filterrijen** (M10) beginnen met een kopje: Bedrijf, Status en Soort.
+  - **Planning** (M7) is in de tabel een klein omrand knopje in plaats van platte tekst.
+  - **Briefing en mail** (M8): iconen in `text-ink-muted`; het aantal volgers als bolletje op de envelop.
+  - **CTR** (M11): geen vaste regel "Google, Meta en LinkedIn" meer; alleen "Alleen Meta en Google" als de
+    campagne niet op alle drie adverteert (uit de uitsplitsing, `ctrPlatforms`).
+  - **Voorstellen** (M9): eerst 8, de rest achter "Toon alle N".
+  - **Zijbalk Nieuwe analyse / briefing**: datums via `components/DatumVeld.tsx` (altijd Nederlands, "1 december
+    2026", kalender van de browser via `showPicker`) (M4); de keuzelijst Analyse opzet met ons eigen pijltje (M4);
+    voorbeeldteksten met "bijv." en lichter (M5); Annuleren en Opslaan in een vaste balk onderin via de nieuwe
+    `voet`-prop van `Drawer` (M6).
+
+- **Resultatenpagina, afwerking** (28 november 2026, op verzoek, H1–H24 uit de designronde op de HRM-analyse;
+  geldt voor elke analyse, want alle analyses delen deze onderdelen):
+  - **Grafieken** (`AnalyseGrafiek.tsx`): vaste kleur per bedrijf/cluster/platform (`VASTE_KLEUR`: Van den
+    Udenhout plek 0, PGZ/Porsche/Bentley 4, VELOO 2, Meta 5, Google 3, Groep/Totaal neutraal grijs; plek 1 =
+    oranje blijft vrij, want oranje is "Aandacht"); maanden "2026-10" op de as als "okt", in de tooltip
+    "oktober 2026"; vanaf 20 punten worden staven gestapeld; de figuur vult zijn kaart (even hoge grafieken).
+  - **Kerncijfers** (`KerncijferRij`): rijen zonder gaten (5–6 tegels per drie, 7–8 per vier, laatste rij rekt op);
+    een cijfer dat tekst is staat in een kleinere letter, en begint de toelichting met een bedrag dan staat dat
+    groot (`TekstCijfer`); een tegel "Niet gemeten" is een oranje waarschuwing.
+  - **Tabellen** (`AnalyseTabel`): kolom Verschil in kleur (groen gunstig, rood ongunstig; kosten per lead lager
+    is beter, bedragen zonder oordeel, `richtingVoor`); Subtotaal- en Totaal-rijen halfvet met een vlak; nullen
+    lichter; Ja/Nee als ✓/✕; Cluster en Bedrijf samen in één kolom; kosten per lead boven 2,5× de mediaan rood
+    en rijen met uitgaven maar 0 leads oranje; vanaf 13 rijen eerst 10 met "Toon alle N rijen"; sorteren door op
+    een kolomkop te klikken (niet in tabellen met subtotalen).
+  - **Stappagina** (`StapPagina.tsx`): drie of meer tabellen met dezelfde kolommen worden één kaart met een
+    schakelaar, het totaal ("Hele groep") vooraan (`TabelWisselaar`); een maandtabel met aantallen per platform
+    krijgt een gestapelde staafgrafiek met de tabel ingeklapt (`maandGrafiekUit`); "Wat nu te doen" is een witte
+    kaart met een blauwe streep, even hoog als "Wat we zien".
+  - **Samenvatting**: problemen als witte kaart met rode streep en een tekstlink; prioriteit hoog rood gevuld,
+    middel oranje, laag grijs; bij een rapportage "Alle stappen in één oogopslag" met zinnen op twee regels; de rij
+    "Acties per stap" is weg.
+  - **Kop**: de soort analyse alleen als hij van de naam verschilt; vanaf vier bedrijven "7 bedrijven" met de namen
+    in de tooltip; de versiekeuze in eigen stijl; **Versie verwijderen** in het menu achter ⋯ (alleen de eigenaar),
+    niet meer onder elke stap.
+  - **Stapnavigatie**: namen en hoofdcijfers op twee regels in plaats van afgekapt. **Verantwoording**: bronnen
+    als lijst, zekerheid als label, Opslaan grijs met uitleg zolang er niets getypt is.
+
 ### Campagnes → Campagne analyse
 
 Tabblad onder **Campagnes** (view `campagne-analyse`, `components/campagneAnalyse/CampagneAnalyse.tsx`,
 rekenwerk in `lib/campagneAnalyseOverzicht.ts`, getest; 27 november 2026, op verzoek van de eigenaar). De
 **Campagne analyses** uit Marketing analyse als **campagnes naast elkaar**: elke campagne een kolom, de cijfers
 uit de laatste analyse als rijen, zoals de campagnetabel. Alleen lezen voor iedereen: geen briefing
-bewerken, planning, E-mail settings, Nieuwe analyse of beheer (dat blijft in Marketing analyse). Staat bovenaan
+bewerken, planning, E-mailinstellingen, Nieuwe analyse of beheer (dat blijft in Marketing analyse). Staat bovenaan
 de sidebar en bovenaan de groep Campagnes op het startscherm.
 
 - **Bron**: `GET /api/marketing-analyse` en `overzichtCijfers`, dus dezelfde getallen als het overzicht in
   Marketing analyse. Alleen opzetten met formulier `campagne` (`isCampagneAnalyse`, gedeeld met Campagne timeline).
 - **Kolomkop** = link naar de analyse (`/?tab=marketing-analyse&analyse=<id>`): status (Online/Offline), naam,
   merk en bedrijf, looptijd met voortgangsbalk (dag x van y), laatste versie en label. Onderaan elke kolom een knop
-  Bekijk analyse. Een gewone link (volledige paginalading), net als Campagne timeline.
-- **Rijen**: Budget (Uitgaven, balk met streepje voor het verstreken deel van de looptijd en
+  Bekijk analyse (een tekstlink). Een gewone link (volledige paginalading), net als Campagne timeline.
+- **Rijen**: Budget (Uitgaven, balk met driehoekje voor het verstreken deel van de looptijd en
   Op schema / sneller / achter, `budgetTempo`), Bereik (CTR, Bezoekers), Leads en orders (Google Analytics,
   Syntec internet, Syntec orders; de Syntec-rijen alleen als minstens één campagne er cijfers voor heeft) en Doel
   (percentage gehaald, groen vanaf 100%).
 - **Filters**: Bedrijf, Merk (multi-select, `filterTimeline`) en **Online/Offline**. Online = live (vandaag binnen de
   looptijd, `isLive`), offline = nog niet begonnen of afgelopen; de aantallen tellen binnen Bedrijf en Merk.
-- **Samenvatting** boven de tabel over de campagnes in beeld (`samenvatting`): campagnes online, uitgegeven
-  tegen budget (alleen campagnes met een analyse), bezoekers en leads (Google Analytics).
+- **Geen samenvatting (KPI-kaarten) boven de tabel** (28 november 2026, op verzoek weggehaald): de tabel staat
+  direct onder de filters. `samenvatting` in `lib/campagneAnalyseOverzicht.ts` bestaat nog (getest), maar
+  wordt hier niet meer getoond.
+- **Afwerking** (28 november 2026, op verzoek, A2–A12 uit de designronde):
+  - Het budgettempo staat als **label met icoon** (`TempoPil`): groen ✓ Op schema, oranje ↓ Achter op de
+    looptijd, rood ↑ Sneller dan de looptijd.
+  - **Eén kleurlogica voor elke balk** (`Meter`): groen = doel gehaald, donker = op koers, oranje = achter op de
+    looptijd, rood = te snel of over budget. Bij Doel leads telt "achter" als het gehaalde deel meer dan 10
+    procentpunt achterloopt op de looptijd (`budgetTempo`).
+  - Op de budgetbalk een **driehoekje (▾)** waar de besteding nu zou staan; de regel eronder zegt het ook
+    ("15% van € 1.000 · ▾ verwacht 35%"). Geen tooltip erop: de cel heeft al een hover-kaartje.
+  - **Geen stippellijn** meer onder de cijfers; een cel met hover-kaartje krijgt bij hover een zacht vlak.
+  - "Tussentijdse evaluatie" is tekst in de regel ("Analyse v1 · 27 nov 2026 · tussentijds"); alleen een
+    **eindevaluatie** krijgt nog een label.
+  - **Sectiekoppen** (Budget, Bereik …) zijn een klein label boven de rijen, zonder grijze band.
+  - **Merklogo** in de kop 18px in de inktkleur.
+  - De **kolom onder de muis licht zacht op** (`kolomHover`).
+  - Onderaan elke kolom een **rustige tekstlink** "Bekijk analyse →" in plaats van een knop; hij kleurt blauw
+    als je in zijn kolom bent. De kolomkop opent de analyse ook.
 - Live eerst, dan wat nog moet beginnen, dan afgelopen (`sorteerOpStatus`).
 - **Kosten per klik en Kosten per lead** (28 november 2026, op verzoek, groep Efficiëntie tussen Leads en
   orders en Doel): mediakosten ÷ klikken en mediakosten ÷ leads in Google Analytics (de soort uit het doel,
@@ -2074,8 +2161,8 @@ de sidebar en bovenaan de groep Campagnes op het startscherm.
   internetleads voor merk en model en niet te herleiden tot deze campagne.
 - **Hover met meer uitleg** (28 november 2026, op verzoek): met de muis (of toetsenfocus) boven een
   cijfer opent een kaartje (`HoverKaart.tsx`, in een portal op `<body>`: de tabel scrolt horizontaal en
-  zou het kaartje afsnijden; klapt naar boven als er onder geen ruimte is). Cellen met een kaartje hebben
-  een stippellijntje onder het grote getal; zonder inhoud is er geen kaartje. Inhoud in
+  zou het kaartje afsnijden; klapt naar boven als er onder geen ruimte is). Cellen met een kaartje krijgen
+  bij hover een zacht vlak (de stippellijn eronder is weg); zonder inhoud is er geen kaartje. Inhoud in
   `hoverKaarten.tsx`, twee soorten:
   - **Uitsplitsing van de analyse** (`kerncijfers.uitsplitsing`, type `MaUitsplitsing`): Uitgaven en CTR per
     platform (Google, Meta, LinkedIn), Bezoekers per kanaal, Google Analytics-leads per event (met welke
@@ -2114,6 +2201,20 @@ ISO-weeknummers en een streep bij vandaag.
 - **Hover** toont periode, status (met dag x van y), budget, uitgaven en leads tegen het doel uit
   de laatste analyse (`overzichtCijfers`, dus dezelfde getallen als het overzicht); **klik** op naam
   of balk opent de analyse (`?tab=marketing-analyse&analyse=<id>`).
+- **Afwerking** (28 november 2026, op verzoek, T1–T10 uit de designronde):
+  - **Openen** (T1/T2): de zoom kiest zich één keer bij het openen zo dat de campagnes, vanaf het begin van de
+    maand van de vroegste balk tot de laatste week waarin een balk loopt, de tijdas vullen (14–72px per week);
+    het beeld begint aan het begin van die maand, dus nooit een afgekapte maandnaam. Daarna bepaalt de schuif
+    Inzoomen het. Rijen 56px hoog.
+  - **Vandaag** (T3/T9): een label "Vandaag" in de weekrij boven een streep van 2px; een knop **Vandaag** naast de
+    jaarkiezer springt naar het huidige jaar met vandaag in het midden.
+  - **Voortgang in de balk** (T4): bij een actieve campagne is het verstreken deel vol en de rest lichter.
+  - **Weeknummers** (T5) horizontaal; smaller dan 22px per week alleen de oneven weken.
+  - **Namen** (T6): naamkolom 290px; past de naam niet in de balk (`naamPastIn`), dan staat hij er niet afgekapt in.
+  - **Merk** (T7): logo en naam, ook "Alle merken" (kolom 140px).
+  - **Rij-hover** (T8): de hele rij licht zacht op; maandkoppen in `text-ink-muted`.
+  - **Legenda** (T10): een status zonder campagnes is gedimd; het hover-kaartje staat bij de muis en wijst met
+    een pijltje naar de balk.
 
 ### Component- en codepatronen
 

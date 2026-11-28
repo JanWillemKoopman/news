@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import GebruikersMenu from "@/components/GebruikersMenu";
 import NavigationItem from "@/components/NavigationItem";
 import { magTabbladZien } from "@/lib/beperkteTabbladen";
@@ -97,6 +97,9 @@ const UITGELICHT: {
 /** De groep Campagnes staat niet als groep in de sidebar: zie `UITGELICHT`. */
 const SIDEBAR_GROEPEN = NAV_GROEPEN.filter((g) => g.id !== "campagnes");
 
+/** Zo lang moet de muis op de rail blijven voor de sidebar uitklapt (G5). */
+const OPEN_VERTRAGING_MS = 150;
+
 /** Toon alleen het lokale deel van het werkadres als naam; het domein staat al in "Marketing" eronder. */
 function naamVoor(email: string | null): string {
   if (!email) return "Gast";
@@ -112,6 +115,18 @@ export default function Sidebar({
   profielAvatarUrl,
 }: Props) {
   const weergavenaam = profielNaam || naamVoor(gebruikerEmail);
+
+  // G5: uitklappen met een korte vertraging. Eerst klapte hij open zodra de muis de rail
+  // raakte, ook als je alleen langs bewoog op weg naar de pagina; nu pas als de muis er
+  // even blijft. Dichtklappen gaat meteen. Met het toetsenbord (Tab) klapt hij direct open.
+  // De kinderen reageren op `data-uit` via `group-data-[uit=true]:` (voorheen group-hover).
+  const [uit, setUit] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wachtOpUit = () => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+  };
+  useEffect(() => wachtOpUit, []);
 
   // Wie welk tabblad ziet staat in `lib/beperkteTabbladen.ts`: Scores, Kennis en acties,
   // Budget beheer, Koppeltabel en Kosten niemand; Leads, Landingspagina en Instellingen
@@ -135,11 +150,28 @@ export default function Sidebar({
     });
 
   return (
-    // Staat standaard ingeklapt op een smalle icoon-rail (72px); bij hover klapt hij uit
-    // tot 240px. De rail zelf reserveert de ruimte in AppShell (sticky, w-[72px]) en dit
+    // Staat standaard ingeklapt op een smalle icoon-rail (72px); bij hover (na een korte
+    // vertraging, zie `uit`) klapt hij uit tot 240px. De rail zelf reserveert de ruimte in AppShell (sticky, w-[72px]) en dit
     // element is daarbinnen absoluut gepositioneerd, zodat uitklappen over de content
     // heen valt in plaats van hem opzij te duwen — geen layoutshift op hover.
-    <aside className="group absolute inset-y-0 left-0 flex w-[72px] flex-col justify-between overflow-x-hidden overflow-y-auto border-r border-sidebar-line sidebar-vlak px-4 py-5 transition-[width] duration-[var(--duur)] ease-merk hover:z-40 hover:w-[240px] hover:shadow-dropdown">
+    <aside
+      data-uit={uit}
+      onMouseEnter={() => {
+        wachtOpUit();
+        timer.current = setTimeout(() => setUit(true), OPEN_VERTRAGING_MS);
+      }}
+      onMouseLeave={() => {
+        wachtOpUit();
+        setUit(false);
+      }}
+      onFocus={(e) => {
+        if (e.target.matches(":focus-visible")) setUit(true);
+      }}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setUit(false);
+      }}
+      className="sidebar-schil group absolute inset-y-0 left-0 flex w-[72px] flex-col justify-between overflow-x-hidden overflow-y-auto border-r border-sidebar-line sidebar-vlak px-4 py-5 transition-[width,box-shadow] duration-[var(--duur)] ease-merk data-[uit=true]:z-40 data-[uit=true]:w-[240px] data-[uit=true]:shadow-dropdown"
+    >
       <div>
         {/* Geen beeldmerk meer (op verzoek): alleen de titel "Marketing dashboard",
             horizontaal gecentreerd, die met de sidebar mee uitklapt. Een klik erop brengt
@@ -156,11 +188,11 @@ export default function Sidebar({
               maakt hij plaats voor de volledige titel. */}
           <span
             aria-hidden="true"
-            className="font-sans-w7 text-title font-bold leading-none text-sidebar-ink group-hover:hidden"
+            className="font-sans-w7 text-title font-bold leading-none text-sidebar-ink group-data-[uit=true]:hidden"
           >
             M
           </span>
-          <span className="max-w-0 overflow-hidden whitespace-nowrap font-sans-w7 text-cell font-bold tracking-[0.04em] text-sidebar-ink opacity-0 transition-all duration-[var(--duur)] group-hover:max-w-[200px] group-hover:opacity-100">
+          <span className="max-w-0 overflow-hidden whitespace-nowrap font-sans-w7 text-cell font-bold tracking-[0.04em] text-sidebar-ink opacity-0 transition-all duration-[var(--duur)] group-data-[uit=true]:max-w-[200px] group-data-[uit=true]:opacity-100">
             Marketing dashboard
           </span>
         </button>
@@ -192,7 +224,7 @@ export default function Sidebar({
           )}
 
           {/* De twee hoofdpagina's als tegels. */}
-          <div className="flex flex-col gap-2 group-hover:gap-2.5">
+          <div className="flex flex-col gap-2 group-data-[uit=true]:gap-2.5">
             {UITGELICHT.filter((t) => zie(t.view)).map((t) => (
               <SidebarTegel
                 key={t.view}
@@ -270,18 +302,17 @@ function SidebarTegel({
       onClick={onClick}
       aria-current={active ? "page" : undefined}
       aria-label={label}
-      title={label}
-      className={`sidebar-tegel iso-blok group/tegel relative block h-10 w-full overflow-hidden rounded-control border text-left transition-[height,background-color,border-color] duration-[var(--duur)] ease-merk group-hover:h-[140px] ${
+      className={`sidebar-tegel iso-blok group/tegel relative block h-10 w-full overflow-hidden rounded-control border text-left transition-[height,background-color,border-color] duration-[var(--duur)] ease-merk group-data-[uit=true]:h-[140px] ${
         active ? "nav-item-actief" : ""
       }`}
     >
       {/* Rail: alleen het icoon, gecentreerd. */}
-      <span className="absolute inset-0 flex items-center justify-center transition-opacity duration-[var(--duur-snel)] group-hover:opacity-0 [&>svg]:h-[18px] [&>svg]:w-[18px]">
+      <span className="absolute inset-0 flex items-center justify-center transition-opacity duration-[var(--duur-snel)] group-data-[uit=true]:opacity-0 [&>svg]:h-[18px] [&>svg]:w-[18px]">
         {icon}
       </span>
 
       {/* Uitgeklapt: illustratie met de titel eronder. */}
-      <span className="absolute inset-0 flex flex-col opacity-0 transition-opacity duration-[var(--duur)] ease-merk group-hover:opacity-100 group-hover:delay-75">
+      <span className="absolute inset-0 flex flex-col opacity-0 transition-opacity duration-[var(--duur)] ease-merk group-data-[uit=true]:opacity-100 group-data-[uit=true]:delay-75">
         <span className="sidebar-tegel-gloed pointer-events-none absolute inset-0" aria-hidden="true" />
         <span className="relative flex min-h-0 flex-1 items-center justify-center px-6 pt-3">
           <span className="block h-full w-full">{illustratie}</span>
@@ -320,13 +351,20 @@ function InklapGroep({
   const lijstId = `nav-groep-${groep.id}`;
   return (
     <div className="flex flex-col">
-      <div aria-hidden="true" className="mx-auto mb-2 mt-3 h-px w-5 bg-sidebar-ink/15 group-hover:hidden" />
+      {/* G6: in de smalle rail het icoon van de groep in plaats van een los streepje, klein
+          en gedempt (het is een kopje, geen link): KPI's, Kanalen, Tools. */}
+      <div
+        aria-hidden="true"
+        className="mt-2 flex h-8 items-center justify-center text-sidebar-ink-muted opacity-70 group-data-[uit=true]:hidden [&>svg]:h-4 [&>svg]:w-4"
+      >
+        {groep.icon}
+      </div>
       <button
         type="button"
         onClick={onWissel}
         aria-expanded={open}
         aria-controls={lijstId}
-        className="nav-item mt-1 hidden w-full items-center justify-between px-3 py-2 text-sidebar-ink-muted transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-sidebar-hover hover:text-sidebar-ink group-hover:flex"
+        className="nav-item mt-1 hidden w-full items-center justify-between px-3 py-2 text-sidebar-ink-muted transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-sidebar-hover hover:text-sidebar-ink group-data-[uit=true]:flex"
       >
         <span className="label-theme whitespace-nowrap text-label">{groep.naam}</span>
         <IconChevronDown

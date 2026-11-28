@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Drawer from "@/components/Drawer";
 import { LabelBadge } from "@/components/marketingAnalyse/onderdelen";
 import { filterMails, type MailStatus, type MaMailRegel } from "@/lib/marketingAnalyse/mailLog";
+import { SkeletRegels } from "@/components/Skelet";
 
 const STATUS: Record<MailStatus, { naam: string; kleur: string }> = {
   verstuurd: { naam: "Verstuurd", kleur: "bg-positive" },
@@ -82,7 +83,7 @@ export default function MailLogZijbalk({ onClose, onOpen }: { onClose: () => voi
         </div>
 
         {fout && <p className="text-sm text-negative">{fout}</p>}
-        {!regels && !fout && <p className="text-sm text-ink-muted">Laden…</p>}
+        {!regels && !fout && <SkeletRegels aantal={5} />}
         {regels && zichtbaar.length === 0 && (
           <p className="rounded-card border border-line-soft bg-surface-tint px-4 py-6 text-center text-sm text-ink-muted">
             {zoek.trim() ? "Niets gevonden voor deze zoekterm." : "Er zijn nog geen analyses gemaakt."}
@@ -114,12 +115,12 @@ export default function MailLogZijbalk({ onClose, onOpen }: { onClose: () => voi
                             type="button"
                             onClick={() => onOpen(r.campagneId as string)}
                             className="text-left font-medium text-ink underline-offset-2 hover:underline"
-                            title="Analyse openen"
+                            data-tip="Analyse openen"
                           >
                             {r.campagneNaam}
                           </button>
                         ) : (
-                          <span className="font-medium text-ink" title="Deze analyse bestaat niet meer">
+                          <span className="font-medium text-ink" data-tip="Deze analyse bestaat niet meer">
                             {r.campagneNaam}
                           </span>
                         )}

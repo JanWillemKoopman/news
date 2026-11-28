@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { IconClose, IconMinus, IconPlus } from "@/components/icons";
+import { IconCheck, IconClose, IconLink, IconMinus, IconPlus } from "@/components/icons";
 import {
   aantalAanpassingen,
   groepeerHerkenning,
@@ -16,6 +16,7 @@ import {
 } from "@/lib/marketingAnalyse/dataverantwoording";
 import { datumKort, formatWaarde, looptijdLabel } from "@/lib/marketingAnalyse/rekenen";
 import type { Herkenning, MaCampagne, MaOverzichtRegel, MaResultaat } from "@/lib/marketingAnalyse/types";
+import { toonMelding } from "@/lib/meldingen";
 
 /** Eén vaste regel zetten of weghalen; de server voegt hem in de Data correctie zoals die nu is. */
 async function zetCorrectieRegel(campagneId: string, sleutel: string, regel: string | null): Promise<MaCampagne> {
@@ -63,6 +64,7 @@ export function DataCorrectie({
       const data = (await res.json().catch(() => ({}))) as { campagne?: MaCampagne; fout?: string };
       if (!res.ok || !data.campagne) throw new Error(data.fout ?? "Kon de Data correctie niet opslaan.");
       onOpgeslagen(data.campagne);
+      toonMelding({ titel: "Data correctie opgeslagen", regel: "Geldt vanaf de volgende analyse." });
       setMelding("Opgeslagen. De volgende analyse neemt dit mee.");
     } catch (err) {
       setFout(err instanceof Error ? err.message : String(err));
@@ -102,7 +104,7 @@ export function DataCorrectie({
                 {r.actie === "weglaten" ? <IconMinus className="h-3 w-3" /> : <IconPlus className="h-3 w-3" />}
               </span>
               <span className="w-20 shrink-0 text-meta text-ink-muted">{r.actie === "weglaten" ? "Weglaten" : "Meenemen"}</span>
-              <span className="min-w-0 flex-1 truncate text-ink" title={r.omschrijving}>
+              <span className="min-w-0 flex-1 truncate text-ink" data-tip={r.omschrijving}>
                 {r.omschrijving}
               </span>
               <button
@@ -110,7 +112,7 @@ export function DataCorrectie({
                 onClick={() => haalRegelWeg(r.sleutel)}
                 disabled={bezig}
                 aria-label={`Regel weghalen: ${r.omschrijving}`}
-                title="Regel weghalen"
+                data-tip="Regel weghalen"
                 className="flex h-6 w-6 shrink-0 items-center justify-center rounded-control text-ink-faint transition-colors duration-[var(--duur-snel)] ease-merk hover:text-ink disabled:opacity-50"
               >
                 <IconClose className="h-3.5 w-3.5" />
@@ -143,11 +145,13 @@ export function DataCorrectie({
         <div className="flex items-center gap-3">
           {fout && <span className="text-sm text-negative">{fout}</span>}
           {melding && <span className="text-sm text-positive">{melding}</span>}
+          {/* H22: uitgeschakeld is grijs met uitleg, geen vaalblauwe knop die kapot lijkt. */}
           <button
             type="button"
             onClick={opslaan}
             disabled={bezig || !gewijzigd}
-            className="rounded-button bg-primary px-4 py-2 text-sm font-medium text-on-primary transition-colors hover:bg-primary-dark disabled:opacity-50"
+            data-tip={!gewijzigd && !bezig ? "Typ eerst een correctie" : undefined}
+            className="rounded-button bg-primary px-4 py-2 text-sm font-medium text-on-primary transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-surface disabled:text-ink-faint"
           >
             {bezig ? "Opslaan…" : "Opslaan"}
           </button>
@@ -237,8 +241,16 @@ function Rij({
           ) : (
             <span className="break-words">{h.naam}</span>
           )}
+          {/* H22: zekerheid als klein label (oranje twijfel); "zeker" staat er niet bij, dat is de norm. */}
           {h.zekerheid && h.zekerheid !== "zeker" && (
-            <span className="rounded-control border border-line-soft px-1.5 text-meta font-normal text-ink-muted no-underline">{h.zekerheid}</span>
+            <span
+              className={`inline-flex items-center gap-1 rounded-pill px-2 py-0.5 text-meta font-semibold no-underline ${
+                h.zekerheid === "twijfel" ? "bg-orange/12 text-orange-dark" : "bg-positive/10 text-positive"
+              }`}
+            >
+              {h.zekerheid !== "twijfel" && <IconCheck className="h-3 w-3" />}
+              {h.zekerheid}
+            </span>
           )}
         </p>
         <p className="mt-0.5 text-meta text-ink-faint">
@@ -289,7 +301,7 @@ function Rij({
             onClick={() => onKlik(h, opgenomen ? "min" : "plus")}
             disabled={bezig}
             aria-label={opgenomen ? `Weglaten bij de volgende analyse: ${h.naam}` : `Meenemen bij de volgende analyse: ${h.naam}`}
-            title={opgenomen ? "Weglaten bij de volgende analyse" : "Meenemen bij de volgende analyse"}
+            data-tip={opgenomen ? "Weglaten bij de volgende analyse" : "Meenemen bij de volgende analyse"}
             className={`flex h-7 w-7 items-center justify-center rounded-control border border-line text-ink-muted transition-[color,border-color,opacity] duration-[var(--duur-snel)] ease-merk hover:border-ink-muted hover:text-ink disabled:opacity-50 ${
               opgenomen ? "opacity-0 focus-visible:opacity-100 group-hover:opacity-100" : ""
             }`}
@@ -413,6 +425,13 @@ export default function Verantwoording({
     setFout(null);
     try {
       onCampagneBijgewerkt(await zetCorrectieRegel(campagne.id, sleutel, soort === "wis" ? null : regelNaKlik(h, soort, dataCorrectieBijVersie)));
+      if (soort === "min" || soort === "plus") {
+        toonMelding({
+          titel: soort === "min" ? "Gaat eraf bij de volgende analyse" : "Komt erbij bij de volgende analyse",
+          regel: `${h.naam} · staat in de Data correctie`,
+          actie: { label: "Ongedaan maken", onClick: () => void klik(h, "ongedaan") },
+        });
+      }
     } catch (err) {
       setFout(err instanceof Error ? err.message : String(err));
     } finally {
@@ -447,14 +466,28 @@ export default function Verantwoording({
             Per bron wat de analyse aan deze campagne heeft toegerekend en hoe er gefilterd is. Hoort iets er niet bij? Ga er met de muis
             overheen en klik op −. Het komt vanzelf in de Data correctie te staan.
           </p>
+          {/* H22: de bronnen als nette lijst met een icoon; alleen bij versies zonder bronFilters. */}
           {bronFilters.length === 0 && r.bronnen && r.bronnen.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {r.bronnen.map((b) => (
-                <span key={b} className="rounded-control border border-line-soft bg-surface-tint px-2 py-0.5 text-meta text-ink-muted">
-                  {b}
-                </span>
-              ))}
-            </div>
+            <ul className="mt-3 grid gap-x-6 gap-y-1.5 text-sm text-ink-muted md:grid-cols-2">
+              {r.bronnen.map((b) => {
+                const [bron, ...rest] = b.split(":");
+                return (
+                  <li key={b} className="flex items-start gap-2">
+                    <IconLink className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-faint" />
+                    <span>
+                      {rest.length > 0 ? (
+                        <>
+                          <span className="text-ink-faint">{bron}:</span>
+                          {rest.join(":")}
+                        </>
+                      ) : (
+                        b
+                      )}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
           )}
           {fout && <p className="mt-2 text-sm text-negative">{fout}</p>}
         </header>

@@ -6,6 +6,8 @@ import { getBrandLogo } from "@/components/brandLogos";
 import { IconClose, IconPlus } from "@/components/icons";
 import { merkSleutel } from "@/lib/marketingAnalyse/rekenen";
 import type { MaMerkMail } from "@/lib/marketingAnalyse/types";
+import { SkeletRegels } from "@/components/Skelet";
+import { toonMelding } from "@/lib/meldingen";
 
 const INVOER =
   "min-w-0 flex-1 rounded-button border border-line bg-surface-tint px-3 py-1.5 text-sm text-ink outline-none focus:border-primary";
@@ -60,7 +62,7 @@ function MerkRegel({
                   onClick={() => onVerwijderen(a)}
                   disabled={bezig !== null}
                   aria-label={`${a.email} weghalen bij ${merk}`}
-                  title="Weghalen"
+                  data-tip="Weghalen"
                   className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-ink-faint transition-colors hover:bg-card hover:text-negative disabled:opacity-50"
                 >
                   <IconClose className="h-3 w-3" />
@@ -96,7 +98,7 @@ function MerkRegel({
             type="button"
             onClick={() => onToevoegen(merk, null)}
             disabled={bezig !== null}
-            title={`Je eigen adres toevoegen bij ${merk}`}
+            data-tip={`Je eigen adres toevoegen bij ${merk}`}
             className={KNOP}
           >
             {bezig === `zelf:${sleutel}` ? "Bezig…" : "Mijzelf"}
@@ -108,7 +110,7 @@ function MerkRegel({
 }
 
 /**
- * E-mail settings: per automerk de adressen die standaard een mail krijgen bij een nieuwe analyse
+ * E-mailinstellingen: per automerk de adressen die standaard een mail krijgen bij een nieuwe analyse
  * voor dat merk. Bij een nieuwe analyse (of een ander merk in de briefing) worden ze volgers van
  * die analyse; een adres dat je hier toevoegt komt ook meteen bij de lopende analyses van het merk.
  */
@@ -125,7 +127,7 @@ export default function MerkMailZijbalk({ onClose, onGewijzigd }: { onClose: () 
     fetch("/api/marketing-analyse/merk-mail")
       .then(async (res) => {
         const data = (await res.json().catch(() => ({}))) as { merken?: string[]; adressen?: MaMerkMail[]; fout?: string };
-        if (!res.ok || !data.merken) throw new Error(data.fout ?? "Kon de e-mail settings niet laden.");
+        if (!res.ok || !data.merken) throw new Error(data.fout ?? "Kon de e-mailinstellingen niet laden.");
         if (!actief) return;
         setMerken(data.merken);
         setAdressen(data.adressen ?? []);
@@ -151,6 +153,7 @@ export default function MerkMailZijbalk({ onClose, onGewijzigd }: { onClose: () 
       if (!res.ok || !data.adres) throw new Error(data.fout ?? "Kon het adres niet toevoegen.");
       const nieuw = data.adres;
       setAdressen((lijst) => [...lijst.filter((a) => a.id !== nieuw.id), nieuw]);
+      toonMelding({ titel: "Adres toegevoegd", regel: `${nieuw.email} · ${nieuw.merk}` });
       const n = data.toegevoegdAanAnalyses ?? 0;
       if (n > 0) {
         setMelding(`${nieuw.email} staat nu ook bij ${n} lopende ${n === 1 ? "analyse" : "analyses"} van ${nieuw.merk}.`);
@@ -174,6 +177,7 @@ export default function MerkMailZijbalk({ onClose, onGewijzigd }: { onClose: () 
       const data = (await res.json().catch(() => ({}))) as { fout?: string };
       if (!res.ok) throw new Error(data.fout ?? "Kon het adres niet weghalen.");
       setAdressen((lijst) => lijst.filter((x) => x.id !== a.id));
+      toonMelding({ titel: "Adres weggehaald", regel: `${a.email} · ${a.merk}` });
     } catch (err) {
       setFout(err instanceof Error ? err.message : String(err));
     } finally {
@@ -196,7 +200,7 @@ export default function MerkMailZijbalk({ onClose, onGewijzigd }: { onClose: () 
   }
 
   return (
-    <Drawer title="E-mail settings" onClose={onClose}>
+    <Drawer title="E-mailinstellingen" onClose={onClose}>
       <div className="flex flex-col gap-4">
         <p className="text-sm text-ink-muted">
           Per merk de adressen die standaard een mail krijgen bij een nieuwe analyse. Komt er een analyse voor een merk bij, dan
@@ -204,7 +208,7 @@ export default function MerkMailZijbalk({ onClose, onGewijzigd }: { onClose: () 
           merk. Weghalen bij een merk haalt het niet weg bij analyses; dat doe je via het mail-icoontje in het overzicht.
         </p>
 
-        {merken === null && !fout && <p className="text-sm text-ink-faint">Laden…</p>}
+        {merken === null && !fout && <SkeletRegels aantal={5} className="mt-2" />}
 
         {merken && (
           <ul className="divide-y divide-line-soft rounded-card border border-line-soft">

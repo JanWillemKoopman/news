@@ -20,18 +20,60 @@ import type { Grafiek } from "@/lib/marketingAnalyse/types";
 /** Hoogstens zes reeksen: een zevende kleur bestaat niet in het palet (zie CLAUDE.md). */
 const MAX_REEKSEN = 6;
 
-/** Een datum "2026-10-01" kort als "1 okt"; andere labels blijven zoals ze zijn. */
+const MAAND_KORT = new Intl.DateTimeFormat("nl-NL", { month: "short", timeZone: "UTC" });
+const MAAND_LANG = new Intl.DateTimeFormat("nl-NL", { month: "long", year: "numeric", timeZone: "UTC" });
+const DAG_KORT = new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "short", timeZone: "UTC" });
+
+/**
+ * Een label op de x-as: een datum "2026-10-01" als "1 okt" en een maand "2026-10" als "okt"
+ * (H2: geen ISO-maanden als "2026-10" op de as). Andere labels blijven zoals ze zijn.
+ */
 function kortLabel(x: string): string {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(x)) return x;
-  return new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "short" }).format(new Date(`${x}T00:00:00Z`));
+  if (/^\d{4}-\d{2}-\d{2}$/.test(x)) return DAG_KORT.format(new Date(`${x}T00:00:00Z`));
+  if (/^\d{4}-\d{2}$/.test(x)) return MAAND_KORT.format(new Date(`${x}-01T00:00:00Z`)).replace(".", "");
+  return x;
 }
+
+/** Hetzelfde, maar voluit voor de tooltip: "oktober 2026". */
+function langLabel(x: string): string {
+  if (/^\d{4}-\d{2}$/.test(x)) return MAAND_LANG.format(new Date(`${x}-01T00:00:00Z`));
+  return kortLabel(x);
+}
+
+/**
+ * H1: één vaste kleur per bedrijf, cluster en platform, in elke grafiek van elke analyse. Eerst
+ * kreeg een reeks de kleur van zijn plek in de grafiek, waardoor oranje op één pagina "Google
+ * Ads", "PGZ" en "Van den Udenhout" kon betekenen. De nummers wijzen in het palet van het theme
+ * (`categorieen`), zodat het in elk theme klopt; plek 1 (oranje in de huisstijl) blijft vrij, want
+ * oranje is ook "Aandacht". "Groep" en "Totaal" krijgen het neutrale grijs van de as.
+ */
+const VASTE_KLEUR: { patroon: RegExp; plek: number | "neutraal" }[] = [
+  { patroon: /^(hele )?groep$|^totaal|^alle /i, plek: "neutraal" },
+  { patroon: /udenhout|^vdu\b/i, plek: 0 },
+  { patroon: /^pgz|pgz\.nl|porsche|bentley/i, plek: 4 },
+  { patroon: /veloo/i, plek: 2 },
+  { patroon: /^meta/i, plek: 5 },
+  { patroon: /^google/i, plek: 3 },
+];
+
+function kleurVoor(naam: string, j: number, palet: readonly string[], neutraal: string, bezet: Set<number>): string {
+  const vast = VASTE_KLEUR.find((k) => k.patroon.test(naam.trim()));
+  if (vast) return vast.plek === "neutraal" ? neutraal : palet[vast.plek % palet.length];
+  // Onbekende reeks: de eerste vrije plek, oranje (1) als laatste.
+  const volgorde = [0, 2, 4, 5, 3, 1].filter((i) => !bezet.has(i));
+  const plek = volgorde[j % Math.max(1, volgorde.length)] ?? j;
+  return palet[plek % palet.length];
+}
+
+/** Vanaf zoveel punten worden staven gestapeld (H24): anders zijn het streepjes van een paar pixels. */
+const STAPELEN_VANAF = 20;
 
 /**
  * Een grafiek uit een analyse: lijn of staaf, één as (alle reeksen in dezelfde eenheid),
  * kleuren in vaste volgorde uit het palet van het theme. Eén reeks heeft geen legenda nodig:
  * de titel zegt wat het is.
  */
-export default function AnalyseGrafiek({ grafiek }: { grafiek: Grafiek }) {
+export default function AnalyseGrafiek({ grafiek, gestapeld: stapel = false }: { grafiek: Grafiek; gestapeld?: boolean }) {
   const kleuren = useGrafiekKleuren();
   const reeksen = grafiek.reeksen.slice(0, MAX_REEKSEN);
   const data = grafiek.x.map((x, i) => {
@@ -42,10 +84,17 @@ export default function AnalyseGrafiek({ grafiek }: { grafiek: Grafiek }) {
     return punt;
   });
   const metLegenda = reeksen.length > 1;
+  const bezet = new Set(
+    reeksen
+      .map((r) => VASTE_KLEUR.find((k) => k.patroon.test(r.naam.trim()))?.plek)
+      .filter((p): p is number => typeof p === "number"),
+  );
+  const kleur = reeksen.map((r, j) => kleurVoor(r.naam, j, kleuren.categorieen, kleuren.as, bezet));
+  const gestapeld = grafiek.type === "staaf" && reeksen.length > 1 && (stapel || data.length >= STAPELEN_VANAF);
   const as = { fontSize: AS_GROOTTE, fill: kleuren.as };
   const tooltip = (
     <Tooltip
-      labelFormatter={(x) => kortLabel(String(x))}
+      labelFormatter={(x) => langLabel(String(x))}
       formatter={(waarde, naam) => {
         const index = Number(String(naam).slice(1));
         return [formatWaarde(waarde as number | null, grafiek.eenheid), reeksen[index]?.naam ?? String(naam)];
@@ -71,12 +120,14 @@ export default function AnalyseGrafiek({ grafiek }: { grafiek: Grafiek }) {
   );
 
   return (
-    <figure className="rounded-card border border-line-soft p-4">
+    // H21: de figuur vult zijn kaart, zodat twee grafieken naast elkaar even hoog zijn; de
+    // voetnoot staat onderaan.
+    <figure className="flex h-full flex-col rounded-card border border-line-soft p-4">
       <figcaption className="mb-3 text-sm font-semibold text-ink">{grafiek.titel}</figcaption>
       <div className="h-56">
         <ResponsiveContainer width="100%" height="100%">
           {grafiek.type === "staaf" ? (
-            <BarChart data={data} barGap={2}>
+            <BarChart data={data} barGap={2} barCategoryGap={gestapeld ? "18%" : "10%"}>
               {assen}
               {tooltip}
               {legenda}
@@ -84,8 +135,9 @@ export default function AnalyseGrafiek({ grafiek }: { grafiek: Grafiek }) {
                 <Bar
                   key={j}
                   dataKey={`r${j}`}
-                  fill={kleuren.categorieen[j % kleuren.categorieen.length]}
-                  radius={[kleuren.staafradius, kleuren.staafradius, 0, 0]}
+                  fill={kleur[j]}
+                  stackId={gestapeld ? "a" : undefined}
+                  radius={gestapeld && j < reeksen.length - 1 ? 0 : [kleuren.staafradius, kleuren.staafradius, 0, 0]}
                   isAnimationActive={false}
                 />
               ))}
@@ -100,7 +152,7 @@ export default function AnalyseGrafiek({ grafiek }: { grafiek: Grafiek }) {
                   key={j}
                   dataKey={`r${j}`}
                   type={kleuren.lijnvorm}
-                  stroke={kleuren.categorieen[j % kleuren.categorieen.length]}
+                  stroke={kleur[j]}
                   strokeWidth={kleuren.lijndikte}
                   dot={false}
                   connectNulls
@@ -111,7 +163,7 @@ export default function AnalyseGrafiek({ grafiek }: { grafiek: Grafiek }) {
           )}
         </ResponsiveContainer>
       </div>
-      {grafiek.voetnoot && <p className="mt-2 text-meta text-ink-faint">{grafiek.voetnoot}</p>}
+      {grafiek.voetnoot && <p className="mt-auto pt-2 text-meta text-ink-faint">{grafiek.voetnoot}</p>}
     </figure>
   );
 }

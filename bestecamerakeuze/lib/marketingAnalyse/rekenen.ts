@@ -97,7 +97,7 @@ export function paginaSleutel(url: string): string | null {
 // ---------------------------------------------------------------------------
 
 /**
- * De merken die standaard in E-mail settings staan. Merken die al adressen hebben of in een
+ * De merken die standaard in E-mailinstellingen staan. Merken die al adressen hebben of in een
  * briefing voorkomen, komen erbij (`merkenVoorMail`).
  */
 export const STANDAARD_MERKEN = [
@@ -141,7 +141,7 @@ export function merkSleutels(merk: string | null | undefined): string[] {
 }
 
 /**
- * De merken voor E-mail settings: de standaardmerken, dan merken met adressen en merken uit de
+ * De merken voor E-mailinstellingen: de standaardmerken, dan merken met adressen en merken uit de
  * briefings die daar nog niet tussen staan (op sleutel), alfabetisch. Een merkveld met meer
  * merken telt als die losse merken.
  */

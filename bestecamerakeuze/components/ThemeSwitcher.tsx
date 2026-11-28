@@ -44,7 +44,7 @@ export default function ThemeSwitcher() {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Vormgeving kiezen"
-        title="Vormgeving kiezen"
+        data-tip="Vormgeving kiezen"
         className={`flex h-9 w-9 items-center justify-center text-ink-muted transition-colors duration-[var(--duur-snel)] hover:text-ink ${
           open ? "text-ink" : ""
         }`}

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Drawer from "@/components/Drawer";
 import { IconTrash } from "@/components/icons";
 import type { MaVolger } from "@/lib/marketingAnalyse/types";
+import { SkeletRegels } from "@/components/Skelet";
+import { toonMelding } from "@/lib/meldingen";
 
 /**
  * Volgers van een analyse, in een zijbalk die opent vanaf het mail-icoontje in het overzicht:
@@ -64,6 +66,7 @@ export default function VolgersZijbalk({
       if (!res.ok || !data.volger) throw new Error(data.fout ?? "Kon het adres niet toevoegen.");
       const nieuw = data.volger;
       zetVolgers([...(volgers ?? []).filter((v) => v.id !== nieuw.id), nieuw]);
+      toonMelding({ titel: "Adres toegevoegd", regel: `${nieuw.email} krijgt een mail bij een nieuwe analyse.` });
       if (adres !== null) setEmail("");
     } catch (err) {
       setFout(err instanceof Error ? err.message : String(err));
@@ -80,6 +83,7 @@ export default function VolgersZijbalk({
       const data = (await res.json().catch(() => ({}))) as { fout?: string };
       if (!res.ok) throw new Error(data.fout ?? "Kon het adres niet weghalen.");
       zetVolgers((volgers ?? []).filter((x) => x.id !== v.id));
+      toonMelding({ titel: "Adres weggehaald", regel: v.email });
     } catch (err) {
       setFout(err instanceof Error ? err.message : String(err));
     } finally {
@@ -111,7 +115,7 @@ export default function VolgersZijbalk({
         )}
       </div>
 
-      {volgers === null && !fout && <p className="text-sm text-ink-faint">Laden…</p>}
+      {volgers === null && !fout && <SkeletRegels aantal={3} />}
 
       {volgers && volgers.length > 0 && (
         <ul className="divide-y divide-line-soft rounded-card border border-line-soft">
@@ -121,7 +125,7 @@ export default function VolgersZijbalk({
                 {v.email}
                 {v.ikZelf && <span className="ml-1.5 text-meta text-ink-faint">(jij)</span>}
                 {v.viaMerk && (
-                  <span className="ml-1.5 text-meta text-ink-faint" title={`Standaard voor ${v.viaMerk} (E-mail settings)`}>
+                  <span className="ml-1.5 text-meta text-ink-faint" data-tip={`Standaard voor ${v.viaMerk} (E-mailinstellingen)`}>
                     via {v.viaMerk}
                   </span>
                 )}
@@ -132,7 +136,7 @@ export default function VolgersZijbalk({
                   onClick={() => verwijder(v)}
                   disabled={bezig !== null}
                   aria-label={`${v.email} verwijderen`}
-                  title="Verwijderen"
+                  data-tip="Verwijderen"
                   className="flex h-7 w-7 shrink-0 items-center justify-center rounded-control text-ink-faint transition-colors hover:bg-surface hover:text-negative disabled:opacity-50"
                 >
                   <IconTrash className="h-4 w-4" />

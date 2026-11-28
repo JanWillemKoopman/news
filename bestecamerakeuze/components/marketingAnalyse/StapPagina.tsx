@@ -5,11 +5,104 @@ import AnalyseGrafiek from "@/components/marketingAnalyse/AnalyseGrafiek";
 import { AnalyseTabel, KerncijferRij } from "@/components/marketingAnalyse/SectieBlok";
 import { OordeelBadge, PrioriteitLabel } from "@/components/marketingAnalyse/onderdelen";
 import type { AnalyseTab } from "@/lib/marketingAnalyse/rekenen";
-import type { Aanbeveling } from "@/lib/marketingAnalyse/types";
+import { useState } from "react";
+import type { Aanbeveling, Grafiek, Tabel } from "@/lib/marketingAnalyse/types";
 
 export type Buur = { sleutel: string; naam: string };
 
 const KAART = "rounded-panel border border-line bg-card shadow-subtle";
+
+const MAANDEN = ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"];
+
+/**
+ * H19: een tabel met een rij per maand ("januari 2026") en een paar kolommen met aantallen
+ * (Facebook, LinkedIn, Instagram) leest beter als gestapelde staafgrafiek. Kolommen met
+ * vertoningen, weergaven of een totaal tellen niet mee; zo blijven het posts per platform.
+ * Geen maandtabel of minder dan twee bruikbare kolommen: geen grafiek.
+ */
+function maandGrafiekUit(t: Tabel): Grafiek | null {
+  if (t.rijen.length < 4) return null;
+  const maanden = t.rijen.map((r) => {
+    const m = typeof r[0] === "string" ? r[0].trim().toLowerCase().match(/^([a-z]+)\s+(\d{4})$/) : null;
+    const i = m ? MAANDEN.indexOf(m[1]) : -1;
+    return m && i >= 0 ? `${m[2]}-${String(i + 1).padStart(2, "0")}` : null;
+  });
+  if (maanden.some((m) => m === null)) return null;
+  const kolommen = t.kolommen
+    .map((k, i) => ({ k, i }))
+    .filter(({ k, i }) => i > 0 && !/vertoning|weergave|totaal|verschil|sinds/i.test(k.label) && t.rijen.every((r) => typeof r[i] === "number" || r[i] === null));
+  if (kolommen.length < 2 || kolommen.length > 6) return null;
+  return {
+    titel: t.titel ?? "Per maand",
+    type: "staaf",
+    x: maanden as string[],
+    reeksen: kolommen.map(({ k, i }) => ({ naam: k.label, waarden: t.rijen.map((r) => (r[i] as number | null) ?? null) })),
+    eenheid: "aantal",
+  };
+}
+
+/** Een maandtabel als grafiek, met de tabel zelf ingeklapt eronder (H19). */
+function MaandTabelMetGrafiek({ tabel, grafiek }: { tabel: Tabel; grafiek: Grafiek }) {
+  return (
+    <section className={`${KAART} flex flex-col gap-3 px-6 py-5`}>
+      <AnalyseGrafiek grafiek={{ ...grafiek, voetnoot: undefined }} gestapeld />
+      <details className="group">
+        <summary className="cursor-pointer text-sm font-medium text-ink-muted transition-colors hover:text-ink">Toon de tabel</summary>
+        <div className="mt-3">
+          <AnalyseTabel tabel={tabel} verbergTitel />
+        </div>
+      </details>
+    </section>
+  );
+}
+
+/** De korte naam van een tabel voor een knop: "Van den Udenhout (VDU, Instra)" → "Van den Udenhout". */
+function korteTitel(t: Tabel, i: number): string {
+  return (t.titel ?? `Tabel ${i + 1}`).replace(/\s*\(.*\)\s*$/, "").trim();
+}
+
+/** Drie of meer tabellen met precies dezelfde kolommen zijn één tabel per bedrijf of cluster (H6). */
+function zelfdeKolommen(tabellen: Tabel[]): boolean {
+  if (tabellen.length < 3) return false;
+  const sleutel = (t: Tabel) => t.kolommen.map((k) => k.label).join("|");
+  return tabellen.every((t) => sleutel(t) === sleutel(tabellen[0]));
+}
+
+/**
+ * H6: tabellen met dezelfde kolommen (Van den Udenhout, PGZ, VELOO, Hele groep) als één kaart met
+ * een schakelaar, in plaats van vier bijna gelijke tabellen onder elkaar. Het totaal ("Hele groep")
+ * staat vooraan en is de standaard.
+ */
+function TabelWisselaar({ tabellen }: { tabellen: Tabel[] }) {
+  const totaal = tabellen.findIndex((t) => /hele groep|^groep|^totaal|alle /i.test(t.titel ?? ""));
+  const volgorde = totaal >= 0 ? [totaal, ...tabellen.map((_, i) => i).filter((i) => i !== totaal)] : tabellen.map((_, i) => i);
+  const [gekozen, setGekozen] = useState(volgorde[0]);
+  const t = tabellen[gekozen];
+  return (
+    <section className={`${KAART} px-6 py-5`}>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm font-semibold text-ink">{t.titel}</p>
+        <div role="tablist" aria-label="Kies een tabel" className="flex flex-wrap items-center gap-0.5 rounded-control bg-surface p-0.5">
+          {volgorde.map((i) => (
+            <button
+              key={i}
+              type="button"
+              role="tab"
+              aria-selected={i === gekozen}
+              onClick={() => setGekozen(i)}
+              className={`rounded-[8px] px-3 py-1 text-sm transition-colors duration-[var(--duur-snel)] ease-merk ${
+                i === gekozen ? "bg-card font-medium text-ink shadow-subtle vdu:bg-ink vdu:text-card" : "text-ink-muted hover:text-ink"
+              }`}
+            >
+              {korteTitel(tabellen[i], i)}
+            </button>
+          ))}
+        </div>
+      </div>
+      <AnalyseTabel key={gekozen} tabel={t} verbergTitel />
+    </section>
+  );
+}
 
 /**
  * Eén stap van de funnel, altijd in dezelfde volgorde: eerst het oordeel in één zin met de
@@ -68,7 +161,9 @@ export default function StapPagina({
       ) : (
         <>
           {formaat !== 1 && (
-            <div className="grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] items-start gap-5">
+            // H18: "Wat we zien" en "Wat nu te doen" even hoog, allebei een witte kaart; de actiekaart
+            // herken je aan de blauwe streep links.
+            <div className="grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] items-stretch gap-5">
               <section className={`${KAART} px-6 py-5`}>
                 <h3 className="text-sm font-semibold text-ink">Wat we zien</h3>
                 {bevindingen.length === 0 ? (
@@ -81,7 +176,7 @@ export default function StapPagina({
                   </ul>
                 )}
               </section>
-              <section className="rounded-panel border border-primary/15 bg-primary-light px-6 py-5">
+              <section className={`${KAART} border-l-[3px] border-l-primary px-6 py-5`}>
                 <h3 className="text-sm font-semibold text-primary">Wat nu te doen</h3>
                 {acties.length === 0 ? (
                   <p className="mt-2 text-sm text-ink-muted">Geen actie nodig voor deze stap.</p>
@@ -117,17 +212,26 @@ export default function StapPagina({
                 {grafieken.length > 0 && (
                   <div className={`grid gap-5 ${grafieken.length > 1 ? "xl:grid-cols-2" : ""}`}>
                     {grafieken.map((g, j) => (
-                      <div key={j} className="rounded-panel bg-card shadow-subtle">
+                      <div key={j} className="h-full rounded-panel bg-card shadow-subtle">
                         <AnalyseGrafiek grafiek={g} />
                       </div>
                     ))}
                   </div>
                 )}
-                {tabellen.map((t, j) => (
-                  <section key={j} className={`${KAART} px-6 py-5`}>
-                    <AnalyseTabel tabel={t} />
-                  </section>
-                ))}
+                {zelfdeKolommen(tabellen) ? (
+                  <TabelWisselaar tabellen={tabellen} />
+                ) : (
+                  tabellen.map((t, j) => {
+                    const g = maandGrafiekUit(t);
+                    return g ? (
+                      <MaandTabelMetGrafiek key={j} tabel={t} grafiek={g} />
+                    ) : (
+                      <section key={j} className={`${KAART} px-6 py-5`}>
+                        <AnalyseTabel tabel={t} />
+                      </section>
+                    );
+                  })
+                )}
               </div>
             );
           })}

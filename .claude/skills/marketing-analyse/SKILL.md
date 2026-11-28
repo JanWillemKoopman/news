@@ -704,7 +704,7 @@ groot (> ~2 MB)? Maak het resultaat compacter, niet in stukken.
 
 Na het bewaren mailt het dashboard vanzelf de volgers van de campagne (trigger in migratie
 0043, via het gedeelde Gmail-account). Daar hoef je niets voor te doen; een nieuwe campagne krijgt de
-adressen uit E-mail settings voor haar merk vanzelf als volgers (trigger in migratie 0047); de mail bevat de kop,
+adressen uit E-mailinstellingen voor haar merk vanzelf als volgers (trigger in migratie 0047); de mail bevat de kop,
 de vijf regels en het doeloordeel, dus schrijf die zo dat ze zonder de rest te begrijpen zijn.
 
 ## Stap 6 — Terugmelden
