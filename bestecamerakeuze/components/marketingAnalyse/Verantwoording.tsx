@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { datumKort } from "@/lib/marketingAnalyse/rekenen";
 import type { MaCampagne, MaOverzichtRegel, MaResultaat } from "@/lib/marketingAnalyse/types";
+import { toonMelding } from "@/lib/meldingen";
+import { IconCheck, IconLink } from "@/components/icons";
 
 /** Het veld Data correctie: altijd de huidige tekst van de campagne, voor de volgende analyse. */
 export function DataCorrectie({
@@ -33,6 +35,7 @@ export function DataCorrectie({
       const data = (await res.json().catch(() => ({}))) as { campagne?: MaCampagne; fout?: string };
       if (!res.ok || !data.campagne) throw new Error(data.fout ?? "Kon de Data correctie niet opslaan.");
       onOpgeslagen(data.campagne);
+      toonMelding({ titel: "Data correctie opgeslagen", regel: "Geldt vanaf de volgende analyse." });
       setMelding("Opgeslagen. De volgende analyse neemt dit mee.");
     } catch (err) {
       setFout(err instanceof Error ? err.message : String(err));
@@ -71,11 +74,13 @@ export function DataCorrectie({
         <div className="flex items-center gap-3">
           {fout && <span className="text-sm text-negative">{fout}</span>}
           {melding && <span className="text-sm text-positive">{melding}</span>}
+          {/* H22: uitgeschakeld is grijs met uitleg, geen vaalblauwe knop die kapot lijkt. */}
           <button
             type="button"
             onClick={opslaan}
             disabled={bezig || !gewijzigd}
-            className="rounded-button bg-primary px-4 py-2 text-sm font-medium text-on-primary transition-colors hover:bg-primary-dark disabled:opacity-50"
+            data-tip={!gewijzigd && !bezig ? "Typ eerst een correctie" : undefined}
+            className="rounded-button bg-primary px-4 py-2 text-sm font-medium text-on-primary transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-surface disabled:text-ink-faint"
           >
             {bezig ? "Opslaan…" : "Opslaan"}
           </button>
@@ -113,14 +118,28 @@ export default function Verantwoording({
           <p className="mt-1 text-meta text-ink-faint">
             Wat de analyse aan deze campagne heeft toegerekend, en waarom. Klopt iets niet? Vul de Data correctie hieronder in.
           </p>
+          {/* H22: de bronnen als nette lijst met een icoon, niet als rij grijze pillen. */}
           {r.bronnen && r.bronnen.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {r.bronnen.map((b) => (
-                <span key={b} className="rounded-control border border-line-soft bg-surface-tint px-2 py-0.5 text-meta text-ink-muted">
-                  {b}
-                </span>
-              ))}
-            </div>
+            <ul className="mt-3 grid gap-x-6 gap-y-1.5 text-sm text-ink-muted md:grid-cols-2">
+              {r.bronnen.map((b) => {
+                const [bron, ...rest] = b.split(":");
+                return (
+                  <li key={b} className="flex items-start gap-2">
+                    <IconLink className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-faint" />
+                    <span>
+                      {rest.length > 0 ? (
+                        <>
+                          <span className="text-ink-faint">{bron}:</span>
+                          {rest.join(":")}
+                        </>
+                      ) : (
+                        b
+                      )}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </header>
         {r.herkenning.length === 0 ? (
@@ -143,8 +162,20 @@ export default function Verantwoording({
                   <td className="whitespace-nowrap px-3 py-2.5 text-ink-muted">{h.soort}</td>
                   <td className="max-w-[28ch] break-words px-3 py-2.5 font-medium text-ink">{h.naam}</td>
                   <td className="px-3 py-2.5 text-ink-muted">{h.reden}</td>
-                  <td className={`whitespace-nowrap px-6 py-2.5 text-right ${h.zekerheid === "twijfel" ? "text-negative" : "text-ink-muted"}`}>
-                    {h.zekerheid ?? "—"}
+                  <td className="whitespace-nowrap px-6 py-2.5 text-right">
+                    {/* H22: zekerheid als klein label: groen zeker, oranje twijfel. */}
+                    {h.zekerheid ? (
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-pill px-2 py-0.5 text-meta font-semibold ${
+                          h.zekerheid === "twijfel" ? "bg-orange/12 text-orange-dark" : "bg-positive/10 text-positive"
+                        }`}
+                      >
+                        {h.zekerheid !== "twijfel" && <IconCheck className="h-3 w-3" />}
+                        {h.zekerheid}
+                      </span>
+                    ) : (
+                      <span className="text-ink-faint">—</span>
+                    )}
                   </td>
                 </tr>
               ))}

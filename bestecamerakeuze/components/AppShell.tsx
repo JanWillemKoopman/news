@@ -5,6 +5,8 @@ import PageHeader from "@/components/PageHeader";
 import Sidebar, { type DashboardView } from "@/components/Sidebar";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import Toast from "@/components/Toast";
+import MeldingLaag from "@/components/MeldingLaag";
+import TooltipLaag from "@/components/TooltipLaag";
 import HomeDashboard from "@/components/home/HomeDashboard";
 import NieuweCampagneKnop from "@/components/NieuweCampagneKnop";
 import NieuwBerichtZijbalk from "@/components/kennisacties/NieuwBerichtZijbalk";
@@ -59,6 +61,9 @@ const CAMPAGNE_GROEP_VIEWS: DashboardView[] = ["campagnes", "tijdlijn", "campagn
  *  tabbladen waar die telling ook zichtbaar is: Scores (de stand zelf) en Kennis en
  *  acties (de berichten die de punten opleveren) — niet op Campagnes. */
 const GAME_INFO_VIEWS: DashboardView[] = ["scores", "kennisacties"];
+
+/** De Kanalen-pagina's: daar staat naast het oogje rechtsboven nog een lampje (zie `<main>`). */
+const KANAAL_VIEWS: DashboardView[] = ["social-ads", "google-ads", "organisch", "account-ontwikkeling", "website"];
 
 /**
  * De tabbladen met de "+" voor een bericht: de twee teamtabbladen én de kanaalpagina's.
@@ -337,10 +342,12 @@ export default function AppShell({
         />
       </div>
 
-      {/* pr-28: ruimte voor het vaste oogje rechtsboven én, op de Kanalen-pagina's, het
-          lampje ernaast (`KanaalPagina.tsx`), zodat de status-/updateknop in de
-          PageHeader er niet onder verdwijnt. */}
-      <main className="min-w-0 flex-1 py-6 pl-8 pr-28">
+      {/* G8: links en rechts dezelfde marge (64px), zodat de pagina recht in het venster
+          staat; het vaste oogje rechtsboven valt binnen die marge. Alleen de
+          Kanalen-pagina's houden pr-28: daar staat naast het oogje nog het lampje
+          (`KanaalPagina.tsx`), en de status-/updateknop in de PageHeader mag daar niet
+          onder verdwijnen. */}
+      <main className={`min-w-0 flex-1 py-6 ${KANAAL_VIEWS.includes(actief) ? "pl-8 pr-28" : "px-16"}`}>
         {actief !== "chat" && actief !== "home" && !(actief === "marketing-analyse" && analyseOpen) && (
           <PageHeader
             title={title}
@@ -476,6 +483,8 @@ export default function AppShell({
       {/* Hoort bij Scores: staat dat tabblad verborgen (lib/beperkteTabbladen.ts), dan ook de pop-up. */}
       {magTabbladZien("scores", gebruikerEmail) && <WeekwinnaarPopup />}
       <Toast melding={melding} onWeg={wisMelding} />
+      <MeldingLaag />
+      <TooltipLaag />
       </div>
     </ActieveWeergaveProvider>
   );

@@ -20,10 +20,13 @@ const DOEL_KLEUR: Record<DoelStatus, string> = {
   onbekend: "text-ink-muted",
 };
 
-/** Hoog rood, middel lichtrood, laag grijs: twee keer rood is eerst oppakken. */
+/**
+ * H4: drie prioriteiten die je uit elkaar houdt: hoog rood gevuld, middel oranje, laag grijs. Eerst
+ * waren hoog en middel allebei rood omrand.
+ */
 const PRIORITEIT_KLEUR: Record<Prioriteit, string> = {
-  hoog: "border-negative/50 text-negative",
-  middel: "border-negative/25 text-negative/80",
+  hoog: "border-negative bg-negative text-on-primary",
+  middel: "border-orange/40 bg-orange/10 text-orange-dark",
   laag: "border-line text-ink-muted",
 };
 
@@ -68,7 +71,7 @@ export function OordeelStip({ oordeel, className = "" }: { oordeel: TabOordeel |
     <span
       role="img"
       aria-label={TAB_OORDEEL_NAAM[oordeel]}
-      title={TAB_OORDEEL_NAAM[oordeel]}
+      data-tip={TAB_OORDEEL_NAAM[oordeel]}
       className={`inline-block h-2 w-2 shrink-0 rounded-full ${OORDEEL_KLEUR[oordeel]} ${className}`}
     />
   );

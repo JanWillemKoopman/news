@@ -120,12 +120,16 @@ export default function PlanningKeuze({
           aria-haspopup="menu"
           aria-expanded={open}
           aria-label={`Planning voor ${naam}: ${PLANNING_NAAM[regel.planning]}`}
-          title={
+          data-tip={
             volgende.datum
               ? `Volgende analyse ${volgende.datum}${volgende.toelichting ? ` · ${volgende.toelichting}` : ""}. Klik om de planning te wijzigen.`
               : "Niet ingepland. Klik om de planning te wijzigen."
           }
-          className="-ml-1 inline-flex items-center gap-1 whitespace-nowrap rounded-control px-1 py-0.5 text-meta text-ink-faint transition-colors duration-[var(--duur-snel)] hover:bg-surface hover:text-ink disabled:opacity-60"
+          // M7: een rustig knopje (haarlijn, bij hover een donkerdere rand) in plaats van platte
+          // tekst, zodat je ziet dat het een keuzemenu is.
+          className={`-my-1 inline-flex items-center gap-1 whitespace-nowrap rounded-control border px-1.5 py-1 text-meta transition-colors duration-[var(--duur-snel)] ease-merk hover:border-ink-faint hover:text-ink disabled:opacity-60 ${
+            open ? "border-ink-faint text-ink" : "border-line bg-card text-ink-muted"
+          }`}
         >
           {PLANNING_NAAM[regel.planning]}
           {volgende.datum && (

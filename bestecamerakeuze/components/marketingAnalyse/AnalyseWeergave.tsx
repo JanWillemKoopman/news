@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Briefing, BriefingZijbalk } from "@/components/marketingAnalyse/Briefing";
 import SamenvattingPagina from "@/components/marketingAnalyse/SamenvattingPagina";
 import StapNavigatie, { SAMENVATTING, VERANTWOORDING } from "@/components/marketingAnalyse/StapNavigatie";
@@ -10,9 +10,10 @@ import Verantwoording, { DataCorrectie } from "@/components/marketingAnalyse/Ver
 import VolgersZijbalk from "@/components/marketingAnalyse/VolgersZijbalk";
 import { LabelBadge } from "@/components/marketingAnalyse/onderdelen";
 import { getBrandLogo } from "@/components/brandLogos";
-import { IconMail, IconPencil } from "@/components/icons";
+import { IconChevronDown, IconMail, IconMeer, IconPencil } from "@/components/icons";
 import { bedrijvenLabel, formatWaarde, looptijdLabel, tabbladenVoor, versieLabel } from "@/lib/marketingAnalyse/rekenen";
 import { LABEL_NAAM, type MaAnalyse, type MaCampagne, type MaOpzet, type MaOverzichtRegel, type MaVersie } from "@/lib/marketingAnalyse/types";
+import { toonMelding } from "@/lib/meldingen";
 
 export { DoelRegel, LabelBadge } from "@/components/marketingAnalyse/onderdelen";
 
@@ -24,7 +25,7 @@ type Props = {
   onTerug: () => void;
   onBewerk: () => void;
   onCampagneBijgewerkt: (c: MaCampagne) => void;
-  /** Beheeracties van de pagina (Beheer, E-mail settings), rechts in de kruimelrij. */
+  /** Beheeracties van de pagina (Beheer, E-mailinstellingen), rechts in de kruimelrij. */
   acties?: ReactNode;
 };
 
@@ -106,6 +107,7 @@ export default function AnalyseWeergave({ campagne, opzet, isEigenaar, onTerug, 
     const res = await fetch(`/api/marketing-analyse/analyse?id=${encodeURIComponent(analyse.id)}`, { method: "DELETE" });
     const data = (await res.json().catch(() => ({}))) as { fout?: string };
     if (!res.ok) return setFout(data.fout ?? "Kon de versie niet verwijderen.");
+    toonMelding({ titel: `Versie ${analyse.versie} verwijderd`, regel: campagne.naam });
     const rest = (versies ?? []).filter((v) => v.id !== analyse.id);
     setVersies(rest);
     setGekozen(rest[0]?.id ?? null);
@@ -139,15 +141,22 @@ export default function AnalyseWeergave({ campagne, opzet, isEigenaar, onTerug, 
   const rapportage = (b?.formulier ?? opzet?.formulier) === "rapportage";
   // Eén regel feiten onder de titel: wat voor campagne, voor wie, wanneer, doel en budget.
   // Doel en budget krijgen een gedempt etiket zodat de waarde zelf opvalt.
-  const feiten: { etiket?: string; tekst: string }[] = [
+  type Feit = { etiket?: string; tekst: string; tip?: string };
+  const feiten: Feit[] = ([
     campagne.merk ? { tekst: campagne.merk } : null,
-    bedrijvenLabel(campagne.bedrijven) ? { tekst: bedrijvenLabel(campagne.bedrijven) } : null,
+    // H16: zeven bedrijven op een rij is een halve regel; vanaf vier staat er "7 bedrijven" met de
+    // namen in de tooltip.
+    campagne.bedrijven.length > 3
+      ? { tekst: `${campagne.bedrijven.length} bedrijven`, tip: bedrijvenLabel(campagne.bedrijven) }
+      : bedrijvenLabel(campagne.bedrijven)
+        ? { tekst: bedrijvenLabel(campagne.bedrijven) }
+        : null,
     (rapportage ? campagne.periodeTekst : looptijdLabel(campagne.startdatum, campagne.einddatum))
       ? { tekst: (rapportage ? campagne.periodeTekst : looptijdLabel(campagne.startdatum, campagne.einddatum)) as string }
       : null,
     !rapportage && campagne.doel ? { etiket: "Doel", tekst: campagne.doel } : null,
     !rapportage && campagne.budget != null ? { etiket: "Budget", tekst: formatWaarde(campagne.budget, "euro") } : null,
-  ].filter((x): x is { etiket?: string; tekst: string } => x !== null);
+  ] as (Feit | null)[]).filter((x): x is Feit => x !== null);
 
   return (
     <div className="flex flex-col gap-5">
@@ -179,16 +188,21 @@ export default function AnalyseWeergave({ campagne, opzet, isEigenaar, onTerug, 
             {Logo && <Logo role="img" aria-label={campagne.merk ?? undefined} className="h-7 w-7 shrink-0 text-ink-muted" />}
             <h1 className="titel-theme min-w-0 truncate text-ink">{campagne.naam}</h1>
             {analyse && <LabelBadge label={analyse.label} />}
-            {opzet && !opzet.standaard && <span className="text-sm text-ink-muted">{opzet.naam}</span>}
+            {/* H16: de soort analyse alleen als hij iets toevoegt (niet "HRM campagne · HRM campagne"). */}
+            {opzet && !opzet.standaard && opzet.naam.trim().toLowerCase() !== campagne.naam.trim().toLowerCase() && (
+              <span className="text-sm text-ink-muted">{opzet.naam}</span>
+            )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {versies && versies.length > 0 && (
               <label className="flex items-center gap-2 text-sm text-ink-muted">
                 <span className="sr-only sm:not-sr-only">Versie</span>
+                {/* H20: de versiekeuze in de stijl van de andere knoppen, met ons eigen pijltje. */}
+                <span className="relative">
                 <select
                   value={gekozen ?? ""}
                   onChange={(e) => setGekozen(e.target.value)}
-                  className="max-w-[22rem] rounded-button border border-line bg-card px-3 py-1.5 text-sm text-ink focus:border-primary focus:outline-none"
+                  className="max-w-[22rem] cursor-pointer appearance-none rounded-button border border-line bg-card py-1.5 pl-3.5 pr-9 text-sm font-medium text-ink transition-colors duration-[var(--duur-snel)] ease-merk hover:border-ink-faint focus:border-primary focus:outline-none"
                 >
                   {versies.map((v, i) => (
                     <option key={v.id} value={v.id}>
@@ -198,6 +212,8 @@ export default function AnalyseWeergave({ campagne, opzet, isEigenaar, onTerug, 
                     </option>
                   ))}
                 </select>
+                <IconChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
+                </span>
               </label>
             )}
             <span aria-hidden="true" className="mx-1 h-5 w-px bg-line" />
@@ -222,12 +238,21 @@ export default function AnalyseWeergave({ campagne, opzet, isEigenaar, onTerug, 
             <button
               type="button"
               onClick={onBewerk}
-              title="Briefing bewerken"
+              data-tip="Briefing bewerken"
               aria-label="Briefing bewerken"
-              className="flex h-8 w-8 items-center justify-center rounded-control text-ink-faint transition-colors hover:bg-surface hover:text-ink"
+              className="flex h-8 w-8 items-center justify-center rounded-control text-ink-muted transition-colors hover:bg-surface hover:text-ink"
             >
               <IconPencil className="h-4 w-4" />
             </button>
+            {/* H15: verwijderen staat niet meer in rood onder elke stap, maar in dit menu. */}
+            {isEigenaar && analyse && (
+              <MeerMenu
+                bevestig={bevestigWeg}
+                versie={analyse.versie}
+                onVerwijder={verwijderVersie}
+                onSluit={() => setBevestigWeg(false)}
+              />
+            )}
           </div>
         </div>
 
@@ -238,7 +263,12 @@ export default function AnalyseWeergave({ campagne, opzet, isEigenaar, onTerug, 
               <span key={`${f.etiket ?? ""}${f.tekst}`} className="flex items-center gap-2">
                 {i > 0 && <span aria-hidden="true" className="text-ink-faint">·</span>}
                 {f.etiket && <span className="text-ink-faint">{f.etiket}</span>}
-                <span className={f.etiket ? "text-ink" : undefined}>{f.tekst}</span>
+                <span
+                  className={`${f.etiket ? "text-ink" : ""} ${f.tip ? "cursor-help underline decoration-dotted decoration-ink-faint underline-offset-4" : ""}`}
+                  data-tip={f.tip}
+                >
+                  {f.tekst}
+                </span>
               </span>
             ))}
           </p>
@@ -285,11 +315,7 @@ export default function AnalyseWeergave({ campagne, opzet, isEigenaar, onTerug, 
               {` · prompt ${analyse.promptVersie ? `v${analyse.promptVersie}` : "standaard"}`}
               {` · semantic layer ${analyse.semantiekVersie ? `v${analyse.semantiekVersie}` : "standaard"}`}
             </p>
-            {isEigenaar && (
-              <button type="button" onClick={verwijderVersie} className="text-meta text-negative underline-offset-2 hover:underline">
-                {bevestigWeg ? `Versie ${analyse.versie} echt verwijderen?` : "Versie verwijderen"}
-              </button>
-            )}
+
           </div>
         </div>
       )}
@@ -331,11 +357,7 @@ export default function AnalyseWeergave({ campagne, opzet, isEigenaar, onTerug, 
                 {` · prompt ${analyse.promptVersie ? `v${analyse.promptVersie}` : "standaard"}`}
                 {` · semantic layer ${analyse.semantiekVersie ? `v${analyse.semantiekVersie}` : "standaard"}`}
               </p>
-              {isEigenaar && (
-                <button type="button" onClick={verwijderVersie} className="text-meta text-negative underline-offset-2 hover:underline">
-                  {bevestigWeg ? `Versie ${analyse.versie} echt verwijderen?` : "Versie verwijderen"}
-                </button>
-              )}
+
             </div>
           </div>
         </div>
@@ -355,6 +377,75 @@ export default function AnalyseWeergave({ campagne, opzet, isEigenaar, onTerug, 
       )}
       {volgersOpen && (
         <VolgersZijbalk campagneId={campagne.id} naam={campagne.naam} onAantal={setAantalVolgers} onClose={() => setVolgersOpen(false)} />
+      )}
+    </div>
+  );
+}
+
+/**
+ * H15: het menu achter de drie puntjes rechts in de kop, met de acties die je zelden nodig hebt.
+ * Nu alleen Versie verwijderen, met een tweede klik als bevestiging.
+ */
+function MeerMenu({
+  bevestig,
+  versie,
+  onVerwijder,
+  onSluit,
+}: {
+  bevestig: boolean;
+  versie: number;
+  onVerwijder: () => void;
+  onSluit: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const buiten = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) {
+        setOpen(false);
+        onSluit();
+      }
+    };
+    const toets = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setOpen(false);
+        onSluit();
+      }
+    };
+    document.addEventListener("mousedown", buiten);
+    document.addEventListener("keydown", toets);
+    return () => {
+      document.removeEventListener("mousedown", buiten);
+      document.removeEventListener("keydown", toets);
+    };
+  }, [open, onSluit]);
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((x) => !x)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="Meer acties"
+        data-tip="Meer"
+        className="flex h-8 w-8 items-center justify-center rounded-control text-ink-muted transition-colors hover:bg-surface hover:text-ink"
+      >
+        <IconMeer className="h-4 w-4" />
+      </button>
+      {open && (
+        <div role="menu" className="tip-in absolute right-0 top-full z-30 mt-1.5 w-60 rounded-card border border-line bg-card p-1.5 shadow-dropdown">
+          <button
+            type="button"
+            role="menuitem"
+            onClick={onVerwijder}
+            className={`w-full rounded-control px-2.5 py-2 text-left text-sm transition-colors hover:bg-negative/10 ${
+              bevestig ? "font-semibold text-negative" : "text-negative"
+            }`}
+          >
+            {bevestig ? `Versie ${versie} echt verwijderen?` : `Versie ${versie} verwijderen`}
+          </button>
+        </div>
       )}
     </div>
   );

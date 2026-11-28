@@ -35,6 +35,10 @@ import {
 } from "@/lib/marketingAnalyse/rekenen";
 import { STANDAARD_SEMANTIEK } from "@/lib/marketingAnalyse/standaardSemantiek";
 import type { MaCampagne, MaOpzet, MaOverzichtRegel, MaVoorstel, MaZoekronde, Planning } from "@/lib/marketingAnalyse/types";
+import { PLANNING_NAAM } from "@/lib/marketingAnalyse/types";
+import { SkeletRegels, SkeletTabel } from "@/components/Skelet";
+import { leesUitsplitsing } from "@/lib/marketingAnalyse/uitsplitsing";
+import { toonMelding } from "@/lib/meldingen";
 
 type Voorstellen = { open: MaVoorstel[]; genegeerd: MaVoorstel[]; laatsteZoekronde: MaZoekronde | null };
 
@@ -137,7 +141,7 @@ function AnalysePromptsMenu({
           style={{ top: plek.top, right: plek.right }}
           className="fixed z-50 max-h-[70vh] w-80 overflow-y-auto rounded-card border border-line bg-card py-1 shadow-dropdown"
         >
-          {zichtbaar.length === 0 && <p className="px-4 py-2 text-sm text-ink-muted">Laden…</p>}
+          {zichtbaar.length === 0 && <SkeletRegels aantal={3} className="px-4 py-3" />}
           {zichtbaar.map((o) => (
             <button
               key={o.id}
@@ -188,8 +192,18 @@ type TabelProps = {
 };
 
 const KOP = "label-theme whitespace-nowrap px-3 py-2.5 font-normal";
+// M2: een rij reageert duidelijk op de muis (een zacht vlak en rechts een pijltje), zodat je ziet
+// dat de hele regel de analyse opent.
 const RIJ =
-  "cursor-pointer align-top transition-colors duration-[var(--duur-snel)] hover:bg-surface vdu:ease-merk vdu:hover:bg-surface-tint [&>td]:border-t [&>td]:border-line-soft";
+  "group/rij cursor-pointer align-top transition-colors duration-[var(--duur-snel)] hover:bg-surface vdu:ease-merk vdu:hover:bg-ink/[0.035] [&>td]:border-t [&>td]:border-line-soft";
+
+/** M2: het pijltje rechts in een rij, zichtbaar bij hover. */
+const RIJ_PIJL = (
+  <IconChevronDown
+    aria-hidden="true"
+    className="ml-0.5 inline-block h-4 w-4 -rotate-90 align-middle text-ink-faint opacity-0 transition-opacity duration-[var(--duur-snel)] ease-merk group-hover/rij:opacity-100"
+  />
+);
 
 /** Groen ademend stipje als de analyse live is (vandaag tussen start en eind), anders grijs. */
 function StatusStip({ c, vandaag }: { c: MaOverzichtRegel; vandaag: string }) {
@@ -199,7 +213,7 @@ function StatusStip({ c, vandaag }: { c: MaOverzichtRegel; vandaag: string }) {
     <span
       role="img"
       aria-label={titel}
-      title={titel}
+      data-tip={titel}
       className={`mt-1.5 block h-2 w-2 rounded-full ${live ? "live-stip bg-open" : "bg-closed opacity-70"}`}
     />
   );
@@ -223,7 +237,7 @@ function LaatsteAnalyse({ c, opzet }: { c: MaOverzichtRegel; opzet: MaOpzet | un
   }
   if (opzet && !opzet.heeftPrompt) {
     return (
-      <span className="text-negative" title={`Er is nog geen prompt voor ${opzet.naam}; Claude weigert de analyse`}>
+      <span className="text-negative" data-tip={`Er is nog geen prompt voor ${opzet.naam}; Claude weigert de analyse`}>
         Nog geen prompt
       </span>
     );
@@ -239,9 +253,9 @@ function BewerkKnop({ c, onBewerk }: { c: MaOverzichtRegel; onBewerk: (c: MaOver
         e.stopPropagation();
         onBewerk(c);
       }}
-      title="Briefing bewerken"
+      data-tip="Briefing bewerken"
       aria-label={`Briefing van ${c.naam} bewerken`}
-      className="inline-flex h-7 w-7 items-center justify-center rounded-control text-ink-faint transition-colors hover:bg-card hover:text-ink"
+      className="inline-flex h-7 w-7 items-center justify-center rounded-control text-ink-muted transition-colors hover:bg-card hover:text-ink"
     >
       <IconPencil className="h-4 w-4" />
     </button>
@@ -258,14 +272,32 @@ function MailKnop({ c, onVolgers }: { c: MaOverzichtRegel; onVolgers: (c: MaOver
         e.stopPropagation();
         onVolgers(c);
       }}
-      title={titel}
+      data-tip={titel}
       aria-label={`${titel} — ${c.naam}`}
-      className="inline-flex h-7 items-center gap-1 rounded-control px-1.5 text-ink-faint transition-colors hover:bg-card hover:text-ink"
+      className="relative inline-flex h-7 w-7 items-center justify-center rounded-control text-ink-muted transition-colors hover:bg-card hover:text-ink"
     >
       <IconMail className="h-4 w-4" />
-      {c.aantalVolgers > 0 && <span className="text-meta tabular-nums">{c.aantalVolgers}</span>}
+      {/* M8: het aantal adressen als klein bolletje op het icoon. */}
+      {c.aantalVolgers > 0 && (
+        <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-ink px-1 text-[10px] font-semibold leading-none tabular-nums text-card">
+          {c.aantalVolgers}
+        </span>
+      )}
     </button>
   );
+}
+
+const ALLE_PLATFORMS = ["Google", "Meta", "LinkedIn"];
+
+/**
+ * M11: op welke platforms de campagne adverteert, alleen als het niet alle drie zijn
+ * ("Alleen Meta en Google"). Uit de uitsplitsing van de laatste analyse; zonder uitsplitsing niets.
+ */
+function ctrPlatforms(c: MaOverzichtRegel): string | null {
+  const u = leesUitsplitsing(c.laatsteAnalyse?.kerncijfers);
+  const namen = (u.kosten ?? []).filter((p) => (p.kosten ?? 0) > 0).map((p) => p.naam.replace(/ Ads$/, ""));
+  if (namen.length === 0 || ALLE_PLATFORMS.every((n) => namen.includes(n))) return null;
+  return `Alleen ${namen.length === 1 ? namen[0] : `${namen.slice(0, -1).join(", ")} en ${namen.at(-1)}`}`;
 }
 
 /** Een cel met een bedrag of aantal, een balkje en een regel eronder. */
@@ -299,11 +331,16 @@ const BRON_UITLEG: Record<LeadBron, string> = {
 };
 
 /** Eén regel in de leadkolom: het getal, en ernaast wat het is. */
+/**
+ * M1: één regel per bron, nooit afgebroken: het getal en de bron, met de soort erachter zolang hij
+ * past. De volledige soort ("alle orders, alleen nieuw (volgens de Data correctie) …") staat in de
+ * tooltip. Zo blijft een rij even hoog als de andere kolommen in plaats van vier, vijf regels.
+ */
 function LeadRegel({ waarde, naam, soort, title }: { waarde: string; naam: string; soort: string | null; title: string }) {
   return (
-    <div className="flex items-baseline gap-2.5" title={title}>
+    <div className="flex min-w-0 items-baseline gap-2.5" data-tip={soort ? `${naam} · ${soort}. ${title}` : title}>
       <span className="min-w-[2.5rem] text-right vdu:font-semibold tabular-nums text-ink">{waarde}</span>
-      <span className="text-meta text-ink-faint">
+      <span className="min-w-0 max-w-[190px] truncate text-meta text-ink-faint">
         {naam}
         {soort ? ` · ${soort}` : ""}
       </span>
@@ -331,7 +368,7 @@ function LeadsCel({
   const s = o.syntec;
   const vdu = s.stand === "cijfers" && s.alleenVdu ? " (alleen VDU)" : "";
   return (
-    <div className="flex min-w-[230px] flex-col gap-1">
+    <div className="flex min-w-[200px] flex-col gap-1">
       <LeadRegel
         waarde={getal(o.ga4Leads)}
         naam="Google Analytics"
@@ -364,13 +401,13 @@ function LeadsCel({
             e.stopPropagation();
             onBewerk(c);
           }}
-          title="Syntec zoekt leads en orders op merk en model. Vul ze in de briefing in; de volgende analyse haalt ze op."
+          data-tip="Syntec zoekt leads en orders op merk en model. Vul ze in de briefing in; de volgende analyse haalt ze op."
           className="mt-0.5 self-start text-left text-meta text-orange-dark underline decoration-dotted underline-offset-2 hover:text-ink"
         >
           Vul {s.mist} in voor Syntec-leads en orders
         </button>
       ) : (
-        <span className="text-meta text-ink-faint" title="Syntec-leads en -orders bestaan alleen voor Van den Udenhout.">
+        <span className="text-meta text-ink-faint" data-tip="Syntec-leads en -orders bestaan alleen voor Van den Udenhout.">
           Geen Syntec-data voor dit bedrijf
         </span>
       )}
@@ -391,28 +428,28 @@ function CampagneAnalyseTabel({ campagnes, opzetten, vandaag, planningBezig, onO
           <tr className="text-left text-label text-ink-faint">
             {STIP_KOP}
             <th className={`${KOP} pl-3`}>Campagne</th>
-            <th className={KOP} title="Mediakosten uit Google Ads, Meta Ads en LinkedIn Ads, tegen het totaalbudget">
+            <th className={KOP} data-tip="Mediakosten uit Google Ads, Meta Ads en LinkedIn Ads, tegen het totaalbudget">
               Uitgaven
             </th>
-            <th className={KOP} title="Alle klikken ÷ alle vertoningen van Google Ads, Meta Ads en LinkedIn Ads samen">
+            <th className={KOP} data-tip="Alle klikken ÷ alle vertoningen van Google Ads, Meta Ads en LinkedIn Ads samen">
               CTR
             </th>
-            <th className={KOP} title="Sessies die op de campagnepagina('s) begonnen, uit elk kanaal (GA4)">
+            <th className={KOP} data-tip="Sessies die op de campagnepagina('s) begonnen, uit elk kanaal (GA4)">
               Bezoekers
             </th>
             <th
               className={KOP}
-              title="Leads in Google Analytics; bij Van den Udenhout met merk en model ook de internetleads en orders uit Syntec"
+              data-tip="Leads in Google Analytics; bij Van den Udenhout met merk en model ook de internetleads en orders uit Syntec"
             >
               Leads en orders
             </th>
-            <th className={KOP} title="Het aantal leads uit het doel van de briefing, en hoeveel daarvan gehaald is">
+            <th className={KOP} data-tip="Het aantal leads uit het doel van de briefing, en hoeveel daarvan gehaald is">
               Doel leads
             </th>
-            <th className="px-3 py-2.5" title="Hoe vaak “voer de analyseronde uit” deze campagne maakt">
+            <th className="px-3 py-2.5" data-tip="Hoe vaak “voer de analyseronde uit” deze campagne maakt">
               <span className="label-theme font-normal">Planning</span>
             </th>
-            <th className="w-24 px-4 py-2.5">
+            <th className="w-24 py-2.5 pl-1 pr-4">
               <span className="sr-only">Briefing en mail</span>
             </th>
           </tr>
@@ -431,7 +468,7 @@ function CampagneAnalyseTabel({ campagnes, opzetten, vandaag, planningBezig, onO
                 <td className="max-w-[340px] px-3 py-3">
                   <div className="flex items-center gap-2">
                     {Logo && <Logo role="img" aria-label={c.merk ?? undefined} className="h-4 w-4 shrink-0 text-ink-muted" />}
-                    <p className="truncate font-semibold text-ink" title={c.naam}>
+                    <p className="truncate font-semibold text-ink" data-tip={c.naam}>
                       {c.naam}
                     </p>
                   </div>
@@ -457,15 +494,19 @@ function CampagneAnalyseTabel({ campagnes, opzetten, vandaag, planningBezig, onO
                     }
                   />
                 </td>
-                <td className="px-3 py-3" title="Alle klikken ÷ alle vertoningen van Google Ads, Meta Ads en LinkedIn Ads samen">
+                <td className="px-3 py-3" data-tip="Alle klikken ÷ alle vertoningen van Google Ads, Meta Ads en LinkedIn Ads samen">
                   <div className="flex min-w-[110px] flex-col gap-1.5">
                     <span className="tabular-nums vdu:font-semibold text-ink">{geanalyseerd ? formatWaarde(o.ctr, "procent") : "—"}</span>
-                    <span className="text-meta text-ink-faint">
-                      {geanalyseerd && o.ctr === null ? "Bij de volgende analyse" : "Google, Meta en LinkedIn"}
-                    </span>
+                    {/* M11: geen vaste regel "Google, Meta en LinkedIn" meer onder elk getal; alleen
+                        als de campagne niet op alle drie adverteert, staat er welke het zijn. */}
+                    {geanalyseerd && o.ctr === null ? (
+                      <span className="text-meta text-ink-faint">Bij de volgende analyse</span>
+                    ) : (
+                      ctrPlatforms(c) && <span className="text-meta text-ink-faint">{ctrPlatforms(c)}</span>
+                    )}
                   </div>
                 </td>
-                <td className="px-3 py-3" title="Sessies die op de campagnepagina('s) begonnen, uit elk kanaal (GA4)">
+                <td className="px-3 py-3" data-tip="Sessies die op de campagnepagina('s) begonnen, uit elk kanaal (GA4)">
                   <div className="flex min-w-[110px] flex-col gap-1.5">
                     <span className="tabular-nums vdu:font-semibold text-ink">{geanalyseerd ? formatWaarde(o.bezoekers) : "—"}</span>
                     <span className="text-meta text-ink-faint">Op de campagnepagina</span>
@@ -476,7 +517,7 @@ function CampagneAnalyseTabel({ campagnes, opzetten, vandaag, planningBezig, onO
                 </td>
                 <td
                   className="px-3 py-3"
-                  title={
+                  data-tip={
                     o.syntecNietMogelijk
                       ? "Het doel noemt Syntec, maar Syntec geldt alleen voor een analyse die uitsluitend over Van den Udenhout gaat. Daarom gemeten in Google Analytics."
                       : BRON_UITLEG[o.bron]
@@ -507,9 +548,10 @@ function CampagneAnalyseTabel({ campagnes, opzetten, vandaag, planningBezig, onO
                     compact
                   />
                 </td>
-                <td className="whitespace-nowrap px-4 py-3 text-right">
+                <td className="whitespace-nowrap py-3 pl-1 pr-4 text-right">
                   <BewerkKnop c={c} onBewerk={onBewerk} />
                   <MailKnop c={c} onVolgers={onVolgers} />
+                  {RIJ_PIJL}
                 </td>
               </tr>
             );
@@ -530,10 +572,10 @@ function RapportageTabel({ campagnes, opzetten, vandaag, planningBezig, onOpen, 
             {STIP_KOP}
             <th className={`${KOP} pl-3`}>Rapportage</th>
             <th className={KOP}>Laatste analyse</th>
-            <th className="w-48 px-3 py-2.5" title="Hoe vaak “voer de analyseronde uit” deze rapportage maakt">
+            <th className="w-48 px-3 py-2.5" data-tip="Hoe vaak “voer de analyseronde uit” deze rapportage maakt">
               <span className="label-theme font-normal">Planning</span>
             </th>
-            <th className="w-24 px-4 py-2.5">
+            <th className="w-24 py-2.5 pl-1 pr-4">
               <span className="sr-only">Briefing en mail</span>
             </th>
           </tr>
@@ -547,7 +589,7 @@ function RapportageTabel({ campagnes, opzetten, vandaag, planningBezig, onOpen, 
                   <StatusStip c={c} vandaag={vandaag} />
                 </td>
                 <td className="max-w-[420px] px-3 py-3">
-                  <p className="truncate font-semibold text-ink" title={c.naam}>
+                  <p className="truncate font-semibold text-ink" data-tip={c.naam}>
                     {c.naam}
                   </p>
                   <p className="mt-0.5 text-meta text-ink-faint">
@@ -567,9 +609,10 @@ function RapportageTabel({ campagnes, opzetten, vandaag, planningBezig, onOpen, 
                     onKies={(p) => onPlanning(c, p)}
                   />
                 </td>
-                <td className="whitespace-nowrap px-4 py-3 text-right">
+                <td className="whitespace-nowrap py-3 pl-1 pr-4 text-right">
                   <BewerkKnop c={c} onBewerk={onBewerk} />
                   <MailKnop c={c} onVolgers={onVolgers} />
+                  {RIJ_PIJL}
                 </td>
               </tr>
             );
@@ -734,9 +777,12 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
       const data = (await res.json().catch(() => ({}))) as { campagne?: MaCampagne; fout?: string };
       if (!res.ok || !data.campagne) throw new Error(data.fout ?? "Kon de planning niet aanpassen.");
       bijgewerkt(data.campagne);
+      toonMelding({ titel: `Planning: ${PLANNING_NAAM[planning].toLowerCase()}`, regel: c.naam });
     } catch (err) {
       bijgewerkt({ ...c, planning: vorige, analyseRonde: vorige !== "uit" });
-      setFout(err instanceof Error ? err.message : String(err));
+      const tekst = err instanceof Error ? err.message : String(err);
+      setFout(tekst);
+      toonMelding({ titel: "Planning niet aangepast", regel: tekst, soort: "fout" });
     } finally {
       setPlanningBezig((s) => {
         const n = new Set(s);
@@ -766,9 +812,20 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
       });
       const data = (await res.json().catch(() => ({}))) as { fout?: string };
       if (!res.ok) throw new Error(data.fout ?? "Kon het voorstel niet aanpassen.");
+      toonMelding(
+        actie === "negeren"
+          ? {
+              titel: "Voorstel genegeerd",
+              regel: v.naam,
+              actie: { label: "Ongedaan maken", onClick: () => zetVoorstel({ ...v, status: "genegeerd" }, "terugzetten") },
+            }
+          : { titel: "Voorstel teruggezet", regel: v.naam },
+      );
     } catch (err) {
       setVoorstellen(vorige);
-      setFout(err instanceof Error ? err.message : String(err));
+      const tekst = err instanceof Error ? err.message : String(err);
+      setFout(tekst);
+      toonMelding({ titel: "Voorstel niet aangepast", regel: tekst, soort: "fout" });
     } finally {
       setVoorstelBezig((s) => {
         const n = new Set(s);
@@ -838,7 +895,7 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
             <button
               type="button"
               onClick={() => setPaneel({ soort: "mails" })}
-              title="Wie wanneer welke analyse per mail kreeg"
+              data-tip="Wie wanneer welke analyse per mail kreeg"
               className="flex items-center gap-2 rounded-button border border-line bg-card px-4 py-2 text-sm font-medium text-ink vdu:text-ink-muted transition-colors duration-[var(--duur-snel)] hover:bg-surface vdu:ease-merk vdu:hover:border-ink-faint vdu:hover:text-ink vdu:hover:bg-card"
             >
               <IconNotes className="h-4 w-4 text-ink-muted" />
@@ -853,7 +910,7 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
         aria-expanded={beheerOpen}
         aria-controls="ma-beheer"
         aria-label={beheerOpen ? "Beheer verbergen" : "Beheer: Analyse prompts, Semantic layer en Verzonden e-mails"}
-        title={beheerOpen ? "Beheer verbergen" : "Beheer: Analyse prompts, Semantic layer en Verzonden e-mails"}
+        data-tip={beheerOpen ? "Beheer verbergen" : "Beheer: Analyse prompts, Semantic layer en Verzonden e-mails"}
         className={`flex items-center justify-center self-stretch rounded-button border px-2.5 transition-colors duration-[var(--duur-snel)] ${
           beheerOpen ? "border-line vdu:border-ink-faint bg-surface text-ink" : "border-line bg-card text-ink-muted hover:bg-surface vdu:hover:border-ink-faint vdu:hover:bg-card hover:text-ink"
         }`}
@@ -866,7 +923,7 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
         className="flex items-center gap-2 rounded-button border border-line bg-card px-4 py-2 text-sm font-medium text-ink vdu:text-ink-muted transition-colors duration-[var(--duur-snel)] hover:bg-surface vdu:ease-merk vdu:hover:border-ink-faint vdu:hover:text-ink vdu:hover:bg-card"
       >
         <IconMail className="h-4 w-4 text-ink-muted" />
-        E-mail settings
+        E-mailinstellingen
       </button>
       {!geopend && (
         <button
@@ -959,7 +1016,7 @@ export default function MarketingAnalysePaneel({ ingelogd }: { ingelogd: boolean
             </header>
             {fout && <p className="px-6 py-3 text-sm text-negative">{fout}</p>}
             {!campagnes ? (
-              !fout && <p className="px-6 py-5 text-sm text-ink-muted">Laden…</p>
+              !fout && <SkeletTabel rijen={4} kolommen={5} />
             ) : zichtbaar.length === 0 && (filterKnop || status || actiefBedrijf) ? (
               <div className="px-6 py-10 text-center">
                 <p className="font-semibold text-ink">
