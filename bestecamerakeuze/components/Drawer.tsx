@@ -12,6 +12,8 @@ type Props = {
   breed?: boolean;
   /** Bijna de hele breedte, voor een tabel met een kolom per maand (Kostenverdeling op Leads). */
   extraBreed?: boolean;
+  /** Een vaste balk onderin (bijv. Annuleren / Opslaan), die niet meescrolt met de inhoud. */
+  voet?: React.ReactNode;
 };
 
 /**
@@ -24,7 +26,7 @@ type Props = {
  * die vanuit een sticky tabelkop opent zit in zijn eigen stacking context en kan daar
  * niet met een hoge z-index uit ontsnappen.
  */
-export default function Drawer({ title, onClose, children, breed = false, extraBreed = false }: Props) {
+export default function Drawer({ title, onClose, children, breed = false, extraBreed = false, voet }: Props) {
   const panelRef = useRef<HTMLDivElement>(null);
   const [gemount, setGemount] = useState(false);
   const [zichtbaar, setZichtbaar] = useState(false);
@@ -83,6 +85,7 @@ export default function Drawer({ title, onClose, children, breed = false, extraB
           </button>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">{children}</div>
+        {voet && <div className="shrink-0 border-t border-line bg-card px-6 py-3.5">{voet}</div>}
       </div>
     </div>,
     document.body,

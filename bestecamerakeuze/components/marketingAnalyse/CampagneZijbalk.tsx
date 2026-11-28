@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Drawer from "@/components/Drawer";
+import DatumVeld from "@/components/DatumVeld";
+import { IconChevronDown } from "@/components/icons";
 import BedrijvenKiezer from "@/components/marketingAnalyse/BedrijvenKiezer";
 import { bedrijvenLabel, rapportageNaam } from "@/lib/marketingAnalyse/rekenen";
 import { STANDAARD_OPZET_ID, type MaCampagne, type MaOpzet, type MaVoorstel } from "@/lib/marketingAnalyse/types";
@@ -79,8 +81,12 @@ function beginwaarden(c: MaCampagne | null, voorstel: MaVoorstel | null, startOp
   };
 }
 
+// M5: voorbeeldtekst lichter dan een ingevulde waarde (en met "bijv."), zodat een leeg veld er
+// niet ingevuld uitziet.
 const INVOER =
-  "w-full rounded-control border border-line bg-card px-3 py-2 text-sm text-ink outline-none placeholder:text-ink-faint focus:border-primary disabled:opacity-60";
+  "w-full rounded-control border border-line bg-card px-3 py-2 text-sm text-ink outline-none transition-colors duration-[var(--duur-snel)] placeholder:text-ink-faint/70 hover:border-ink-faint focus:border-primary disabled:opacity-60";
+
+const FORMULIER_ID = "briefing-formulier";
 
 function Veld({ label, verplicht, hint, children }: { label: string; verplicht?: boolean; hint?: string; children: React.ReactNode }) {
   return (
@@ -198,8 +204,34 @@ export default function CampagneZijbalk({
   }
 
   return (
-    <Drawer title={campagne ? `Briefing — ${campagne.naam}` : uitVoorstel ? "Voorgestelde analyse toevoegen" : "Nieuwe analyse"} onClose={onClose}>
-      <form onSubmit={opslaan} className="flex flex-col gap-4">
+    <Drawer
+      title={campagne ? `Briefing — ${campagne.naam}` : uitVoorstel ? "Voorgestelde analyse toevoegen" : "Nieuwe analyse"}
+      onClose={onClose}
+      // M6: Annuleren en Opslaan staan vast onderin beeld, ook in een lange briefing; de
+      // opslaanknop hoort via `form` bij het formulier.
+      voet={
+        <div className="flex items-center justify-end gap-2">
+          {fout && <p className="mr-auto text-sm text-negative">{fout}</p>}
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={bezig}
+            className="rounded-button border border-line bg-card px-4 py-2 text-sm font-medium text-ink vdu:text-ink-muted transition-colors vdu:hover:border-ink-faint hover:bg-surface vdu:hover:text-ink disabled:opacity-60"
+          >
+            Annuleren
+          </button>
+          <button
+            type="submit"
+            form={FORMULIER_ID}
+            disabled={bezig}
+            className="rounded-button bg-primary px-4 py-2 text-sm font-medium text-on-primary transition-colors hover:bg-primary-dark disabled:cursor-wait disabled:opacity-60"
+          >
+            {bezig ? "Opslaan…" : campagne ? "Opslaan" : uitVoorstel ? "Toevoegen" : "Aanmaken"}
+          </button>
+        </div>
+      }
+    >
+      <form id={FORMULIER_ID} onSubmit={opslaan} className="flex flex-col gap-4">
         {uitVoorstel && (
           <p className="rounded-control border border-line-soft bg-surface-tint px-3 py-2.5 text-sm text-ink-muted">
             Claude heeft deze briefing ingevuld uit de advertenties, de campagnepagina en de social posts. Loop hem na, vooral het
@@ -208,8 +240,10 @@ export default function CampagneZijbalk({
           </p>
         )}
         <Veld label="Analyse opzet" hint={uitVoorstel ? "Een voorstel is altijd een campagne-analyse." : "Welke soort analyse. Bepaalt de prompt en het formulier hieronder."}>
+          {/* M4: de keuzelijst in de stijl van de andere velden, met ons eigen pijltje. */}
+          <div className="relative">
           <select
-            className={INVOER}
+            className={`${INVOER} cursor-pointer appearance-none pr-9`}
             value={v.opzetId}
             onChange={(e) => zetMetNaam({ opzetId: e.target.value })}
             disabled={bezig || opzetten.length === 0 || uitVoorstel}
@@ -223,6 +257,8 @@ export default function CampagneZijbalk({
               </option>
             ))}
           </select>
+          <IconChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
+          </div>
         </Veld>
         {opzet && !opzet.heeftPrompt && (
           <p className="-mt-2 text-meta text-negative">
@@ -272,20 +308,20 @@ export default function CampagneZijbalk({
         <>
         <div className="grid grid-cols-2 gap-3">
           <Veld label="Merk" hint="Het automerk.">
-            <input className={INVOER} value={v.merk} onChange={zet("merk")} disabled={bezig} placeholder="Audi" />
+            <input className={INVOER} value={v.merk} onChange={zet("merk")} disabled={bezig} placeholder="bijv. Audi" />
           </Veld>
           <Veld label="Model(len)" hint="Meerdere met komma's.">
-            <input className={INVOER} value={v.modellen} onChange={zet("modellen")} disabled={bezig} placeholder="A2 e-tron" />
+            <input className={INVOER} value={v.modellen} onChange={zet("modellen")} disabled={bezig} placeholder="bijv. A2 e-tron" />
           </Veld>
           <Veld label="Startdatum">
-            <input type="date" className={INVOER} value={v.startdatum} onChange={zet("startdatum")} disabled={bezig} />
+            <DatumVeld label="Startdatum" value={v.startdatum} onChange={(d) => setV((h) => ({ ...h, startdatum: d }))} disabled={bezig} />
           </Veld>
           <Veld label="Einddatum" hint="Wanneer de campagne stopt.">
-            <input type="date" className={INVOER} value={v.einddatum} onChange={zet("einddatum")} disabled={bezig} />
+            <DatumVeld label="Einddatum" value={v.einddatum} onChange={(d) => setV((h) => ({ ...h, einddatum: d }))} disabled={bezig} />
           </Veld>
         </div>
         <Veld label="Totaalbudget" hint="Wat marketing voor de hele campagneperiode beschikbaar heeft.">
-          <input className={`${INVOER} tabular-nums`} inputMode="decimal" value={v.budget} onChange={zet("budget")} disabled={bezig} placeholder="5.000" />
+          <input className={`${INVOER} tabular-nums`} inputMode="decimal" value={v.budget} onChange={zet("budget")} disabled={bezig} placeholder="bijv. 5.000" />
         </Veld>
         <Veld
           label="Doel van de campagne"
@@ -302,7 +338,7 @@ export default function CampagneZijbalk({
             value={v.campagnePaginas}
             onChange={zet("campagnePaginas")}
             disabled={bezig}
-            placeholder="https://www.udenhout.nl/acties/a2-e-tron"
+            placeholder="bijv. https://www.udenhout.nl/acties/a2-e-tron"
           />
         </Veld>
         </>
@@ -334,25 +370,6 @@ export default function CampagneZijbalk({
           <textarea className={`${INVOER} min-h-24 resize-y`} value={v.dataCorrectie} onChange={zet("dataCorrectie")} disabled={bezig} />
         </Veld>
 
-        {fout && <p className="text-sm text-negative">{fout}</p>}
-
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={bezig}
-            className="rounded-button border border-line bg-card px-4 py-2 text-sm font-medium text-ink vdu:text-ink-muted transition-colors vdu:hover:border-ink-faint hover:bg-surface vdu:hover:text-ink disabled:opacity-60"
-          >
-            Annuleren
-          </button>
-          <button
-            type="submit"
-            disabled={bezig}
-            className="rounded-button bg-primary px-4 py-2 text-sm font-medium text-on-primary transition-colors hover:bg-primary-dark disabled:cursor-wait disabled:opacity-60"
-          >
-            {bezig ? "Opslaan…" : campagne ? "Opslaan" : uitVoorstel ? "Toevoegen" : "Aanmaken"}
-          </button>
-        </div>
       </form>
 
       <div className="mt-8 flex flex-col gap-4 border-t border-line-soft pt-5">

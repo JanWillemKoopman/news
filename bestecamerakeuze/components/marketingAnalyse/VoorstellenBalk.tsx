@@ -161,12 +161,19 @@ function Bewijs({ v }: { v: MaVoorstel }) {
  * Claude Code in de advertenties vond (skill campagne-voorstellen). Toevoegen opent de
  * ingevulde briefing; een klik op de regel toont wat er is gevonden.
  */
+/** M9: zoveel voorstellen staan er standaard; de rest achter "Toon alle". */
+const EERSTE = 8;
+
 export default function VoorstellenBalk({ open, genegeerd, laatsteZoekronde, bezig, onToevoegen, onNegeren, onTerugzetten }: Props) {
   // Standaard ingeklapt (verzoek van de eigenaar): de lopende analyses gaan voor.
   const [ingeklapt, setIngeklapt] = useState(true);
   const [uitgeklapt, setUitgeklapt] = useState<string | null>(null);
   const [genegeerdOpen, setGenegeerdOpen] = useState(false);
+  // M9: eerst de acht belangrijkste voorstellen; de rest achter "Toon alle".
+  const [alleTonen, setAlleTonen] = useState(false);
   const vandaag = vandaagNL();
+  const gesorteerd = sorteerVoorstellen(open);
+  const getoond = alleTonen ? gesorteerd : gesorteerd.slice(0, EERSTE);
 
   if (open.length === 0 && genegeerd.length === 0) return null;
 
@@ -214,14 +221,14 @@ export default function VoorstellenBalk({ open, genegeerd, laatsteZoekronde, bez
               </tr>
             </thead>
             <tbody>
-              {sorteerVoorstellen(open).map((v) => {
+              {getoond.map((v) => {
                 const Logo = v.merk ? getBrandLogo(v.merk) : null;
                 const isOpen = uitgeklapt === v.id;
                 return (
                   <Fragment key={v.id}>
                     <tr
                       onClick={() => setUitgeklapt(isOpen ? null : v.id)}
-                      className="cursor-pointer align-top transition-colors duration-[var(--duur-snel)] hover:bg-surface vdu:ease-merk vdu:hover:bg-surface-tint [&>td]:border-t [&>td]:border-line-soft"
+                      className="cursor-pointer align-top transition-colors duration-[var(--duur-snel)] hover:bg-surface vdu:ease-merk vdu:hover:bg-ink/[0.035] [&>td]:border-t [&>td]:border-line-soft"
                       aria-expanded={isOpen}
                     >
                       <td className="py-3 pl-6 pr-3">
@@ -285,6 +292,19 @@ export default function VoorstellenBalk({ open, genegeerd, laatsteZoekronde, bez
               })}
             </tbody>
           </table>
+          {gesorteerd.length > EERSTE && (
+            <div className="border-t border-line-soft px-6 py-3">
+              <button
+                type="button"
+                onClick={() => setAlleTonen((x) => !x)}
+                aria-expanded={alleTonen}
+                className="inline-flex items-center gap-1.5 rounded-button px-2 py-1 -ml-2 text-sm font-medium text-ink-muted transition-colors duration-[var(--duur-snel)] ease-merk hover:bg-surface hover:text-ink"
+              >
+                <IconChevronDown className={`h-4 w-4 transition-transform duration-[var(--duur-snel)] ${alleTonen ? "rotate-180" : ""}`} />
+                {alleTonen ? "Toon minder" : `Toon alle ${gesorteerd.length}`}
+              </button>
+            </div>
+          )}
         </div>
       )}
 

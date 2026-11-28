@@ -2046,6 +2046,23 @@ lees dat eerst voordat je hier iets verandert.
 - **Een eigen tabel, niet de sheet.** Dit is geen campagnelijst maar de briefing voor een
   analyse; de sheet blijft de bron van de campagnetabel.
 
+- **Afwerking** (28 november 2026, op verzoek, M1–M11 uit de designronde):
+  - **Leads en orders** (M1): elke bron op één regel (getal + bron + soort), afgekapt; de volledige soort staat in
+    de tooltip. Rijen zijn daardoor even hoog als de andere kolommen.
+  - **Rij-hover** (M2): een duidelijker vlak (`vdu:hover:bg-ink/[0.035]`) en rechts een pijltje (`RIJ_PIJL`).
+  - **Bedrijfsfilter** (M3): bedrijven zonder analyses staan achter "+N" (tooltip noemt ze); een gekozen
+    bedrijf blijft altijd zichtbaar.
+  - **Filterrijen** (M10) beginnen met een kopje: Bedrijf, Status en Soort.
+  - **Planning** (M7) is in de tabel een klein omrand knopje in plaats van platte tekst.
+  - **Briefing en mail** (M8): iconen in `text-ink-muted`; het aantal volgers als bolletje op de envelop.
+  - **CTR** (M11): geen vaste regel "Google, Meta en LinkedIn" meer; alleen "Alleen Meta en Google" als de
+    campagne niet op alle drie adverteert (uit de uitsplitsing, `ctrPlatforms`).
+  - **Voorstellen** (M9): eerst 8, de rest achter "Toon alle N".
+  - **Zijbalk Nieuwe analyse / briefing**: datums via `components/DatumVeld.tsx` (altijd Nederlands, "1 december
+    2026", kalender van de browser via `showPicker`) (M4); de keuzelijst Analyse opzet met ons eigen pijltje (M4);
+    voorbeeldteksten met "bijv." en lichter (M5); Annuleren en Opslaan in een vaste balk onderin via de nieuwe
+    `voet`-prop van `Drawer` (M6).
+
 ### Campagnes → Campagne analyse
 
 Tabblad onder **Campagnes** (view `campagne-analyse`, `components/campagneAnalyse/CampagneAnalyse.tsx`,

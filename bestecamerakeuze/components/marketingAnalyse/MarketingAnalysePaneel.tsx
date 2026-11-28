@@ -37,6 +37,7 @@ import { STANDAARD_SEMANTIEK } from "@/lib/marketingAnalyse/standaardSemantiek";
 import type { MaCampagne, MaOpzet, MaOverzichtRegel, MaVoorstel, MaZoekronde, Planning } from "@/lib/marketingAnalyse/types";
 import { PLANNING_NAAM } from "@/lib/marketingAnalyse/types";
 import { SkeletRegels, SkeletTabel } from "@/components/Skelet";
+import { leesUitsplitsing } from "@/lib/marketingAnalyse/uitsplitsing";
 import { toonMelding } from "@/lib/meldingen";
 
 type Voorstellen = { open: MaVoorstel[]; genegeerd: MaVoorstel[]; laatsteZoekronde: MaZoekronde | null };
@@ -191,8 +192,18 @@ type TabelProps = {
 };
 
 const KOP = "label-theme whitespace-nowrap px-3 py-2.5 font-normal";
+// M2: een rij reageert duidelijk op de muis (een zacht vlak en rechts een pijltje), zodat je ziet
+// dat de hele regel de analyse opent.
 const RIJ =
-  "cursor-pointer align-top transition-colors duration-[var(--duur-snel)] hover:bg-surface vdu:ease-merk vdu:hover:bg-surface-tint [&>td]:border-t [&>td]:border-line-soft";
+  "group/rij cursor-pointer align-top transition-colors duration-[var(--duur-snel)] hover:bg-surface vdu:ease-merk vdu:hover:bg-ink/[0.035] [&>td]:border-t [&>td]:border-line-soft";
+
+/** M2: het pijltje rechts in een rij, zichtbaar bij hover. */
+const RIJ_PIJL = (
+  <IconChevronDown
+    aria-hidden="true"
+    className="ml-0.5 inline-block h-4 w-4 -rotate-90 align-middle text-ink-faint opacity-0 transition-opacity duration-[var(--duur-snel)] ease-merk group-hover/rij:opacity-100"
+  />
+);
 
 /** Groen ademend stipje als de analyse live is (vandaag tussen start en eind), anders grijs. */
 function StatusStip({ c, vandaag }: { c: MaOverzichtRegel; vandaag: string }) {
@@ -244,7 +255,7 @@ function BewerkKnop({ c, onBewerk }: { c: MaOverzichtRegel; onBewerk: (c: MaOver
       }}
       data-tip="Briefing bewerken"
       aria-label={`Briefing van ${c.naam} bewerken`}
-      className="inline-flex h-7 w-7 items-center justify-center rounded-control text-ink-faint transition-colors hover:bg-card hover:text-ink"
+      className="inline-flex h-7 w-7 items-center justify-center rounded-control text-ink-muted transition-colors hover:bg-card hover:text-ink"
     >
       <IconPencil className="h-4 w-4" />
     </button>
@@ -263,12 +274,30 @@ function MailKnop({ c, onVolgers }: { c: MaOverzichtRegel; onVolgers: (c: MaOver
       }}
       data-tip={titel}
       aria-label={`${titel} — ${c.naam}`}
-      className="inline-flex h-7 items-center gap-1 rounded-control px-1.5 text-ink-faint transition-colors hover:bg-card hover:text-ink"
+      className="relative inline-flex h-7 w-7 items-center justify-center rounded-control text-ink-muted transition-colors hover:bg-card hover:text-ink"
     >
       <IconMail className="h-4 w-4" />
-      {c.aantalVolgers > 0 && <span className="text-meta tabular-nums">{c.aantalVolgers}</span>}
+      {/* M8: het aantal adressen als klein bolletje op het icoon. */}
+      {c.aantalVolgers > 0 && (
+        <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-ink px-1 text-[10px] font-semibold leading-none tabular-nums text-card">
+          {c.aantalVolgers}
+        </span>
+      )}
     </button>
   );
+}
+
+const ALLE_PLATFORMS = ["Google", "Meta", "LinkedIn"];
+
+/**
+ * M11: op welke platforms de campagne adverteert, alleen als het niet alle drie zijn
+ * ("Alleen Meta en Google"). Uit de uitsplitsing van de laatste analyse; zonder uitsplitsing niets.
+ */
+function ctrPlatforms(c: MaOverzichtRegel): string | null {
+  const u = leesUitsplitsing(c.laatsteAnalyse?.kerncijfers);
+  const namen = (u.kosten ?? []).filter((p) => (p.kosten ?? 0) > 0).map((p) => p.naam.replace(/ Ads$/, ""));
+  if (namen.length === 0 || ALLE_PLATFORMS.every((n) => namen.includes(n))) return null;
+  return `Alleen ${namen.length === 1 ? namen[0] : `${namen.slice(0, -1).join(", ")} en ${namen.at(-1)}`}`;
 }
 
 /** Een cel met een bedrag of aantal, een balkje en een regel eronder. */
@@ -302,11 +331,16 @@ const BRON_UITLEG: Record<LeadBron, string> = {
 };
 
 /** Eén regel in de leadkolom: het getal, en ernaast wat het is. */
+/**
+ * M1: één regel per bron, nooit afgebroken: het getal en de bron, met de soort erachter zolang hij
+ * past. De volledige soort ("alle orders, alleen nieuw (volgens de Data correctie) …") staat in de
+ * tooltip. Zo blijft een rij even hoog als de andere kolommen in plaats van vier, vijf regels.
+ */
 function LeadRegel({ waarde, naam, soort, title }: { waarde: string; naam: string; soort: string | null; title: string }) {
   return (
-    <div className="flex items-baseline gap-2.5" data-tip={title}>
+    <div className="flex min-w-0 items-baseline gap-2.5" data-tip={soort ? `${naam} · ${soort}. ${title}` : title}>
       <span className="min-w-[2.5rem] text-right vdu:font-semibold tabular-nums text-ink">{waarde}</span>
-      <span className="text-meta text-ink-faint">
+      <span className="min-w-0 max-w-[190px] truncate text-meta text-ink-faint">
         {naam}
         {soort ? ` · ${soort}` : ""}
       </span>
@@ -334,7 +368,7 @@ function LeadsCel({
   const s = o.syntec;
   const vdu = s.stand === "cijfers" && s.alleenVdu ? " (alleen VDU)" : "";
   return (
-    <div className="flex min-w-[230px] flex-col gap-1">
+    <div className="flex min-w-[200px] flex-col gap-1">
       <LeadRegel
         waarde={getal(o.ga4Leads)}
         naam="Google Analytics"
@@ -415,7 +449,7 @@ function CampagneAnalyseTabel({ campagnes, opzetten, vandaag, planningBezig, onO
             <th className="px-3 py-2.5" data-tip="Hoe vaak “voer de analyseronde uit” deze campagne maakt">
               <span className="label-theme font-normal">Planning</span>
             </th>
-            <th className="w-24 px-4 py-2.5">
+            <th className="w-24 py-2.5 pl-1 pr-4">
               <span className="sr-only">Briefing en mail</span>
             </th>
           </tr>
@@ -463,9 +497,13 @@ function CampagneAnalyseTabel({ campagnes, opzetten, vandaag, planningBezig, onO
                 <td className="px-3 py-3" data-tip="Alle klikken ÷ alle vertoningen van Google Ads, Meta Ads en LinkedIn Ads samen">
                   <div className="flex min-w-[110px] flex-col gap-1.5">
                     <span className="tabular-nums vdu:font-semibold text-ink">{geanalyseerd ? formatWaarde(o.ctr, "procent") : "—"}</span>
-                    <span className="text-meta text-ink-faint">
-                      {geanalyseerd && o.ctr === null ? "Bij de volgende analyse" : "Google, Meta en LinkedIn"}
-                    </span>
+                    {/* M11: geen vaste regel "Google, Meta en LinkedIn" meer onder elk getal; alleen
+                        als de campagne niet op alle drie adverteert, staat er welke het zijn. */}
+                    {geanalyseerd && o.ctr === null ? (
+                      <span className="text-meta text-ink-faint">Bij de volgende analyse</span>
+                    ) : (
+                      ctrPlatforms(c) && <span className="text-meta text-ink-faint">{ctrPlatforms(c)}</span>
+                    )}
                   </div>
                 </td>
                 <td className="px-3 py-3" data-tip="Sessies die op de campagnepagina('s) begonnen, uit elk kanaal (GA4)">
@@ -510,9 +548,10 @@ function CampagneAnalyseTabel({ campagnes, opzetten, vandaag, planningBezig, onO
                     compact
                   />
                 </td>
-                <td className="whitespace-nowrap px-4 py-3 text-right">
+                <td className="whitespace-nowrap py-3 pl-1 pr-4 text-right">
                   <BewerkKnop c={c} onBewerk={onBewerk} />
                   <MailKnop c={c} onVolgers={onVolgers} />
+                  {RIJ_PIJL}
                 </td>
               </tr>
             );
@@ -536,7 +575,7 @@ function RapportageTabel({ campagnes, opzetten, vandaag, planningBezig, onOpen, 
             <th className="w-48 px-3 py-2.5" data-tip="Hoe vaak “voer de analyseronde uit” deze rapportage maakt">
               <span className="label-theme font-normal">Planning</span>
             </th>
-            <th className="w-24 px-4 py-2.5">
+            <th className="w-24 py-2.5 pl-1 pr-4">
               <span className="sr-only">Briefing en mail</span>
             </th>
           </tr>
@@ -570,9 +609,10 @@ function RapportageTabel({ campagnes, opzetten, vandaag, planningBezig, onOpen, 
                     onKies={(p) => onPlanning(c, p)}
                   />
                 </td>
-                <td className="whitespace-nowrap px-4 py-3 text-right">
+                <td className="whitespace-nowrap py-3 pl-1 pr-4 text-right">
                   <BewerkKnop c={c} onBewerk={onBewerk} />
                   <MailKnop c={c} onVolgers={onVolgers} />
+                  {RIJ_PIJL}
                 </td>
               </tr>
             );
