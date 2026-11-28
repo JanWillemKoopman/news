@@ -2154,6 +2154,20 @@ ISO-weeknummers en een streep bij vandaag.
 - **Hover** toont periode, status (met dag x van y), budget, uitgaven en leads tegen het doel uit
   de laatste analyse (`overzichtCijfers`, dus dezelfde getallen als het overzicht); **klik** op naam
   of balk opent de analyse (`?tab=marketing-analyse&analyse=<id>`).
+- **Afwerking** (28 november 2026, op verzoek, T1–T10 uit de designronde):
+  - **Openen** (T1/T2): de zoom kiest zich één keer bij het openen zo dat de campagnes, vanaf het begin van de
+    maand van de vroegste balk tot de laatste week waarin een balk loopt, de tijdas vullen (14–72px per week);
+    het beeld begint aan het begin van die maand, dus nooit een afgekapte maandnaam. Daarna bepaalt de schuif
+    Inzoomen het. Rijen 56px hoog.
+  - **Vandaag** (T3/T9): een label "Vandaag" in de weekrij boven een streep van 2px; een knop **Vandaag** naast de
+    jaarkiezer springt naar het huidige jaar met vandaag in het midden.
+  - **Voortgang in de balk** (T4): bij een actieve campagne is het verstreken deel vol en de rest lichter.
+  - **Weeknummers** (T5) horizontaal; smaller dan 22px per week alleen de oneven weken.
+  - **Namen** (T6): naamkolom 290px; past de naam niet in de balk (`naamPastIn`), dan staat hij er niet afgekapt in.
+  - **Merk** (T7): logo en naam, ook "Alle merken" (kolom 140px).
+  - **Rij-hover** (T8): de hele rij licht zacht op; maandkoppen in `text-ink-muted`.
+  - **Legenda** (T10): een status zonder campagnes is gedimd; het hover-kaartje staat bij de muis en wijst met
+    een pijltje naar de balk.
 
 ### Component- en codepatronen
 
