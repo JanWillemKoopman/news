@@ -35,7 +35,7 @@ export function FilterKnop({
       type="button"
       aria-pressed={aan}
       onClick={onClick}
-      title={leeg ? `Geen analyses: ${naam}` : undefined}
+      data-tip={leeg ? `Geen analyses: ${naam}` : undefined}
       // Gekozen: een vol vlak in de inktkleur, zodat de selectie in één oogopslag te zien is. Zelfde
       // gewicht en maat als voorheen, dus de knoppen schuiven niet; hover wisselt alleen rand en tekst.
       className={`inline-flex items-center gap-2 whitespace-nowrap rounded-button border px-3.5 py-1.5 text-sm transition-colors duration-[var(--duur-snel)] ease-merk ${

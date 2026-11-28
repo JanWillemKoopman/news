@@ -276,13 +276,39 @@ Houd je in de huisstijl aan deze principes bij nieuwe UI:
   Selligent-opt-ins, signaal) krijgt `bg-surface` met een streep of rand in de inktkleur. Houd het
   lettergewicht van gekozen en niet-gekozen gelijk aan wat het was, anders verschuiven de knoppen.
 - **Primair blauw alleen voor de hoofdactie** (Nieuwe analyse, Opslaan, Analyseer …). Een selectie
-  is nooit blauw; secundaire acties (E-mail settings, Nu bijwerken, Data updaten, Annuleren) zijn
+  is nooit blauw; secundaire acties (E-mailinstellingen, Nu bijwerken, Data updaten, Annuleren) zijn
   omrand met gedempte tekst (`text-ink-muted`), bij hover een donkerdere rand en tekst.
 - **Hover en focus zonder beweging**: alleen een kleur- of randwissel. `.kaart-hover` tilt niet meer
   op maar krijgt een donkerdere rand. Uitzondering: de illustraties op het startscherm en de
   sidebar-tegels bewegen bij hover zoals eerder gevraagd.
 - **Kerncijfers dragen gewicht** (Marketing analyse: `vdu:font-semibold` op de cijfers in de tabel).
   Controleer bij een gewicht- of maatwijziging in een tabel altijd of de rijen even hoog blijven.
+
+### Afwerking voor het hele dashboard (G1–G10, 28 november 2026, op verzoek)
+
+Kleine dingen die het geheel professioneler maken. Gebruik ze bij nieuwe UI:
+
+- **Tooltips: `data-tip="…"`, niet `title`** (G7). `components/TooltipLaag.tsx` (één keer in
+  `AppShell`) toont elke `data-tip` als nette tooltip na 350 ms, ook bij toetsenbordfocus, in een
+  portal (wordt dus niet afgesneden door overflow-hidden). Optioneel `data-tip-plaats="rechts|links|boven"`.
+  Een icoonknop houdt daarnaast altijd een `aria-label`. Op Campagne analyse, Marketing analyse en
+  Campagne timeline zijn alle `title`-attributen omgezet.
+- **Bevestiging na een handeling: `toonMelding({ titel, regel?, soort?, actie? })`** uit
+  `lib/meldingen.ts` (G3). `components/MeldingLaag.tsx` zet hem onderaan in het midden; met
+  `actie` ("Ongedaan maken") blijft hij langer staan. Staat op planning, voorstel negeren/terugzetten,
+  briefing opslaan/aanmaken/verwijderen, versie verwijderen, data correctie, volgers en E-mailinstellingen.
+- **Laden: `components/Skelet.tsx`** (`SkeletRegels`, `SkeletTabel`, `SkeletKaarten`) in plaats van
+  de tekst "Laden…" (G4).
+- **Sidebar** (G5/G6): klapt pas uit na 150 ms op de rail (`data-uit` + `group-data-[uit=true]:`,
+  niet meer `group-hover:`), met Tab meteen; uitgeklapt een duidelijke schaduw (`.sidebar-schil`). In
+  de rail staat per groep het groepsicoon (`icon` in `navigatie.tsx`) i.p.v. een streepje.
+- **Marges** (G8): `<main>` heeft links en rechts 64px (`px-16`); alleen de Kanalen-pagina's houden
+  `pr-28` vanwege het lampje naast het oogje.
+- **Alleen in de huisstijl** (globals.css, blok "Afwerking"): waarschuwingstekst `text-orange-dark`
+  10% donkerder (4,8:1), gedempte sidebartekst 70% (G1), en een knop wordt bij indrukken een fractie
+  donkerder (G2, `filter: brightness`, geen beweging). Elke knop krijgt in `@layer base` een korte
+  kleurovergang. In vlakken met overflow-hidden staat de focusring binnen de rand (G9).
+- Knoptekst in het Nederlands: "E-mailinstellingen" (was "E-mail settings", G10).
 
 ### Themes (het oogje rechtsboven)
 
@@ -1903,7 +1929,7 @@ lees dat eerst voordat je hier iets verandert.
   ingelogde collega's). Per regel wie wanneer welke analyse kreeg, nieuwste eerst, zoekbaar op adres
   of campagne. Versies zonder logregel staan er ook in (`mailOverzicht` in `mailLog.ts`, getest): van
   vóór het logboek met alleen het aantal, zonder volgers ("Geen mail") of niet verstuurd met de fout.
-- **E-mail settings: adressen per merk** (25 november 2026, migratie 0047, op verzoek). Per automerk
+- **E-mailinstellingen: adressen per merk** (25 november 2026, migratie 0047, op verzoek). Per automerk
   de adressen die standaard volger worden van elke nieuwe analyse voor dat merk, zodat niemand ze per
   analyse opnieuw hoeft op te geven (`MerkMailZijbalk.tsx`, route `merk-mail`, tabel
   `marketing_analyse_merk_mail`). Een trigger op `marketing_analyse_campagnes` zet ze erbij bij een
@@ -1978,7 +2004,7 @@ lees dat eerst voordat je hier iets verandert.
     items of niet-oplopende kwartielen weg. Getest in `rekenen.test.ts`.
 - **Het overzicht**: één tabel, live bovenaan op startdatum, dan nog te beginnen, dan afgelopen
   (zie "Live-stipje en statusfilter"); per regel de planning (uitklapmenu) en bij campagnes de kerncijfers uit de laatste analyse.
-  Rechtsboven (25 november 2026, op verzoek) een schildje **Beheer**, dan **E-mail settings** en Nieuwe
+  Rechtsboven (25 november 2026, op verzoek) een schildje **Beheer**, dan **E-mailinstellingen** en Nieuwe
   analyse. Analyse prompts, Semantic layer en (alleen voor de eigenaar) Verzonden e-mails staan achter het schildje (vooral voor beheerders, maar
   iedereen kan ze openen); open of dicht wordt per browser onthouden. De open analyse staat in de URL
   (`?analyse=<campagne-id>`).
@@ -2026,7 +2052,7 @@ Tabblad onder **Campagnes** (view `campagne-analyse`, `components/campagneAnalys
 rekenwerk in `lib/campagneAnalyseOverzicht.ts`, getest; 27 november 2026, op verzoek van de eigenaar). De
 **Campagne analyses** uit Marketing analyse als **campagnes naast elkaar**: elke campagne een kolom, de cijfers
 uit de laatste analyse als rijen, zoals de campagnetabel. Alleen lezen voor iedereen: geen briefing
-bewerken, planning, E-mail settings, Nieuwe analyse of beheer (dat blijft in Marketing analyse). Staat bovenaan
+bewerken, planning, E-mailinstellingen, Nieuwe analyse of beheer (dat blijft in Marketing analyse). Staat bovenaan
 de sidebar en bovenaan de groep Campagnes op het startscherm.
 
 - **Bron**: `GET /api/marketing-analyse` en `overzichtCijfers`, dus dezelfde getallen als het overzicht in

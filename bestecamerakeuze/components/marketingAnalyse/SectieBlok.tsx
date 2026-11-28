@@ -32,7 +32,7 @@ function BenchmarkRegel({ cijfer }: { cijfer: Kerncijfer }) {
   const stijl = BENCHMARK[oordeel];
   const uitleg = `Vergeleken met ${b.groep}. Mediaan ${formatWaarde(b.mediaan, cijfer.eenheid)}, middelste helft ${formatWaarde(b.p25, cijfer.eenheid)} tot ${formatWaarde(b.p75, cijfer.eenheid)}${b.hogerIsBeter === false ? " (lager is beter)" : ""}.`;
   return (
-    <div className="mt-2.5 border-t border-line-soft pt-2" title={uitleg}>
+    <div className="mt-2.5 border-t border-line-soft pt-2" data-tip={uitleg}>
       <div className="flex items-baseline justify-between gap-2">
         <span className={`shrink-0 text-meta font-semibold ${stijl.tekst}`}>{stijl.naam}</span>
         <span className="truncate text-meta tabular-nums text-ink-faint">mediaan {formatWaarde(b.mediaan, cijfer.eenheid)}</span>

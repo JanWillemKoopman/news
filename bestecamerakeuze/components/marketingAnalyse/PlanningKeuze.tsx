@@ -120,7 +120,7 @@ export default function PlanningKeuze({
           aria-haspopup="menu"
           aria-expanded={open}
           aria-label={`Planning voor ${naam}: ${PLANNING_NAAM[regel.planning]}`}
-          title={
+          data-tip={
             volgende.datum
               ? `Volgende analyse ${volgende.datum}${volgende.toelichting ? ` · ${volgende.toelichting}` : ""}. Klik om de planning te wijzigen.`
               : "Niet ingepland. Klik om de planning te wijzigen."

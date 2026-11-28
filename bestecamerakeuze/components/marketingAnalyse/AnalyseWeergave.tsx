@@ -13,6 +13,7 @@ import { getBrandLogo } from "@/components/brandLogos";
 import { IconMail, IconPencil } from "@/components/icons";
 import { bedrijvenLabel, formatWaarde, looptijdLabel, tabbladenVoor, versieLabel } from "@/lib/marketingAnalyse/rekenen";
 import { LABEL_NAAM, type MaAnalyse, type MaCampagne, type MaOpzet, type MaOverzichtRegel, type MaVersie } from "@/lib/marketingAnalyse/types";
+import { toonMelding } from "@/lib/meldingen";
 
 export { DoelRegel, LabelBadge } from "@/components/marketingAnalyse/onderdelen";
 
@@ -24,7 +25,7 @@ type Props = {
   onTerug: () => void;
   onBewerk: () => void;
   onCampagneBijgewerkt: (c: MaCampagne) => void;
-  /** Beheeracties van de pagina (Beheer, E-mail settings), rechts in de kruimelrij. */
+  /** Beheeracties van de pagina (Beheer, E-mailinstellingen), rechts in de kruimelrij. */
   acties?: ReactNode;
 };
 
@@ -106,6 +107,7 @@ export default function AnalyseWeergave({ campagne, opzet, isEigenaar, onTerug, 
     const res = await fetch(`/api/marketing-analyse/analyse?id=${encodeURIComponent(analyse.id)}`, { method: "DELETE" });
     const data = (await res.json().catch(() => ({}))) as { fout?: string };
     if (!res.ok) return setFout(data.fout ?? "Kon de versie niet verwijderen.");
+    toonMelding({ titel: `Versie ${analyse.versie} verwijderd`, regel: campagne.naam });
     const rest = (versies ?? []).filter((v) => v.id !== analyse.id);
     setVersies(rest);
     setGekozen(rest[0]?.id ?? null);
@@ -222,7 +224,7 @@ export default function AnalyseWeergave({ campagne, opzet, isEigenaar, onTerug, 
             <button
               type="button"
               onClick={onBewerk}
-              title="Briefing bewerken"
+              data-tip="Briefing bewerken"
               aria-label="Briefing bewerken"
               className="flex h-8 w-8 items-center justify-center rounded-control text-ink-faint transition-colors hover:bg-surface hover:text-ink"
             >

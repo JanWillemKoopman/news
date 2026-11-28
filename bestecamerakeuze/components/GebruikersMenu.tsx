@@ -80,11 +80,11 @@ export default function GebruikersMenu({
         className="flex w-full items-center gap-2.5 rounded-control px-2 py-2 text-left transition-colors duration-[var(--duur-snel)] hover:bg-sidebar-hover"
       >
         <Avatar naam={naam} avatarUrl={avatarUrl} size={32} />
-        <span className="min-w-0 max-w-0 flex-1 overflow-hidden opacity-0 transition-all duration-[var(--duur)] group-hover:max-w-[160px] group-hover:opacity-100">
+        <span className="min-w-0 max-w-0 flex-1 overflow-hidden opacity-0 transition-all duration-[var(--duur)] group-data-[uit=true]:max-w-[160px] group-data-[uit=true]:opacity-100">
           <span className="block truncate text-sm font-medium text-sidebar-ink">{naam}</span>
           <span className="block truncate text-xs text-sidebar-ink-muted">Udenhout</span>
         </span>
-        <IconChevronUpDown className="hidden h-4 w-4 shrink-0 text-sidebar-ink-muted group-hover:block" />
+        <IconChevronUpDown className="hidden h-4 w-4 shrink-0 text-sidebar-ink-muted group-data-[uit=true]:block" />
       </button>
 
       {open &&

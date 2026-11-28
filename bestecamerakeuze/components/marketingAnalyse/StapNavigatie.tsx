@@ -81,7 +81,7 @@ export default function StapNavigatie({
                 type="button"
                 onClick={() => onKies(tab.sleutel)}
                 aria-current={isActief ? "page" : undefined}
-                title={tab.hoofdcijfer ? `${tab.hoofdcijfer.label}: ${cijfer}` : (tab.reden ?? undefined)}
+                data-tip={tab.hoofdcijfer ? `${tab.hoofdcijfer.label}: ${cijfer}` : (tab.reden ?? undefined)}
                 className={knopKlasse(isActief, tab.leeg)}
               >
                 <Vak actief={isActief}>{nr}</Vak>

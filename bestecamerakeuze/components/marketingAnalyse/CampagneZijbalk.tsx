@@ -5,6 +5,7 @@ import Drawer from "@/components/Drawer";
 import BedrijvenKiezer from "@/components/marketingAnalyse/BedrijvenKiezer";
 import { bedrijvenLabel, rapportageNaam } from "@/lib/marketingAnalyse/rekenen";
 import { STANDAARD_OPZET_ID, type MaCampagne, type MaOpzet, type MaVoorstel } from "@/lib/marketingAnalyse/types";
+import { toonMelding } from "@/lib/meldingen";
 
 type Props = {
   /** Zonder campagne: een nieuwe aanmaken. */
@@ -177,6 +178,10 @@ export default function CampagneZijbalk({
         : await verstuur("/api/marketing-analyse", "POST", v);
     if (data?.campagne) {
       onOpgeslagen(data.campagne);
+      toonMelding({
+        titel: campagne ? "Briefing opgeslagen" : voorstel ? "Voorstel toegevoegd" : "Analyse aangemaakt",
+        regel: data.campagne.naam,
+      });
       onClose();
     }
   }
@@ -187,6 +192,7 @@ export default function CampagneZijbalk({
     const data = await verstuur(`/api/marketing-analyse?id=${encodeURIComponent(campagne.id)}`, "DELETE");
     if (data) {
       onVerwijderd(campagne.id);
+      toonMelding({ titel: "Analyse verwijderd", regel: campagne.naam });
       onClose();
     }
   }

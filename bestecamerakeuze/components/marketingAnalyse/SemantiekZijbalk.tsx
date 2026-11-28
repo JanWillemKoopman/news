@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Drawer from "@/components/Drawer";
 import { opgeslagenRegel } from "@/components/marketingAnalyse/AnalysePromptZijbalk";
 import { SEMANTIEK_BLOKKEN, type MaSemantiek, type SemantiekInhoud, type SemantiekSleutel } from "@/lib/marketingAnalyse/types";
+import { SkeletRegels } from "@/components/Skelet";
 
 type Props = {
   onClose: () => void;
@@ -48,7 +49,7 @@ export default function SemantiekZijbalk({ onClose, onOpgeslagen }: Props) {
   if (!semantiek || !concept) {
     return (
       <Drawer title="Semantic layer" onClose={onClose} extraBreed>
-        <p className="text-sm text-ink-muted">{fout ?? "Laden…"}</p>
+        {fout ? <p className="text-sm text-ink-muted">{fout}</p> : <SkeletRegels aantal={6} />}
       </Drawer>
     );
   }
@@ -110,7 +111,7 @@ export default function SemantiekZijbalk({ onClose, onOpgeslagen }: Props) {
                 }`}
               >
                 {b.naam}
-                {blokGewijzigd(b.sleutel) && <span className="h-1.5 w-1.5 rounded-full bg-primary" title="Gewijzigd, nog niet opgeslagen" />}
+                {blokGewijzigd(b.sleutel) && <span className="h-1.5 w-1.5 rounded-full bg-primary" data-tip="Gewijzigd, nog niet opgeslagen" />}
               </button>
             ))}
           </nav>

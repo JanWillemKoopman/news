@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { datumKort } from "@/lib/marketingAnalyse/rekenen";
 import type { MaCampagne, MaOverzichtRegel, MaResultaat } from "@/lib/marketingAnalyse/types";
+import { toonMelding } from "@/lib/meldingen";
 
 /** Het veld Data correctie: altijd de huidige tekst van de campagne, voor de volgende analyse. */
 export function DataCorrectie({
@@ -33,6 +34,7 @@ export function DataCorrectie({
       const data = (await res.json().catch(() => ({}))) as { campagne?: MaCampagne; fout?: string };
       if (!res.ok || !data.campagne) throw new Error(data.fout ?? "Kon de Data correctie niet opslaan.");
       onOpgeslagen(data.campagne);
+      toonMelding({ titel: "Data correctie opgeslagen", regel: "Geldt vanaf de volgende analyse." });
       setMelding("Opgeslagen. De volgende analyse neemt dit mee.");
     } catch (err) {
       setFout(err instanceof Error ? err.message : String(err));

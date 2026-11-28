@@ -11,8 +11,10 @@ import {
   IconMail,
   IconMegaphone,
   IconPhoto,
+  IconPosts,
   IconSearch,
   IconSettings,
+  IconTable,
   IconTarget,
   IconTrendUp,
   IconUserCircle,
@@ -27,6 +29,8 @@ export type NavGroep = {
   id: NavGroepId;
   /** Het kleine uppercase kopje in de sidebar, en het grijze kopje op het startscherm. */
   naam: string;
+  /** Het icoon van de groep in de ingeklapte sidebar-rail (G6), op de plek van het kopje. */
+  icon: React.ReactNode;
   paginas: NavPagina[];
 };
 
@@ -57,6 +61,7 @@ export const NAV_GROEPEN: NavGroep[] = [
   {
     id: "campagnes",
     naam: "Campagnes",
+    icon: <IconMegaphone />,
     paginas: [
       { view: "campagne-analyse", label: "Campagne analyse", icon: <IconColumns /> },
       { view: "campagnes", label: "Campagnes", icon: <IconMegaphone /> },
@@ -69,6 +74,7 @@ export const NAV_GROEPEN: NavGroep[] = [
   {
     id: "kpis",
     naam: "KPI's 2027",
+    icon: <IconTrendUp />,
     paginas: [
       { view: "kpi-2027", label: "KPI's Google Analytics", icon: <IconTrendUp /> },
       { view: "kpi-2027-syntec", label: "KPI's Syntec", icon: <IconTarget /> },
@@ -79,6 +85,7 @@ export const NAV_GROEPEN: NavGroep[] = [
   {
     id: "kanalen",
     naam: "Kanalen",
+    icon: <IconPosts />,
     paginas: [
       { view: "social-ads", label: "Social ads", icon: <IconAdHeart /> },
       { view: "google-ads", label: "Google Ads", icon: <IconSearch /> },
@@ -90,6 +97,7 @@ export const NAV_GROEPEN: NavGroep[] = [
   {
     id: "tools",
     naam: "Tools",
+    icon: <IconTable />,
     paginas: [
       { view: "leads-syntec", label: "Syntec leads", icon: <IconUsers /> },
       { view: "selligent", label: "Selligent database", icon: <IconMail /> },

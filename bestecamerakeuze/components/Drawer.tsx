@@ -75,6 +75,8 @@ export default function Drawer({ title, onClose, children, breed = false, extraB
             type="button"
             onClick={onClose}
             aria-label="Sluiten"
+            data-tip="Sluiten (Esc)"
+            data-tip-plaats="links"
             className="flex h-7 w-7 shrink-0 items-center justify-center rounded-control text-ink-faint transition-colors duration-[var(--duur-snel)] hover:bg-surface hover:text-ink"
           >
             <IconClose className="h-4 w-4" />

@@ -13,6 +13,7 @@ import {
   type MaPrompt,
   type Planning,
 } from "@/lib/marketingAnalyse/types";
+import { SkeletRegels } from "@/components/Skelet";
 
 export function opgeslagenRegel(
   p: { standaard: boolean; versie: number; opgeslagenOp: string | null; opgeslagenDoorNaam: string | null },
@@ -159,7 +160,7 @@ function OpzetInstellingen({
             onClick={() => (bevestigWeg ? verstuur("DELETE") : setBevestigWeg(true))}
             disabled={bezig}
             className="text-sm text-negative underline-offset-2 hover:underline disabled:opacity-60"
-            title={opzet.aantalCampagnes > 0 ? "Er hangen analyses aan; zet hem dan uit" : undefined}
+            data-tip={opzet.aantalCampagnes > 0 ? "Er hangen analyses aan; zet hem dan uit" : undefined}
           >
             {bevestigWeg ? "Zeker weten? De prompt gaat ook weg." : "Opzet verwijderen"}
           </button>
@@ -250,7 +251,7 @@ export default function AnalysePromptZijbalk({ opzet, bedrijven, isEigenaar, onO
             Na het aanmaken schrijf je hier de prompt. Zolang die leeg is, weigert Claude een analyse met deze opzet.
           </p>
         ) : !prompt ? (
-          <p className="text-sm text-ink-muted">{fout ?? "Laden…"}</p>
+          fout ? <p className="text-sm text-ink-muted">{fout}</p> : <SkeletRegels aantal={6} />
         ) : (
           <>
             <p className="text-sm text-ink-muted">

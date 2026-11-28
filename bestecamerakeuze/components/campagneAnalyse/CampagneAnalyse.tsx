@@ -48,6 +48,7 @@ import {
 } from "@/lib/marketingAnalyse/rekenen";
 import type { MaOpzet, MaOverzichtRegel } from "@/lib/marketingAnalyse/types";
 import { kostenPer, leesUitsplitsing } from "@/lib/marketingAnalyse/uitsplitsing";
+import { SkeletKaarten } from "@/components/Skelet";
 
 const LABELKOLOM = 196;
 const KOLOM_MIN = 280;
@@ -133,7 +134,7 @@ function Meter({ pct, tijdPct, toon = "neutraal" }: { pct: number; tijdPct?: num
       />
       {tijdPct != null && (
         <span
-          title="Verstreken deel van de looptijd"
+          data-tip="Verstreken deel van de looptijd"
           aria-hidden="true"
           className="absolute -bottom-[3px] -top-[3px] w-px bg-ink/50"
           style={{ left: `${klem(tijdPct)}%` }}
@@ -164,7 +165,7 @@ function Cel({ children, kaart }: { children: ReactNode; kaart?: Kaart | null })
 function StatusChip({ online }: { online: boolean }) {
   return online ? (
     <span
-      title="Online: vandaag valt binnen de looptijd"
+      data-tip="Online: vandaag valt binnen de looptijd"
       className="inline-flex items-center gap-1.5 rounded-pill bg-open-light px-2.5 py-1 text-meta font-semibold leading-none text-positive"
     >
       <span aria-hidden="true" className="live-stip h-1.5 w-1.5 rounded-full bg-open" />
@@ -172,7 +173,7 @@ function StatusChip({ online }: { online: boolean }) {
     </span>
   ) : (
     <span
-      title="Offline: vandaag valt buiten de looptijd"
+      data-tip="Offline: vandaag valt buiten de looptijd"
       className="inline-flex items-center gap-1.5 rounded-pill bg-closed-light px-2.5 py-1 text-meta font-semibold leading-none text-ink-muted"
     >
       <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-closed" />
@@ -202,7 +203,7 @@ function KolomKop({ k }: { k: Kolom }) {
   return (
     <a
       href={analyseHref(c.id)}
-      title={`Open de analyse van ${c.naam}`}
+      data-tip={`Open de analyse van ${c.naam}`}
       className="group/kop flex h-full flex-col gap-3 px-5 pb-5 pt-5 text-left transition-colors duration-[var(--duur-snel)] hover:bg-surface-tint"
     >
       <div className="flex items-center justify-between gap-2">
@@ -438,7 +439,7 @@ const GROEPEN: Groep[] = [
                 <Leeg />
               )}
               {o.gehaaldPct !== null && <Meter pct={o.gehaaldPct} toon={gehaald ? "positief" : "neutraal"} />}
-              <span title={o.syntecNietMogelijk ? "Het doel noemt Syntec, maar Syntec geldt alleen voor een analyse die uitsluitend over Van den Udenhout gaat. Daarom gemeten in Google Analytics." : BRON_UITLEG[o.bron]}>
+              <span data-tip={o.syntecNietMogelijk ? "Het doel noemt Syntec, maar Syntec geldt alleen voor een analyse die uitsluitend over Van den Udenhout gaat. Daarom gemeten in Google Analytics." : BRON_UITLEG[o.bron]}>
                 <Meta toon={gehaald ? "positief" : "neutraal"}>
                   {o.doelLeads === null
                     ? "Geen aantal in het doel"
@@ -461,7 +462,7 @@ const GROEPEN: Groep[] = [
 
 function StatTegel({ label, titel, children, onder }: { label: string; titel?: string; children: ReactNode; onder: ReactNode }) {
   return (
-    <div title={titel} className="flex flex-col gap-2 rounded-card border border-line bg-card px-5 py-4 shadow-subtle">
+    <div data-tip={titel} className="flex flex-col gap-2 rounded-card border border-line bg-card px-5 py-4 shadow-subtle">
       <span className="label-theme text-label text-ink-faint">{label}</span>
       <div className="flex items-baseline gap-2">{children}</div>
       <div className="flex min-h-[1rem] flex-col gap-1.5 text-meta text-ink-faint">{onder}</div>
@@ -484,7 +485,7 @@ function OnlineSchakelaar({
       <div
         role="group"
         aria-label="Online of offline"
-        title="Online = de campagne loopt nu; offline = nog niet begonnen of afgelopen"
+        data-tip="Online = de campagne loopt nu; offline = nog niet begonnen of afgelopen"
         className="flex items-center gap-0.5 rounded-control bg-surface p-0.5"
       >
         {ONLINE_FILTERS.map((f) => {
@@ -519,7 +520,7 @@ function OnlineSchakelaar({
 /**
  * Campagnes → Campagne analyse: de Campagne analyses uit Marketing analyse als campagnes
  * naast elkaar (kolommen) met de cijfers uit de laatste analyse als rijen, zoals het tabblad
- * Campagnes. Alleen lezen: geen briefing bewerken, geen planning, e-mail settings of nieuwe
+ * Campagnes. Alleen lezen: geen briefing bewerken, geen planning, e-mailinstellingen of nieuwe
  * analyse — dat blijft in Marketing analyse. Een klik op de kop van een campagne opent de
  * volledige analyse. Dezelfde bron en dezelfde cijfers (`overzichtCijfers`) als het overzicht
  * in Marketing analyse.
@@ -605,7 +606,7 @@ export default function CampagneAnalyse({ ingelogd }: { ingelogd: boolean }) {
     );
   }
 
-  if (regels === null) return <p className="text-sm text-ink-muted">Campagne-analyses laden…</p>;
+  if (regels === null) return <SkeletKaarten />;
 
   if (campagnes.length === 0) {
     return (
@@ -754,7 +755,7 @@ export default function CampagneAnalyse({ ingelogd }: { ingelogd: boolean }) {
                       <tr key={rij.label}>
                         <th
                           scope="row"
-                          title={rij.uitleg}
+                          data-tip={rij.uitleg}
                           className="sticky left-0 z-10 border-b border-r border-line-soft bg-card px-5 py-5 text-left align-top text-sm font-medium text-ink-muted"
                         >
                           {rij.label}

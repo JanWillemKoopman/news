@@ -27,7 +27,7 @@ function StatusStip({ v, vandaag }: { v: MaVoorstel; vandaag: string }) {
     <span
       role="img"
       aria-label={titel}
-      title={titel}
+      data-tip={titel}
       className={`mt-1.5 block h-2 w-2 shrink-0 rounded-full ${live ? "live-stip bg-open" : "bg-closed opacity-70"}`}
     />
   );
@@ -38,7 +38,7 @@ function ZekerheidLabel({ v }: { v: MaVoorstel }) {
   if (v.zekerheid !== "twijfel") return null;
   return (
     <span
-      title={v.reden ?? undefined}
+      data-tip={v.reden ?? undefined}
       className="inline-flex items-center rounded-control border border-line px-1.5 py-px text-meta text-ink-muted"
     >
       {ZEKERHEID_NAAM.twijfel}
@@ -53,7 +53,7 @@ function PaginaLink({ url }: { url: string }) {
       target="_blank"
       rel="noreferrer"
       onClick={(e) => e.stopPropagation()}
-      title={url}
+      data-tip={url}
       className="inline-flex max-w-[260px] items-center gap-1 truncate text-ink-muted underline-offset-2 hover:text-ink hover:underline"
     >
       <IconLink className="h-3.5 w-3.5 shrink-0" />
@@ -204,10 +204,10 @@ export default function VoorstellenBalk({ open, genegeerd, laatsteZoekronde, bez
                 <th className={`${KOP} pl-6`}>Campagne</th>
                 <th className={KOP}>Campagnepagina</th>
                 <th className={KOP}>Kanalen</th>
-                <th className={KOP} title="Eerste dag met uitgaven naar de pagina, binnen de laatste 90 dagen">
+                <th className={KOP} data-tip="Eerste dag met uitgaven naar de pagina, binnen de laatste 90 dagen">
                   Live sinds
                 </th>
-                <th className={`${KOP} text-right`} title="Mediakosten tot nu toe, alle platforms samen">
+                <th className={`${KOP} text-right`} data-tip="Mediakosten tot nu toe, alle platforms samen">
                   Uitgegeven
                 </th>
                 <th className={`${KOP} pr-6`} />

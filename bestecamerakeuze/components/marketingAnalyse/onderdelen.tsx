@@ -68,7 +68,7 @@ export function OordeelStip({ oordeel, className = "" }: { oordeel: TabOordeel |
     <span
       role="img"
       aria-label={TAB_OORDEEL_NAAM[oordeel]}
-      title={TAB_OORDEEL_NAAM[oordeel]}
+      data-tip={TAB_OORDEEL_NAAM[oordeel]}
       className={`inline-block h-2 w-2 shrink-0 rounded-full ${OORDEEL_KLEUR[oordeel]} ${className}`}
     />
   );

@@ -297,6 +297,28 @@ body {
   --tw-shadow: 0 0 #0000;
 }
 
+/* ── Afwerking (G1–G9, 28 november 2026), alleen in de huisstijl ─────────────────────
+   G1 · Waarschuwingstekst ("Achter op de looptijd") stond op 3,96:1 in oranje; 10% donkerder
+        haalt 4,8:1. Alleen de tekst: oranje vlakken en balken blijven gelijk.
+        De gedempte sidebartekst (inactieve tegels, groepskopjes) van 56% naar 70%.
+   G2 · Klikfeedback zonder beweging ("Rustig en vlak": geen schaal of verschuiving): een
+        knop wordt bij indrukken een fractie donkerder, en elke knop heeft een korte
+        kleurovergang, ook waar de component zelf geen transitie zet.
+   G5 · De uitgeklapte sidebar is een zwevende laag: een duidelijke schaduw naar rechts, zodat
+        hij zichtbaar óver de pagina ligt in plaats van er hard tegenaan te staan. */
+[data-theme="udenhout"] .text-orange-dark {
+  color: color-mix(in srgb, var(--color-orange-dark) 90%, black);
+}
+[data-theme="udenhout"] body {
+  --color-sidebar-ink-muted: rgba(245, 246, 248, 0.7);
+}
+[data-theme="udenhout"] :is(button, a[href], summary, [role="button"], [role="tab"], [role="menuitem"]):not(:disabled):active {
+  filter: brightness(0.93);
+}
+[data-theme="udenhout"] .sidebar-schil[data-uit="true"] {
+  box-shadow: 10px 0 32px rgba(15, 23, 42, 0.22);
+}
+
 /* De donkere navigatieschil. Als `bg-sidebar` met daarbovenop, per merk, een verloop —
    zo blijft de kleur één token en is het verloop optioneel. */
 .sidebar-vlak {
@@ -401,6 +423,21 @@ body {
   :focus-visible {
     outline: var(--focus-ring) solid var(--focus-ring-kleur);
     outline-offset: var(--focus-ring-offset);
+  }
+
+  /* G2: een korte kleurovergang op elke knop, ook waar de component er zelf geen zet.
+     In @layer base, dus een `transition-*`-utility in de component wint altijd. */
+  button,
+  [role="button"] {
+    transition-property: color, background-color, border-color, filter;
+    transition-duration: var(--duur-snel);
+    transition-timing-function: var(--ease-merk);
+  }
+
+  /* G9: in een vlak dat zijn inhoud afsnijdt (overflow-hidden: tabellen, tegels, kaarten)
+     valt een ring buíten de knop weg. Daar tekenen we hem binnen de rand. */
+  :where(.overflow-hidden, .overflow-x-auto, .overflow-auto, .overflow-y-auto, .overflow-x-hidden) :focus-visible {
+    outline-offset: calc(var(--focus-ring) * -1 - 1px);
   }
 
   ::selection {
@@ -578,7 +615,49 @@ body {
   transform: translate(var(--dx, 0px), var(--dy, 0px));
 }
 
+/* G3: een melding (MeldingLaag) komt zacht op en gaat zacht weg — alleen opacity en een paar
+   pixels, in het tempo van het merk. */
+@keyframes melding-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.melding-in {
+  animation: melding-in var(--duur) var(--ease-merk);
+}
+.melding-uit {
+  opacity: 0;
+  transition: opacity 180ms var(--ease-merk);
+}
+
+/* G7: de tooltip (TooltipLaag) verschijnt met een korte fade — alleen opacity, want zijn
+   positie staat in een inline transform. */
+@keyframes tip-in {
+  from {
+    opacity: 0;
+  }
+}
+.tip-in {
+  animation: tip-in var(--duur-snel) var(--ease-merk);
+}
+
+/* G4: laadskelet (components/Skelet.tsx). Grijze balkjes in de vorm van wat er komt, die
+   rustig ademen, in plaats van het woord "Laden…". */
+@keyframes skelet-adem {
+  50% {
+    opacity: 0.45;
+  }
+}
+.skelet {
+  background-color: color-mix(in srgb, var(--color-ink) 7%, transparent);
+  animation: skelet-adem 1.6s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .melding-in,
+  .tip-in,
+  .skelet,
   .status-dot-ademen,
   .live-stip,
   .laadvlak,

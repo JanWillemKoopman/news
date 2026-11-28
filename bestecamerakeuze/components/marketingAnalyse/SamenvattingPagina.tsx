@@ -62,7 +62,7 @@ function Meter({
         {pct !== null && <div className="absolute inset-y-0 left-0 rounded-pill bg-primary" style={{ width: `${Math.min(100, Math.max(0, pct))}%` }} />}
         {tijdPct !== null && (
           <div
-            title="Verstreken deel van de looptijd"
+            data-tip="Verstreken deel van de looptijd"
             className="absolute -bottom-1 -top-1 w-0.5 bg-ink"
             style={{ left: `calc(${Math.min(100, Math.max(0, tijdPct))}% - 1px)` }}
           />

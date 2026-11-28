@@ -36,6 +36,7 @@ import {
   versieLabel,
 } from "@/lib/marketingAnalyse/rekenen";
 import type { MaOpzet, MaOverzichtRegel } from "@/lib/marketingAnalyse/types";
+import { SkeletTabel } from "@/components/Skelet";
 
 const MIN_KOLOMBREEDTE = 14;
 const MAX_KOLOMBREEDTE = 44;
@@ -208,7 +209,11 @@ export default function CampagneTimeline({ ingelogd }: { ingelogd: boolean }) {
   }
 
   if (regels === null) {
-    return <p className="text-sm text-ink-muted">Campagne-analyses laden…</p>;
+    return (
+      <div className="rounded-panel border border-line bg-card">
+        <SkeletTabel rijen={4} kolommen={3} />
+      </div>
+    );
   }
 
   if (campagnes.length === 0) {
@@ -254,6 +259,7 @@ export default function CampagneTimeline({ ingelogd }: { ingelogd: boolean }) {
                 onClick={() => setJaar((j) => j - 1)}
                 disabled={jaar <= bereik.van}
                 aria-label="Vorig jaar"
+                data-tip="Vorig jaar"
                 className="flex h-8 w-8 items-center justify-center text-ink-muted transition-colors hover:bg-surface hover:text-ink disabled:pointer-events-none disabled:opacity-30"
               >
                 <IconChevronDown className="h-4 w-4 rotate-90" />
@@ -266,6 +272,7 @@ export default function CampagneTimeline({ ingelogd }: { ingelogd: boolean }) {
                 onClick={() => setJaar((j) => j + 1)}
                 disabled={jaar >= bereik.tot}
                 aria-label="Volgend jaar"
+                data-tip="Volgend jaar"
                 className="flex h-8 w-8 items-center justify-center text-ink-muted transition-colors hover:bg-surface hover:text-ink disabled:pointer-events-none disabled:opacity-30"
               >
                 <IconChevronDown className="h-4 w-4 -rotate-90" />
@@ -387,7 +394,7 @@ export default function CampagneTimeline({ ingelogd }: { ingelogd: boolean }) {
                           href={analyseHref(campagne.id)}
                           className="group flex min-w-0 flex-col justify-center px-3"
                           style={{ width: NAAMKOLOM }}
-                          title={`${campagne.naam} — open de analyse`}
+                          data-tip={`${campagne.naam} — open de analyse`}
                         >
                           <span className="truncate text-sm text-ink group-hover:text-primary">{campagne.naam}</span>
                           <span className="truncate text-xs text-ink-faint">{bedrijvenLabel(campagne.bedrijven)}</span>
@@ -395,7 +402,7 @@ export default function CampagneTimeline({ ingelogd }: { ingelogd: boolean }) {
                         <span
                           className="flex h-full min-w-0 items-center border-l border-line px-3"
                           style={{ width: MERKKOLOM }}
-                          title={campagne.merk ?? undefined}
+                          data-tip={campagne.merk ?? undefined}
                         >
                           <MerkLogo merk={campagne.merk} />
                         </span>
