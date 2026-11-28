@@ -664,3 +664,159 @@ planning Maandelijks), prompt versie 2.
   standaard-hoofdprompt, de skill en de hints in de briefing. Analyses van vóór deze datum hebben
   de nieuwe kerncijfers nog niet: de Syntec-regels tonen dan "–" tot de volgende analyse, en
   Google Analytics valt terug op het leadcijfer als dat uit GA4 kwam.
+
+## 25. Dataverantwoording: per bron wat er is meegenomen, met − en + (plan, verzoek van de eigenaar, 28 november 2026)
+
+**Status: plan, nog niet gebouwd.** Besluiten die nog open staan, staan in 25.9.
+
+### 25.1 Wat de eigenaar wil
+Het laatste onderdeel in de navigatie van een analyse (nu "Verantwoording") wordt **Dataverantwoording**:
+in één oogopslag, **per databron**, welke datapunten de analyse aan de campagne heeft toegerekend
+(deze advertentiecampagnes, deze social posts, deze landingspagina's, deze events, deze Syntec-filter)
+en **hoe er per bron gefilterd is**. Elke rij kan eraf (−); daaronder, onder een streep, de
+**twijfelgevallen die niet zijn meegenomen** (mogelijke touchpoints), die er met een + bij kunnen.
+Elke klik komt **vanzelf in de Data correctie** te staan, zodat de volgende analyse het toepast.
+Geldt voor alle Campagne analyses.
+
+### 25.2 Hoe het eruitziet
+```
+Dataverantwoording                                        Geldt vanaf de volgende analyse
+38 onderdelen meegenomen uit 6 bronnen · 5 twijfelgevallen niet meegenomen · 2 aanpassingen klaar
+
+ADVERTENTIES
+  Meta Ads · Van den Udenhout (69324444) · campagnenaam bevat "A2" · 1 sep – 30 nov      4 campagnes
+    Campagne  A2 | Leads | Okt                 € 1.240   12 sep – 31 okt                        [−]  ← op hover
+    Campagne  A2 | Awareness                   € 860     1 sep – 30 nov    waarschijnlijk
+  Google Ads · …                                                                          2 campagnes
+ORGANISCHE SOCIAL
+  Instagram · @vandenudenhout · tekst bevat "A2" of "Audi A2" · 1 sep – 30 nov             3 posts
+    Post      "De nieuwe A2 staat klaar…"      4.120 bereik   3 okt   ↗
+WEBSITE (GA4)
+  GA4 · udenhout.nl · landing page begint met /acties/audi-a2                              2 pagina's
+    Pagina    /acties/audi-a2                  1.830 sessies
+    Event     proefrit_aangevraagd             41 events
+E-MAIL
+  GA4 · utm_medium = email + Selligent M_BT= · naar de campagnepagina                       1 regel
+SYNTEC
+  Leads · merk Audi, model A2, Kanaalgroep Internet · 1 sep – 22 nov                        1 filter
+──────────────────────────────────────────────────────────────────────────────────────────────
+MOGELIJKE TOUCHPOINTS, NIET MEEGENOMEN
+  Instagram · Post "Audi-weekend bij Van den Udenhout"  3 nov   noemt de A2 tussen 4 modellen      [+]
+  Meta Ads  · Campagne "Audi | Voorraad Q4"             € 310   A2 zit in de feed, geen eigen boodschap [+]
+  Facebook  · Post (verwijderd via Data correctie)      12 okt                                      [+]
+```
+- **Per bron een kop** met account(s), de filter in gewone taal, de periode en het aantal. Daaronder
+  één rij per datapunt: soort, naam (met link als die er is, nieuw tabblad), het belangrijkste cijfer
+  (uitgaven, bereik, sessies, events), datum of looptijd, en de zekerheid **alleen als die niet "zeker"
+  is** (rustig houden). De reden staat als grijze tweede regel of in de tooltip.
+- **De bronnen in vaste volgorde**, gelijk aan de funnel: Advertenties (Google Ads, Meta Ads, LinkedIn
+  Ads), Organische social (Instagram, Facebook, LinkedIn), Website (GA4: campagnepagina's en events),
+  E-mail, Syntec (leads, orders). Onbekende bron: "Overig" onderaan.
+- **Het minnetje verschijnt op hover** van de rij (en bij toetsenbordfocus), rechts uitgelijnd; geen
+  kleurverandering van de rij zelf. Na een klik blijft de rij staan, doorgestreept en gedimd, met
+  "Gaat eraf bij de volgende analyse · Ongedaan maken".
+- **Onder een streep**: de mogelijke touchpoints die de analyse heeft bekeken maar niet heeft
+  meegenomen, met waarom niet, en een **plusje** (altijd zichtbaar, het is de enige actie daar). Na een
+  klik: "Komt erbij bij de volgende analyse · Ongedaan maken". Iets wat eerder via de Data correctie is
+  verwijderd, staat hier ook (reden "verwijderd via Data correctie"); de + haalt dan de −-regel weg.
+- **Bovenaan één regel** met de tellingen en rechts "Geldt vanaf de volgende analyse": een versie
+  verandert nooit, dus de cijfers van deze versie blijven zoals ze zijn.
+- Daaronder blijft wat er nu staat: Wat er met de Data correctie is gedaan, Kanttekeningen bij de data,
+  het veld Data correctie en de Voorstellen voor de semantic layer.
+- Navigatie (`StapNavigatie.tsx`): "Dataverantwoording", subregel "Wat is meegenomen, per bron";
+  met een klein getal als er aanpassingen klaarstaan.
+
+### 25.3 Naar de Data correctie: vaste regels in hetzelfde veld
+Een klik schrijft **direct** (PATCH, zoals de knop Opslaan nu) een regel in het bestaande veld Data
+correctie, in een vaste vorm met de sleutel van het datapunt:
+```
+− Meta Ads · campagne · A2 | Awareness  [meta-ads:campagne:120211234567]
++ Instagram · post · Audi-weekend bij Van den Udenhout  [instagram:post:17890123456789]
+```
+- **Waarom in hetzelfde veld en geen nieuwe tabel**: de skill leest de Data correctie al, elke versie
+  legt hem al vast (`marketing_analyse_bewaar`), de briefing-zijbalk toont hem al, en de geplande
+  vrijdagronde neemt hem dus vanzelf mee. Geen migratie nodig.
+- Het dashboard herkent zijn eigen regels aan de sleutel tussen `[ ]` (`lib/marketingAnalyse/correctieRegels.ts`:
+  lezen, toevoegen, weghalen; getest). Ongedaan maken = die regel weghalen. Vrije tekst eromheen
+  blijft gewoon staan en werkt zoals nu.
+- In het blok Data correctie staan de −/+-regels als nette lijst boven het tekstveld (met een kruisje
+  om er één weg te halen); in het tekstveld zelf alleen de vrije tekst. Bij opslaan voegt het dashboard
+  ze weer samen.
+- Iedereen mag klikken, net als de Data correctie nu. Bij gelijktijdig bewerken: de PATCH stuurt de
+  regel mee (toevoegen of weghalen), niet het hele veld, zodat twee collega's elkaar niet overschrijven.
+
+### 25.4 Wat de analyse moet aanleveren (formaat, optionele velden)
+`Herkenning` in `types.ts` krijgt optionele velden; oude versies blijven werken (`normaliseerResultaat`):
+```ts
+interface Herkenning {
+  bron: string;              // vaste namen, lijst HERKENNING_BRONNEN in types.ts
+  soort: string;             // campagne | advertentie | post | pagina | event | utm | filter …
+  naam: string;
+  reden: string;
+  zekerheid?: "zeker" | "waarschijnlijk" | "twijfel";
+  sleutel?: string;          // stabiel: <bron>:<soort>:<extern id, pad of naam>
+  opgenomen?: boolean;       // standaard true; false = mogelijk touchpoint, niet meegenomen
+  cijfer?: { label: string; waarde: number; eenheid: Eenheid }; // uitgaven, bereik, sessies …
+  datum?: string; tot?: string; // post: datum; campagne: looptijd
+  url?: string;
+  account?: string;
+  viaCorrectie?: "erbij" | "eraf"; // opgenomen of weggelaten door de Data correctie
+}
+interface BronFilter { bron: string; accounts: string[]; filter: string; periode?: string }
+// MaResultaat krijgt: bronFilters?: BronFilter[]
+```
+- Zonder `sleutel` (oude versies) maakt het dashboard er een van bron + soort + naam, zodat ook daar
+  het minnetje werkt. Zonder `bronFilters` toont de kop alleen de bron, met de oude `bronnen` als chips.
+- Groeperen en tellen: `groepeerHerkenning` in `rekenen.ts` (getest).
+- Geen nieuw formaatnummer (alles optioneel), maar wel **skill, standaard-hoofdprompt en dit plan in
+  dezelfde wijziging** (regel uit CLAUDE.md).
+
+### 25.5 Wat de skill anders gaat doen
+- **Volledig**: elke advertentiecampagne, elke post, elke pagina, elk event en elke Syntec-filter die
+  in een cijfer meetelt, staat als eigen rij in `herkenning`, met `sleutel`, `cijfer` en (waar het kan)
+  `url`. Niet samenvatten tot "3 Meta-campagnes".
+- **Per bron de filter** in `bronFilters`, in gewone taal ("campagnenaam bevat A2", "landing page begint
+  met /acties/audi-a2", "merk Audi, model A2, Kanaalgroep Internet").
+- **Twijfelgevallen opschrijven**: wat hij bekeek en níet meenam (posts die het model noemen tussen
+  andere, campagnes met een lijkende naam, verwante pagina's, posts net buiten de looptijd) als
+  `opgenomen: false` met de reden. Hoogstens ±15, de sterkste kandidaten eerst.
+- **De vaste regels in de Data correctie strikt toepassen**: `−` = weglaten uit alle cijfers, `+` =
+  meenemen; elk in `correcties` melden, en het datapunt in `herkenning` laten staan met `viaCorrectie`
+  (een weggelaten punt als `opgenomen: false`, zodat het met de + terug kan).
+- Sleutels stabiel houden tussen versies (extern id van het platform waar dat er is), anders werkt
+  "ongedaan maken" en de herkenning van een eerdere −/+ niet.
+
+### 25.6 Rapportages en Maandrapport Jana
+Rapportages (VDU/PGZ maand en kwartaal, E-mail VDU, HRM campagne) gebruiken dezelfde pagina en krijgen
+de nieuwe weergave vanzelf, met minder rijen. Maandrapport Jana (formaat 4) heeft een eigen weergave
+zonder Verantwoording en blijft buiten dit plan.
+
+### 25.7 Bouwvolgorde
+1. `types.ts` (velden, `HERKENNING_BRONNEN`), `normaliseerResultaat`, `groepeerHerkenning` + tests.
+2. `correctieRegels.ts` + tests; PATCH op `/api/marketing-analyse` met `correctieRegel: { actie, regel }`
+   naast het bestaande `dataCorrectie`.
+3. `Verantwoording.tsx` herbouwen (bronblokken, hover-min, streep, plus, ongedaan maken, tellingen),
+   `DataCorrectie` met de lijst van −/+-regels, `StapNavigatie.tsx` (naam, subregel, getal).
+4. Skill (`.claude/skills/marketing-analyse/SKILL.md`): volledige herkenning, `bronFilters`,
+   twijfelgevallen, vaste regels toepassen; standaard-hoofdprompt; nieuwe hoofdprompt-versie via een
+   migratie als de opgeslagen prompt de verantwoording beschrijft.
+5. CLAUDE.md (sectie Marketing analyse) bijwerken; visueel testen op 1400–1920px, licht en donker.
+6. Bestaande analyses krijgen de volledige lijst bij hun volgende versie (vrijdagronde of handmatig);
+   tot dan tonen ze hun huidige herkenning, mét minnetje.
+
+### 25.8 Risico's
+- **Lange lijsten** (veel posts): per bron inklapbaar boven ±8 rijen ("nog 14 posts").
+- **Sleutels die verschuiven** tussen versies: dan herkent het dashboard een −-regel niet meer bij de
+  nieuwe rij. De regel blijft wel gewoon tekst die de skill toepast; het dashboard toont hem dan als
+  losse regel in het blok Data correctie.
+- **E-mail is altijd één kanaal** (besluit van de eigenaar): e-mail staat er als herkenningsregel(s),
+  niet per mailing — zie 25.9.
+
+### 25.9 Open vragen aan de eigenaar
+1. **E-mail per mailing?** De vaste regel zegt dat e-mail nergens per mailing wordt uitgesplitst. In de
+   Dataverantwoording zou dat per mailing wél handig zijn om er één af te halen. Uitzondering alleen
+   hier, of e-mail als één regel laten?
+2. **Alleen klaarzetten, of direct een nieuwe versie?** Voorstel: een klik zet het klaar voor de
+   volgende analyse (vrijdagronde of handmatig). Een knop "Nu opnieuw analyseren" kan later.
+3. **Zelf iets toevoegen dat nergens in de lijst staat** (bijv. een pagina die de analyse niet vond):
+   voorstel is dat dat de vrije tekst van de Data correctie blijft. Of een veld "+ Zelf toevoegen" per bron?
